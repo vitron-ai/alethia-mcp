@@ -1,3 +1,6 @@
 node_modules/
 dist/
-*.tsbuildinfo
+*.log
+.DS_Store
+package-lock.json
+*.tgz
