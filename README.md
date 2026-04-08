@@ -1,11 +1,29 @@
 # @vitronai/alethia
 
-> **The MCP bridge to Alethia** — the patent-pending zero-IPC E2E test runtime built for AI agents.
+> **The MIT-licensed MCP bridge to Alethia** — the patent-pending zero-IPC E2E test runtime built for AI agents.
 > **45× faster than Playwright** on the localhost test loop. Fail-closed by default. Cryptographically chained audit packs. Local-first, no telemetry.
 
 [![npm version](https://img.shields.io/npm/v/@vitronai/alethia.svg)](https://www.npmjs.com/package/@vitronai/alethia)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
-[![Patent Pending](https://img.shields.io/badge/Patent-Pending-blue.svg)](#patent-notice)
+[![License: MIT](https://img.shields.io/badge/bridge-MIT-green.svg)](./LICENSE)
+[![Patent Pending](https://img.shields.io/badge/runtime-Patent%20Pending-blue.svg)](#patent-notice)
+
+---
+
+## ⚠️ This is the MCP bridge — the runtime is separate
+
+**This npm package is the open-source MCP bridge — a thin (~9 KB) stdio→HTTP relay**, MIT-licensed and freely usable. It does not contain the runtime. By itself it cannot drive a browser, run a test, or do anything except forward MCP requests to a local HTTP endpoint.
+
+**The Alethia desktop runtime** — the part that actually contains the patent-pending in-process zero-IPC executor, the VITRON-EA1 policy gate, and the NLP compiler — is **closed-source, patent-pending**, and currently distributed through the **design-partner alpha program**.
+
+| Component | License | How to get it |
+|---|---|---|
+| `@vitronai/alethia` (this npm package — the MCP bridge) | **MIT, open source** | `npm install -g @vitronai/alethia` |
+| Bridge source mirror | **MIT, open source** | [github.com/vitron-ai/alethia-mcp](https://github.com/vitron-ai/alethia-mcp) |
+| **Alethia desktop runtime** (the patented in-process executor) | **Closed-source, Patent Pending — U.S. App. 19/571,437** | Design-partner alpha. Request access: **gatekeeper@vitron.ai** |
+
+**The MIT license on this bridge does not, under any circumstances, grant any patent license under U.S. Application No. 19/571,437 or any other vitron.ai patent rights.** The runtime is a separate licensable artifact. Public binary releases of the runtime ship with the v0.3 milestone.
+
+**Bottom line for developers:** installing this npm package is free and unrestricted. Using the actual Alethia runtime in production requires either (a) the design-partner alpha (free during the alpha period, by request) or (b) a future commercial license once the patent grants.
 
 ---
 
@@ -32,14 +50,22 @@ Benchmarks: `click-assert-wait` scenario, 20 iterations. Numbers from `benchmark
 
 ## Install
 
+### Step 1 — Install the MCP bridge from npm (this package)
+
 ```bash
 npm install -g @vitronai/alethia
 ```
 
-You also need the **Alethia desktop app** running locally. Download the latest signed build:
-👉 [github.com/vitron-ai/alethia/releases](https://github.com/vitron-ai/alethia/releases)
+### Step 2 — Get the Alethia desktop runtime
 
-The desktop app starts a loopback JSON-RPC server on `127.0.0.1:47432`. The npm package above is a thin **stdio→HTTP shim** that lets MCP-capable AI agents call into it.
+The bridge alone does nothing — it's a relay. You also need the **Alethia desktop runtime** (the patent-pending closed-source Electron app) running locally on `127.0.0.1:47432`.
+
+The desktop runtime is currently in **design-partner alpha**. To request access:
+
+👉 **Landing page:** [github.com/vitron-ai/alethia](https://github.com/vitron-ai/alethia)
+👉 **Request access:** **gatekeeper@vitron.ai**
+
+Public binary releases ship with the v0.3 milestone. During the alpha, runtime access is free for design partners (typically AI coding agent tool builders integrating Alethia into their product).
 
 ### Verify the install
 
@@ -219,18 +245,21 @@ alethia-mcp --debug          Run with debug logging on stderr
 
 ## Troubleshooting
 
-### "Alethia desktop app is not running on 127.0.0.1:47432"
+### "Alethia desktop runtime is not running on 127.0.0.1:47432"
 
-The desktop app isn't running. Download it:
-👉 [github.com/vitron-ai/alethia/releases](https://github.com/vitron-ai/alethia/releases)
+The npm package you installed is the **MCP bridge only** — a thin relay. The actual runtime (the Electron app containing the patent-pending zero-IPC executor) is a separate, closed-source artifact distributed through the design-partner program.
 
-Launch it. You should see in its console:
+**To get runtime access:**
+👉 [github.com/vitron-ai/alethia](https://github.com/vitron-ai/alethia)
+👉 **gatekeeper@vitron.ai**
+
+Public binary releases ship in v0.3. Once you have the runtime and launch it, you should see in its console:
 
 ```
 [alethia] local RPC server listening on 127.0.0.1:47432
 ```
 
-Then re-run your MCP client.
+Then re-run your MCP client and `alethia-mcp --health-check` should print `✓ Connected`.
 
 ### "DENY_WRITE_HIGH" in the audit log
 
