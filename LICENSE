@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2026 vitron.ai
+Copyright (c) 2025-2026 vitron.ai
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +19,26 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+PATENT NOTICE
+
+This software is the public MCP bridge to a proprietary, closed-source runtime
+("Alethia Core") whose underlying method is the subject of:
+
+  U.S. Patent Application No. 19/571,437 (non-provisional)
+  Claiming priority to U.S. Provisional Application No. 63/785,814
+  Filed: April 9, 2025
+  Title: "Deterministic Local Automation Runtime with Zero-IPC Execution,
+          Offline Operation, and Per-Step Policy Enforcement"
+  Status: Patent Pending — U.S. Patent and Trademark Office
+
+The MIT license above applies ONLY to the source code in this directory
+(the @vitronai/alethia npm package — the MCP bridge and CLI). It does NOT
+grant any license, express or implied, under U.S. Application No. 19/571,437
+or any other patent rights of vitron.ai. Use of the Alethia Core runtime is
+governed by separate terms; commercial and production use may require a
+patent license from vitron.ai once the patent grants.
+
+For licensing inquiries: gatekeeper@vitron.ai

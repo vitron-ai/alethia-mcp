@@ -1,29 +1,57 @@
 {
   "name": "@vitronai/alethia",
-  "version": "0.1.0",
-  "description": "Connect AI agents to Alethia via MCP. Zero-IPC E2E testing with natural language — no Playwright, no CDP, no telemetry.",
+  "version": "0.2.0",
+  "description": "MCP bridge for Alethia — the patent-pending zero-IPC E2E test runtime built for AI agents. 45x faster than Playwright on the localhost loop. Fail-closed by default. Cryptographically chained audit packs. Local-first, no telemetry.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
     "alethia-mcp": "dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "LICENSE",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "test": "node --test test/smoke.test.mjs",
+    "prepublishOnly": "npm run build && npm test"
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "alethia",
     "e2e",
+    "e2e-testing",
+    "browser-automation",
     "testing",
     "ai-agents",
     "zero-ipc",
-    "playwright-alternative"
+    "playwright-alternative",
+    "cypress-alternative",
+    "claude-code",
+    "cursor",
+    "cline",
+    "continue",
+    "agent-testing",
+    "patent-pending",
+    "fail-closed",
+    "vitron"
   ],
+  "author": "vitron.ai <gatekeeper@vitron.ai>",
   "license": "MIT",
+  "homepage": "https://github.com/vitron-ai/alethia",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vitron-ai/alethia-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vitron-ai/alethia-mcp/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=18"
   },
