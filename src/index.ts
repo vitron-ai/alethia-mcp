@@ -11,7 +11,8 @@
  *
  * Alethia is the patent-pending zero-IPC E2E test runtime built for AI agents.
  * 45x faster than Playwright on the localhost loop. Fail-closed by default.
- * Cryptographically chained audit packs. Local-first, no telemetry.
+ * Cryptographically chained audit packs. Local-first. Zero telemetry by default.
+ * Opt-in cloud features (when they ship — none today).
  *
  * MIT License — vitron-ai 2026.
  * Patent Pending — U.S. Application No. 19/571,437. The MIT license on this

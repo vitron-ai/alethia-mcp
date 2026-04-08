@@ -1,7 +1,7 @@
 # @vitronai/alethia
 
 > **The MIT-licensed MCP bridge to Alethia** — the patent-pending zero-IPC E2E test runtime built for AI agents.
-> **45× faster than Playwright** on the localhost test loop. Fail-closed by default. Cryptographically chained audit packs. Local-first, no telemetry.
+> **45× faster than Playwright** on the localhost test loop. Fail-closed by default. Cryptographically chained audit packs. **Local-first. Zero telemetry by default. Opt-in cloud.**
 
 [![npm version](https://img.shields.io/npm/v/@vitronai/alethia.svg)](https://www.npmjs.com/package/@vitronai/alethia)
 [![License: MIT](https://img.shields.io/badge/bridge-MIT-green.svg)](./LICENSE)
@@ -41,7 +41,7 @@ Alethia is a different shape entirely. The driver and the DOM live in **the same
 | DOM access | async, marshalled, race-prone | **synchronous, in-process** |
 | Per-step safety policy | none | **VITRON-EA1 fail-closed gate** |
 | Audit trail | trace viewer (debugging) | **SHA-256 chained, Ed25519 signable** |
-| Telemetry | optional cloud | **none, ever** |
+| Telemetry | on by default in cloud product | **off by default; opt-in only** |
 | Patent moat | none | **U.S. App 19/571,437** |
 
 Benchmarks: `click-assert-wait` scenario, 20 iterations. Numbers from `benchmarks/league-latest.json` in the [alethia-core](https://github.com/vitron-ai/alethia-core) repo.
@@ -290,11 +290,16 @@ The Electron renderer hasn't loaded `window.__alethia` yet (or crashed). Restart
 
 ---
 
-## Privacy
+## Privacy & data flow
 
-Everything runs on your machine. **No cloud. No telemetry. No data leaves your network.** The bridge above only ever speaks to `127.0.0.1` (loopback). The desktop app's network filter blocks all non-`file://`, non-`app://`, non-`localhost` requests in production builds.
+Alethia is **local-first with zero telemetry by default.**
 
-The bridge source is open and auditable: the entirety of what this package does is in [`src/index.ts`](./src/index.ts).
+- **The MCP bridge** (this npm package) only speaks to `127.0.0.1` (loopback). It cannot reach any other host. No data leaves your machine through the bridge — verify yourself by reading [`src/index.ts`](./src/index.ts), it's ~530 lines.
+- **The desktop runtime** has a production webRequest filter that blocks all non-`file://`, non-`app://`, non-`localhost` requests. The runtime is **architecturally loopback-only** in production builds.
+- **Zero telemetry collection** in v0.2 — the runtime does not phone home, does not collect usage metrics, does not report crashes anywhere by default.
+- **Future cloud features** (signed evidence as a service, team dashboards, agent observability) will be **opt-in only**, clearly labeled, with disclosed data flow. They are separate paid products you explicitly enroll in — not defaults that turn on silently.
+
+The bottom line: **what you install today does nothing on the network beyond your machine.** When the cloud product ships, it's a separate, opt-in choice you make explicitly.
 
 ---
 
