@@ -1,0 +1,56 @@
+{
+  "context": "Tests whether the agent produces the correct package name (@vitronai/alethia), correct install command (npm install -g), and correct MCP server configuration (command: alethia-mcp under mcpServers.alethia). Also checks that the sample test uses correct NLP phrasing and file:// navigation.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "Correct npm package name",
+      "max_score": 12,
+      "description": "setup_guide.md and/or mcp_config.json use the exact package name '@vitronai/alethia' (not 'alethia', 'vitronai/alethia', or any other variant)"
+    },
+    {
+      "name": "Global npm install command",
+      "max_score": 10,
+      "description": "setup_guide.md shows the install command as 'npm install -g @vitronai/alethia'"
+    },
+    {
+      "name": "mcpServers key in config",
+      "max_score": 8,
+      "description": "mcp_config.json contains a 'mcpServers' key at the top level"
+    },
+    {
+      "name": "alethia server key",
+      "max_score": 8,
+      "description": "mcp_config.json has 'alethia' as the server name under mcpServers"
+    },
+    {
+      "name": "alethia-mcp command",
+      "max_score": 15,
+      "description": "mcp_config.json sets command to 'alethia-mcp' (not 'npx alethia', 'node alethia', or another value)"
+    },
+    {
+      "name": "file:// URL in sample test",
+      "max_score": 10,
+      "description": "sample_test.txt uses 'navigate to file:///workspace/orion/index.html' (file:// scheme)"
+    },
+    {
+      "name": "Assertion phrasing in sample test",
+      "max_score": 12,
+      "description": "Both assertion steps in sample_test.txt use 'assert X is visible' without a descriptor word prefix (e.g. 'assert Welcome to Orion is visible', not 'assert the heading Welcome to Orion is visible')"
+    },
+    {
+      "name": "Click phrasing in sample test",
+      "max_score": 8,
+      "description": "The click step uses simple 'click Learn More' or 'click the Learn More button' — but NOT a long descriptive form"
+    },
+    {
+      "name": "Auto-install runtime mentioned",
+      "max_score": 10,
+      "description": "setup_guide.md mentions that the headless runtime is auto-installed on first use (no manual runtime install required)"
+    },
+    {
+      "name": "No signup/gate mentioned",
+      "max_score": 7,
+      "description": "setup_guide.md does NOT describe a signup, email gate, or account creation step (Alethia has no signup requirement)"
+    }
+  ]
+}
