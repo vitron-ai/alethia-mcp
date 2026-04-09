@@ -20,9 +20,14 @@
  */
 
 import http from 'node:http';
-import { readFileSync } from 'node:fs';
+import https from 'node:https';
+import { readFileSync, existsSync, mkdirSync, writeFileSync, createWriteStream, chmodSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { dirname, resolve, join } from 'node:path';
+import { createHash, createPublicKey, verify as cryptoVerify } from 'node:crypto';
+import { execSync, spawn, type ChildProcess } from 'node:child_process';
+import { homedir, platform, arch } from 'node:os';
+import { pipeline } from 'node:stream/promises';
 
 // ---------------------------------------------------------------------------
 // Package metadata (read at runtime from the bundled package.json)
@@ -58,6 +63,231 @@ const debug = (...args: unknown[]): void => {
     process.stderr.write(`[alethia-mcp] ${args.map(String).join(' ')}\n`);
   }
 };
+
+// ---------------------------------------------------------------------------
+// Auto-install: download, verify, extract, and spawn the headless runtime
+// ---------------------------------------------------------------------------
+
+const RUNTIME_VERSION = '0.1.0-alpha.1';
+const RUNTIME_DIR = join(homedir(), '.alethia', 'runtime');
+const RUNTIME_MARKER = join(RUNTIME_DIR, '.installed');
+const GITHUB_RELEASE_BASE = `https://github.com/vitron-ai/alethia/releases/download/v${RUNTIME_VERSION}`;
+
+// Ed25519 public key for release verification — embedded so it ships with npm
+const RELEASE_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEA0zXtS6R90li3nBHsO4iae1Ltddx9skjQuFv+/V497UQ=
+-----END PUBLIC KEY-----`;
+
+type ReleaseManifest = {
+  schemaVersion: string;
+  version: string;
+  signatureAlgorithm: string;
+  artifacts: Array<{ file: string; platform: string; arch: string; sha256: string; sizeBytes: number }>;
+  canonicalSha256: string;
+  signature: string;
+};
+
+const PLATFORM_MAP: Record<string, Record<string, string>> = {
+  darwin: {
+    x64: `Alethia-${RUNTIME_VERSION}-mac.tar.gz`,
+    arm64: `Alethia-${RUNTIME_VERSION}-mac-arm64.tar.gz`,
+  },
+  linux: {
+    x64: `alethia-${RUNTIME_VERSION}.tar.gz`,
+    arm64: `alethia-${RUNTIME_VERSION}-arm64.tar.gz`,
+  },
+  win32: {
+    x64: `Alethia-${RUNTIME_VERSION}-win.zip`,
+  },
+};
+
+const getArtifactName = (): string | null => {
+  const p = platform();
+  const a = arch();
+  return PLATFORM_MAP[p]?.[a] ?? null;
+};
+
+const getExecutablePath = (): string => {
+  const p = platform();
+  if (p === 'darwin') {
+    // Look for the .app inside the extracted directory
+    const macDir = existsSync(join(RUNTIME_DIR, 'mac')) ? 'mac' : 'mac-arm64';
+    return join(RUNTIME_DIR, macDir, 'Alethia.app', 'Contents', 'MacOS', 'Alethia');
+  }
+  if (p === 'win32') {
+    return join(RUNTIME_DIR, 'win-unpacked', 'Alethia.exe');
+  }
+  // Linux
+  const linuxDir = existsSync(join(RUNTIME_DIR, 'linux-unpacked')) ? 'linux-unpacked' : 'linux-arm64-unpacked';
+  return join(RUNTIME_DIR, linuxDir, 'alethia');
+};
+
+const httpsGet = (url: string): Promise<http.IncomingMessage> =>
+  new Promise((res, rej) => {
+    const doGet = (u: string, redirects = 0): void => {
+      if (redirects > 5) { rej(new Error('Too many redirects')); return; }
+      https.get(u, (response) => {
+        if (response.statusCode && response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+          doGet(response.headers.location, redirects + 1);
+          return;
+        }
+        if (response.statusCode !== 200) {
+          rej(new Error(`HTTP ${response.statusCode} for ${u}`));
+          return;
+        }
+        res(response);
+      }).on('error', rej);
+    };
+    doGet(url);
+  });
+
+const downloadFile = async (url: string, dest: string): Promise<void> => {
+  debug(`downloading ${url}`);
+  const response = await httpsGet(url);
+  const ws = createWriteStream(dest);
+  await pipeline(response, ws);
+  debug(`saved to ${dest}`);
+};
+
+const verifyManifest = (manifest: ReleaseManifest): boolean => {
+  // Reconstruct the canonical payload that was signed (manifest without canonicalSha256 and signature)
+  const { canonicalSha256: _c, signature: _s, ...unsigned } = manifest;
+  const canonical = JSON.stringify(unsigned, Object.keys(unsigned).sort(), 0);
+  const sig = Buffer.from(manifest.signature, 'base64');
+  const pubKey = createPublicKey(RELEASE_PUBLIC_KEY);
+  return cryptoVerify(null, Buffer.from(canonical, 'utf8'), pubKey, sig);
+};
+
+const sha256File = (filePath: string): string => {
+  const data = readFileSync(filePath);
+  return createHash('sha256').update(data).digest('hex');
+};
+
+let runtimeProcess: ChildProcess | null = null;
+let autoInstallAttempted = false;
+
+const ensureRuntime = async (): Promise<void> => {
+  if (autoInstallAttempted) return;
+  autoInstallAttempted = true;
+
+  const artifactName = getArtifactName();
+  if (!artifactName) {
+    throw new Error(
+      `No Alethia runtime available for ${platform()}-${arch()}. ` +
+      `Supported: macOS (x64/arm64), Linux (x64/arm64), Windows (x64). ` +
+      `Contact gatekeeper@vitron.ai for assistance.`
+    );
+  }
+
+  // Check if already installed
+  if (existsSync(RUNTIME_MARKER)) {
+    debug('runtime already installed, spawning');
+    await spawnRuntime();
+    return;
+  }
+
+  process.stderr.write(`[alethia] Runtime not found. Auto-installing v${RUNTIME_VERSION}...\n`);
+
+  mkdirSync(RUNTIME_DIR, { recursive: true });
+  const artifactPath = join(RUNTIME_DIR, artifactName);
+  const manifestPath = join(RUNTIME_DIR, 'manifest.json');
+
+  // Download manifest + artifact
+  await downloadFile(`${GITHUB_RELEASE_BASE}/manifest.json`, manifestPath);
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as ReleaseManifest;
+
+  // Verify Ed25519 signature on manifest
+  process.stderr.write('[alethia] Verifying Ed25519 signature...\n');
+  if (!verifyManifest(manifest)) {
+    throw new Error(
+      'Release manifest signature verification FAILED. ' +
+      'The download may have been tampered with. Aborting. ' +
+      'Contact gatekeeper@vitron.ai if this persists.'
+    );
+  }
+  debug('manifest signature verified');
+
+  // Download the binary
+  await downloadFile(`${GITHUB_RELEASE_BASE}/${artifactName}`, artifactPath);
+
+  // Verify SHA-256 of downloaded artifact against manifest
+  const expectedHash = manifest.artifacts.find(a => a.file === artifactName)?.sha256;
+  if (!expectedHash) {
+    throw new Error(`Artifact ${artifactName} not found in signed manifest.`);
+  }
+  const actualHash = sha256File(artifactPath);
+  if (actualHash !== expectedHash) {
+    throw new Error(
+      `SHA-256 mismatch for ${artifactName}.\n` +
+      `  Expected: ${expectedHash}\n` +
+      `  Got:      ${actualHash}\n` +
+      `The download may be corrupted or tampered with. Aborting.`
+    );
+  }
+  process.stderr.write('[alethia] SHA-256 verified.\n');
+
+  // Extract
+  process.stderr.write('[alethia] Extracting runtime...\n');
+  if (artifactName.endsWith('.tar.gz')) {
+    execSync(`tar -xzf "${artifactPath}" -C "${RUNTIME_DIR}"`, { stdio: 'pipe' });
+  } else if (artifactName.endsWith('.zip')) {
+    execSync(`unzip -o -q "${artifactPath}" -d "${RUNTIME_DIR}"`, { stdio: 'pipe' });
+  }
+
+  // Mark as installed
+  writeFileSync(RUNTIME_MARKER, JSON.stringify({ version: RUNTIME_VERSION, installedAt: new Date().toISOString() }), 'utf8');
+  process.stderr.write(`[alethia] Runtime v${RUNTIME_VERSION} installed to ${RUNTIME_DIR}\n`);
+
+  await spawnRuntime();
+};
+
+const spawnRuntime = async (): Promise<void> => {
+  const exe = getExecutablePath();
+  if (!existsSync(exe)) {
+    throw new Error(`Runtime executable not found at ${exe}. Try deleting ${RUNTIME_DIR} and restarting.`);
+  }
+
+  // Make sure it's executable (Linux/Mac)
+  if (platform() !== 'win32') {
+    try { chmodSync(exe, 0o755); } catch { /* best effort */ }
+  }
+
+  process.stderr.write('[alethia] Spawning headless runtime...\n');
+  runtimeProcess = spawn(exe, ['--headless'], {
+    env: { ...process.env, ALETHIA_HEADLESS: '1' },
+    stdio: 'ignore',
+    detached: false,
+  });
+
+  runtimeProcess.on('exit', (code) => {
+    debug(`runtime exited with code ${code}`);
+    runtimeProcess = null;
+  });
+
+  // Wait for port to bind
+  const maxWait = 15_000;
+  const interval = 300;
+  const start = Date.now();
+  while (Date.now() - start < maxWait) {
+    try {
+      await callAlethia({ jsonrpc: '2.0', id: 0, method: 'tools/list' }, 2_000);
+      process.stderr.write('[alethia] Runtime is ready.\n');
+      return;
+    } catch {
+      await new Promise(r => setTimeout(r, interval));
+    }
+  }
+  throw new Error(`Runtime failed to start within ${maxWait / 1000}s. Check ${RUNTIME_DIR} for issues.`);
+};
+
+// Clean up spawned runtime on exit
+const cleanupRuntime = (): void => {
+  if (runtimeProcess && !runtimeProcess.killed) {
+    debug('killing spawned runtime');
+    runtimeProcess.kill('SIGTERM');
+  }
+};
+process.on('exit', cleanupRuntime);
 
 // ---------------------------------------------------------------------------
 // CLI flag handling — runs before any stdio processing
@@ -237,11 +467,21 @@ const callAlethia = (body: unknown, timeoutMs = ALETHIA_TIMEOUT_MS): Promise<Ale
 
 const runHealthCheck = async (): Promise<never> => {
   process.stdout.write(`Probing Alethia desktop runtime at ${ALETHIA_HOST}:${ALETHIA_PORT}...\n`);
+  const probeRuntime = async (): Promise<AlethiaHttpResponse> => {
+    try {
+      return await callAlethia({ jsonrpc: '2.0', id: 1, method: 'tools/list' }, 5_000);
+    } catch (err) {
+      if (err instanceof AlethiaConnectionError) {
+        process.stdout.write('Runtime not running. Attempting auto-install...\n');
+        await ensureRuntime();
+        return await callAlethia({ jsonrpc: '2.0', id: 1, method: 'tools/list' }, 5_000);
+      }
+      throw err;
+    }
+  };
+
   try {
-    const response = await callAlethia(
-      { jsonrpc: '2.0', id: 1, method: 'tools/list' },
-      5_000
-    );
+    const response = await probeRuntime();
     if (response.error) {
       process.stdout.write(`✗ Alethia returned an error: ${response.error.message}\n`);
       process.exit(1);
@@ -486,7 +726,7 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
         };
       }
 
-      try {
+      const doCall = async (): Promise<JsonRpcResponse> => {
         const httpResponse = await callAlethia({
           jsonrpc: '2.0',
           id: 1,
@@ -507,13 +747,23 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
           id,
           result: wrapMcpResult(httpResponse.result ?? null),
         };
+      };
+
+      try {
+        return await doCall();
       } catch (err) {
         if (err instanceof AlethiaConnectionError) {
-          return {
-            jsonrpc: '2.0',
-            id,
-            result: wrapMcpResult(err.message, true),
-          };
+          // Runtime not running — try auto-install + spawn
+          try {
+            await ensureRuntime();
+            return await doCall();
+          } catch (installErr) {
+            return {
+              jsonrpc: '2.0',
+              id,
+              result: wrapMcpResult((installErr as Error).message, true),
+            };
+          }
         }
         throw err;
       }

@@ -11,7 +11,7 @@
 
 ## ⚠️ This is the MCP bridge — the runtime is separate
 
-**This npm package is the open-source MCP bridge — a thin (~9 KB) stdio→HTTP relay**, MIT-licensed and freely usable. It does not contain the runtime. By itself it cannot drive a browser, run a test, or do anything except forward MCP requests to a local HTTP endpoint.
+**This npm package is the open-source MCP bridge — a thin (~22 KB) stdio→HTTP relay**, MIT-licensed and freely usable. It does not contain the runtime. By itself it cannot drive a browser, run a test, or do anything except forward MCP requests to a local HTTP endpoint.
 
 **The Alethia desktop runtime** — the part that actually contains the patent-pending in-process zero-IPC executor, the VITRON-EA1 policy gate, and the NLP compiler — is **closed-source, patent-pending**, and currently distributed through the **design-partner alpha program**.
 
@@ -196,7 +196,7 @@ Clear an active kill switch and reset the shared executor state. Re-enables `tel
            │ stdio (JSON-RPC over newline-delimited JSON)
            ↓
 ┌────────────────────────┐
-│  @vitronai/alethia     │  This npm package — ~9 KB
+│  @vitronai/alethia     │  This npm package — ~22 KB
 │  stdio → HTTP shim     │  - speaks MCP stdio inbound
 └──────────┬─────────────┘  - wraps results in MCP content envelope
            │ HTTP POST 127.0.0.1:47432 (loopback only, never networked)
@@ -294,7 +294,7 @@ The Electron renderer hasn't loaded `window.__alethia` yet (or crashed). Restart
 
 Alethia is **local-first with zero telemetry by default.**
 
-- **The MCP bridge** (this npm package) only speaks to `127.0.0.1` (loopback). It cannot reach any other host. No data leaves your machine through the bridge — verify yourself by reading [`src/index.ts`](./src/index.ts), it's ~530 lines.
+- **The MCP bridge** (this npm package) only speaks to `127.0.0.1` (loopback). It cannot reach any other host. No data leaves your machine through the bridge — verify yourself by reading [`src/index.ts`](./src/index.ts), it's ~590 lines, single file.
 - **The desktop runtime** has a production webRequest filter that blocks all non-`file://`, non-`app://`, non-`localhost` requests. The runtime is **architecturally loopback-only** in production builds.
 - **Zero telemetry collection** in v0.2 — the runtime does not phone home, does not collect usage metrics, does not report crashes anywhere by default.
 - **Future cloud features** (signed evidence as a service, team dashboards, agent observability) will be **opt-in only**, clearly labeled, with disclosed data flow. They are separate paid products you explicitly enroll in — not defaults that turn on silently.
