@@ -195,16 +195,18 @@ test('tools/call alethia_tell with non-string nlp returns validation error', asy
   assert.match(responses[0].result.content[0].text, /string/);
 });
 
-test('tools/call alethia_tell when offline returns connection error in MCP envelope', async () => {
-  // ALETHIA_PORT=1 is unreachable; we expect a graceful error, not a crash
+test('tools/call alethia_tell when offline auto-installs or returns error gracefully', async () => {
+  // In v0.3+, the bridge auto-installs the runtime on ECONNREFUSED.
+  // This test verifies the bridge doesn't crash — it either auto-installs
+  // successfully (returns a PlanRun) or returns a structured error.
   const responses = await sendRpc([
     { jsonrpc: '2.0', method: 'tools/call', id: 1, params: { name: 'alethia_tell', arguments: { nlp: 'wait 50 milliseconds' } } },
-  ], { timeoutMs: 8000 });
+  ], { timeoutMs: 30000 });
   assert.equal(responses.length, 1);
   const r = responses[0];
-  assert.ok(r.result?.content, 'connection failure should return content envelope, not crash');
-  assert.equal(r.result.isError, true);
-  assert.match(r.result.content[0].text, /not running|Connection|github\.com/i);
+  assert.ok(r.result?.content, 'should return MCP content envelope, not crash');
+  // Either auto-install succeeded (isError: false) or failed gracefully (isError: true)
+  assert.equal(typeof r.result.isError, 'boolean');
 });
 
 test('unknown method returns standard JSON-RPC method-not-found error', async () => {
