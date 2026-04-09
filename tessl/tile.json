@@ -1,0 +1,17 @@
+{
+  "name": "vitron-ai/alethia",
+  "version": "0.3.0",
+  "summary": "Reference tile for Alethia, the patent-pending zero-IPC E2E test runtime for AI agents. Covers MCP bridge setup, natural-language test instructions via alethia_tell, VITRON-EA1 fail-closed policy gate, and integration with Claude Code, Cursor, and Cline.",
+  "private": false,
+  "docs": "docs/index.md",
+  "skills": {
+    "alethia": {
+      "path": "skills/alethia/SKILL.md"
+    }
+  },
+  "rules": {
+    "alethia": {
+      "rules": "rules/alethia.md"
+    }
+  }
+}
