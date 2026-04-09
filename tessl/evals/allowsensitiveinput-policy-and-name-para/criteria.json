@@ -1,0 +1,51 @@
+{
+  "context": "Tests whether the agent correctly withholds allowSensitiveInput:true from the smoke test (which doesn't need it), applies it only in auth_flow_script.json where the QA lead explicitly requested auth flow testing, and includes a 'name' parameter in all alethia_tell calls for audit trail clarity.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "No allowSensitiveInput in smoke test",
+      "max_score": 15,
+      "description": "smoke_test_script.json does NOT include allowSensitiveInput: true in any alethia_tell params"
+    },
+    {
+      "name": "allowSensitiveInput in auth flow",
+      "max_score": 12,
+      "description": "auth_flow_script.json includes allowSensitiveInput: true in the alethia_tell params for the step that types into the password field"
+    },
+    {
+      "name": "name param in smoke test alethia_tell",
+      "max_score": 10,
+      "description": "The alethia_tell step in smoke_test_script.json includes a 'name' parameter"
+    },
+    {
+      "name": "name param in auth flow alethia_tell",
+      "max_score": 10,
+      "description": "The alethia_tell step in auth_flow_script.json includes a 'name' parameter"
+    },
+    {
+      "name": "decisions.md explains allowSensitiveInput",
+      "max_score": 12,
+      "description": "decisions.md explains that allowSensitiveInput is only used when the user/QA lead explicitly requested auth/payment flow testing"
+    },
+    {
+      "name": "decisions.md mentions name for audit",
+      "max_score": 8,
+      "description": "decisions.md mentions that the name parameter is for audit trail identification"
+    },
+    {
+      "name": "alethia_status in both scripts",
+      "max_score": 12,
+      "description": "Both script files include an alethia_status step before alethia_tell"
+    },
+    {
+      "name": "alethia_compile in both scripts",
+      "max_score": 10,
+      "description": "Both script files include an alethia_compile step before alethia_tell"
+    },
+    {
+      "name": "file:// navigation",
+      "max_score": 11,
+      "description": "Navigation steps in both scripts use the file:// URL (file:///workspace/holloway/register.html)"
+    }
+  ]
+}

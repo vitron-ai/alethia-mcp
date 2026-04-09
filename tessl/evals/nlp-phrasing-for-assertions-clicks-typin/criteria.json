@@ -1,0 +1,46 @@
+{
+  "context": "Tests whether the agent uses correct Alethia NLP phrasing conventions: 'assert X is visible' (not 'assert the heading/button X'), 'type VALUE into the FIELD field', 'click LABEL', and newline-separated instructions (one step per line, not semicolons or periods).",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "Assertion avoids descriptor prefix",
+      "max_score": 15,
+      "description": "The assertion for 'Analytics Overview' does NOT include a descriptor word like 'heading' before the text — e.g. uses 'assert Analytics Overview is visible' not 'assert the heading Analytics Overview is visible'"
+    },
+    {
+      "name": "'assert X is visible' phrasing",
+      "max_score": 12,
+      "description": "All assertion steps use the pattern 'assert X is visible' (not 'assert X exists', 'verify X', or 'check X')"
+    },
+    {
+      "name": "Type phrasing pattern",
+      "max_score": 12,
+      "description": "The step for entering the date range uses 'type VALUE into the FIELD field' pattern (e.g. 'type ... into the date range field')"
+    },
+    {
+      "name": "Click phrasing pattern",
+      "max_score": 12,
+      "description": "Click steps use simple 'click LABEL' phrasing (e.g. 'click Generate Report') rather than verbose forms like 'click the Generate Report button'"
+    },
+    {
+      "name": "Newline-separated instructions",
+      "max_score": 12,
+      "description": "Each instruction is on its own line in instructions.txt — steps are NOT joined with periods, semicolons, or commas"
+    },
+    {
+      "name": "Navigation step uses file:// URL",
+      "max_score": 12,
+      "description": "The navigation step uses 'navigate to file:///workspace/meridian/dashboard.html' (file:// scheme, not http://localhost or relative path)"
+    },
+    {
+      "name": "Confirmation assertion avoids descriptor prefix",
+      "max_score": 12,
+      "description": "The assertion for 'Report Ready' does NOT include a descriptor like 'message' or 'text' before the term"
+    },
+    {
+      "name": "Notes explain phrasing",
+      "max_score": 13,
+      "description": "notes.md mentions that descriptor words (like 'heading' or 'button') get included in the text search needle and cause incorrect element matching"
+    }
+  ]
+}

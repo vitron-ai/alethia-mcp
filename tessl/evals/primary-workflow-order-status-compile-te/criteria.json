@@ -1,0 +1,51 @@
+{
+  "context": "Tests whether the agent follows the correct three-step Alethia workflow: calling alethia_status first to check runtime health, then alethia_compile to preview the Action IR, then alethia_tell to execute. Also checks that the agent knows to inspect PlanRun response fields and includes a name parameter in alethia_tell.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "alethia_status first",
+      "max_score": 15,
+      "description": "The first tool call in test_script.json is alethia_status (before alethia_compile and alethia_tell)"
+    },
+    {
+      "name": "alethia_compile second",
+      "max_score": 15,
+      "description": "alethia_compile appears as a step before alethia_tell in test_script.json"
+    },
+    {
+      "name": "alethia_tell present",
+      "max_score": 10,
+      "description": "alethia_tell appears as a step in test_script.json"
+    },
+    {
+      "name": "name parameter in alethia_tell",
+      "max_score": 10,
+      "description": "The alethia_tell step in test_script.json includes a 'name' parameter"
+    },
+    {
+      "name": "run.ok check documented",
+      "max_score": 10,
+      "description": "test_plan.md or test_script.json mentions checking run.ok from the PlanRun response"
+    },
+    {
+      "name": "stepRuns inspection documented",
+      "max_score": 10,
+      "description": "test_plan.md mentions inspecting stepRuns (per-step results) from the PlanRun response"
+    },
+    {
+      "name": "policyAudits documented",
+      "max_score": 10,
+      "description": "test_plan.md mentions reviewing policyAudits from the PlanRun response"
+    },
+    {
+      "name": "kill switch check documented",
+      "max_score": 10,
+      "description": "test_plan.md or test_script.json describes verifying the kill switch is inactive as part of the status check"
+    },
+    {
+      "name": "compile purpose documented",
+      "max_score": 10,
+      "description": "test_plan.md explains that alethia_compile is used to catch NLP issues before execution (not just as an optional step)"
+    }
+  ]
+}
