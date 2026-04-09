@@ -65,8 +65,10 @@ assert the button Sign In exists       → searches for "button Sign In"
 **Typing into fields:**
 ```
 type admin@example.com into the email field
-type password123 into the password field
+type hello world into the message field
 ```
+
+**Never include real passwords, tokens, or secrets in NLP instructions.** They flow through the agent's context and conversation history. The runtime blocks sensitive input fields (password, credit card, SSN) by default — use `allowSensitiveInput: true` with dummy test credentials only.
 
 **Clicking:**
 ```
