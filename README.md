@@ -66,7 +66,7 @@ alethia-mcp --health-check
 Expected:
 
 ```
-✓ Connected. 7 MCP tools available.
+✓ Connected. MCP tools available.
   runtime version:  0.1.0-alpha.1
   default profile:  controlled-web
   kill switch:      inactive
@@ -125,9 +125,9 @@ After saving the config, restart your MCP client.
 
 Once configured, your agent has the full Alethia tool suite available. The most common one:
 
-> *"Use alethia_tell to navigate to localhost:3000, sign in as admin@example.com / password123, and verify the dashboard heading is visible."*
+> *"Use alethia_tell to navigate to file:///path/to/app.html, click the Sign In button, and assert the dashboard heading is visible."*
 
-The agent will call `alethia_tell` with that NLP, Alethia compiles to Action IR, runs through the VITRON-EA1 policy gate, executes step by step, and returns a `PlanRun` with per-step results, policy audit records, and an integrity hash.
+The agent calls `alethia_tell` with plain English. Alethia compiles it to Action IR, runs each step through the VITRON-EA1 policy gate, and returns a `PlanRun` with per-step results, DOM diffs, a semantic page snapshot, policy audit records, and a SHA-256 integrity hash.
 
 ---
 
@@ -137,9 +137,8 @@ The agent will call `alethia_tell` with that NLP, Alethia compiles to Action IR,
 Execute natural-language test instructions. The headline tool.
 
 ```
-nlp: "navigate to http://localhost:3000/login
-      type admin@example.com into the email field
-      type password123 into the password field
+nlp: "navigate to file:///path/to/app.html
+      type test@example.com into the email field
       click Sign In
       assert the dashboard heading is visible"
 ```
