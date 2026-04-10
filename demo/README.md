@@ -42,7 +42,7 @@ Use alethia_tell to navigate to file:///PATH/demo/admin-panel.html. Assert the c
 
 ### Financial Risk Monitor
 ```
-Use alethia_tell to navigate to file:///PATH/demo/financial-dashboard.html. What's the current risk level? What's the margin usage? Are any compliance checks failing? Try to click "Liquidate All" and report what the policy gate does.
+Use alethia_tell to navigate to file:///PATH/demo/financial-dashboard.html. Assert the risk level is visible. Assert "$4.2M" is visible. Assert "82%" is visible. Try to click "Liquidate All" and report what the policy gate does.
 ```
 
 ## Setup

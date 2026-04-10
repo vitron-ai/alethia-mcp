@@ -39,13 +39,17 @@ Add to your agent's MCP config (`.mcp.json`, Claude Code settings, Cursor MCP, e
 Send plain English instructions:
 
 ```
-navigate to http://localhost:3000/login
-type admin@example.com into the email field
+navigate to file:///path/to/app.html
 click Sign In
 assert the dashboard heading is visible
 ```
 
-Alethia compiles to Action IR, runs each step through the VITRON-EA1 fail-closed policy gate, executes with synchronous DOM access, and returns a signed PlanRun with per-step results, policy audit records, and a SHA-256 integrity hash.
+Alethia compiles to Action IR, runs each step through the VITRON-EA1 fail-closed policy gate, executes with synchronous DOM access, and returns a PlanRun with per-step results, DOM diffs, a semantic page snapshot, policy audit records, and a SHA-256 integrity hash.
+
+Every response includes:
+- **DOM diffs** — what changed after each step (added, removed, changed elements)
+- **Page snapshot** — structured page state (~200 tokens): headings, buttons, form state, list counts, errors
+- **Smart error context** — on failure, returns near-matches and suggested fixes
 
 ## Safety: VITRON-EA1
 

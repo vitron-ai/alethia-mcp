@@ -139,14 +139,12 @@ This package ships with ready-to-use demo pages in the `demo/` folder. Each page
 
 | Demo | What it shows |
 |---|---|
-| `signup-form.html` | Login flow — navigate, type, click, assert, error detection |
-| `todo-app.html` | Dynamic lists — list awareness in snapshots |
-| `ecommerce.html` | EA1 policy gate blocks purchase (write-high) |
-| `spa-loading.html` | Page readiness — auto-waits for 2s async load |
-| `cookie-banner.html` | Conditional steps — "if banner exists, click Accept" |
-| `form-validation.html` | Smart assertions — error detection, suggested fixes |
-| `admin-panel.html` | Defense/classified — EA1 blocks user deletion, audit trail |
-| `financial-dashboard.html` | Finance — compliance checks, EA1 blocks liquidation |
+| `incident-response.html` | Defense / SOC — triage active cyber incident, EA1 blocks network isolation |
+| `threat-intel.html` | Intelligence / CTI — APT tracking, IOC blocking, MITRE ATT&CK correlation |
+| `crypto-readiness.html` | Cybersecurity / PQC — post-quantum migration, certificate revocation |
+| `agent-oversight.html` | AI Safety — autonomous agent monitoring, kill switch, policy violations |
+| `admin-panel.html` | Defense / Classified — TS/SCI admin, EA1 blocks user deletion |
+| `financial-dashboard.html` | Finance / Trading — risk monitor, compliance checks, EA1 blocks liquidation |
 
 Find the demos at:
 ```bash
