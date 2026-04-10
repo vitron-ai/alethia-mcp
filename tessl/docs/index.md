@@ -22,7 +22,7 @@ Add to your agent's MCP config (`.mcp.json`, Claude Code settings, Cursor MCP, e
 }
 ```
 
-## The 5 MCP tools
+## MCP tools
 
 | Tool | Purpose |
 |---|---|
@@ -31,6 +31,8 @@ Add to your agent's MCP config (`.mcp.json`, Claude Code settings, Cursor MCP, e
 | `alethia_status` | Health probe. Version, profile, kill switch state, driver stats. |
 | `alethia_activate_kill_switch` | Halt all automation immediately. Logged in audit trail. |
 | `alethia_reset_kill_switch` | Clear an active kill switch. Re-enables `tell()` calls. |
+| `alethia_screenshot` | Capture a PNG screenshot of the current page. Visual verification for agent loops. |
+| `alethia_eval` | Evaluate a JS expression in the page under test. Escape hatch for raw DOM queries. |
 
 ## How alethia_tell works
 

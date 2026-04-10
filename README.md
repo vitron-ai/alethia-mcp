@@ -66,7 +66,7 @@ alethia-mcp --health-check
 Expected:
 
 ```
-✓ Connected. 5 MCP tools available.
+✓ Connected. 7 MCP tools available.
   runtime version:  0.1.0-alpha.1
   default profile:  controlled-web
   kill switch:      inactive
@@ -123,7 +123,7 @@ After saving the config, restart your MCP client.
 
 ## Usage
 
-Once configured, your agent has five Alethia tools available. The most common one:
+Once configured, your agent has seven Alethia tools available. The most common one:
 
 > *"Use alethia_tell to navigate to localhost:3000, sign in as admin@example.com / password123, and verify the dashboard heading is visible."*
 
@@ -172,6 +172,12 @@ Liveness probe + identity. Returns runtime version, default policy profile, kill
 
 ### `alethia_reset_kill_switch`
 Clear an active kill switch and reset the shared executor state. Re-enables `tell()` calls. The reset itself is logged.
+
+### `alethia_screenshot`
+Capture a PNG screenshot of the current page and return it as a base64-encoded image. Use this to visually verify what the browser is showing after running test steps with `alethia_tell`.
+
+### `alethia_eval`
+Evaluate a JavaScript expression in the page under test and return the result. Runs in the context of the navigated page, not the Alethia host UI. Use this for queries the NLP compiler cannot express — counting elements, reading computed styles, checking localStorage, or any DOM inspection that needs raw JS.
 
 ---
 
