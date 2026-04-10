@@ -3,9 +3,11 @@
 > **The MIT-licensed MCP bridge to Alethia** — the patent-pending zero-IPC E2E test runtime built for AI agents.
 > **45× faster than Playwright** on the localhost test loop. Fail-closed by default. Cryptographically chained audit packs. **Local-first. Zero telemetry by default. Opt-in cloud.**
 
-[![npm version](https://img.shields.io/npm/v/@vitronai/alethia.svg)](https://www.npmjs.com/package/@vitronai/alethia)
-[![License: MIT](https://img.shields.io/badge/bridge-MIT-green.svg)](./LICENSE)
-[![Patent Pending](https://img.shields.io/badge/runtime-Patent%20Pending-blue.svg)](#patent-notice)
+[![npm version](https://img.shields.io/npm/v/@vitronai/alethia.svg?logo=npm&logoColor=white)](https://www.npmjs.com/package/@vitronai/alethia)
+[![License: MIT](https://img.shields.io/badge/bridge-MIT-green.svg?logo=opensourceinitiative&logoColor=white)](./LICENSE)
+[![Patent Pending](https://img.shields.io/badge/runtime-Patent%20Pending-blue.svg?logo=shield&logoColor=white)](#patent-notice)
+[![GitHub](https://img.shields.io/badge/source-GitHub-1f2328.svg?logo=github&logoColor=white)](https://github.com/vitron-ai/alethia-mcp)
+[![Tessl](https://img.shields.io/badge/Tessl-Registry-5fb4f7.svg)](https://tessl.io/registry/vitron-ai/alethia)
 
 ---
 
