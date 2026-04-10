@@ -13,17 +13,17 @@
 
 **This npm package is the open-source MCP bridge — a thin (~22 KB) stdio→HTTP relay**, MIT-licensed and freely usable. It does not contain the runtime. By itself it cannot drive a browser, run a test, or do anything except forward MCP requests to a local HTTP endpoint.
 
-**The Alethia desktop runtime** — the part that actually contains the patent-pending in-process zero-IPC executor, the VITRON-EA1 policy gate, and the NLP compiler — is **closed-source, patent-pending**, and currently distributed through the **design-partner alpha program**.
+**The Alethia desktop runtime** — the part that actually contains the patent-pending in-process zero-IPC executor, the VITRON-EA1 policy gate, and the NLP compiler — is **closed-source and patent-pending**. As of v0.3, the bridge **auto-downloads the signed runtime on first use** — no manual steps, no signup required.
 
 | Component | License | How to get it |
 |---|---|---|
 | `@vitronai/alethia` (this npm package — the MCP bridge) | **MIT, open source** | `npm install -g @vitronai/alethia` |
 | Bridge source mirror | **MIT, open source** | [github.com/vitron-ai/alethia-mcp](https://github.com/vitron-ai/alethia-mcp) |
-| **Alethia desktop runtime** (the patented in-process executor) | **Closed-source, Patent Pending — U.S. App. 19/571,437** | Design-partner alpha. Request access: **gatekeeper@vitron.ai** |
+| **Alethia desktop runtime** (the patented in-process executor) | **Closed-source, Patent Pending — U.S. App. 19/571,437** | Auto-installed by the bridge on first use. Ed25519 verified. |
 
-**The MIT license on this bridge does not, under any circumstances, grant any patent license under U.S. Application No. 19/571,437 or any other vitron.ai patent rights.** The runtime is a separate licensable artifact. Public binary releases of the runtime ship with the v0.3 milestone.
+**The MIT license on this bridge does not, under any circumstances, grant any patent license under U.S. Application No. 19/571,437 or any other vitron.ai patent rights.** The runtime is a separate licensable artifact.
 
-**Bottom line for developers:** installing this npm package is free and unrestricted. Using the actual Alethia runtime in production requires either (a) the design-partner alpha (free during the alpha period, by request) or (b) a future commercial license once the patent grants.
+**Bottom line for developers:** `npm install -g @vitronai/alethia` gets you everything you need. The bridge auto-downloads the signed headless runtime on first use. Commercial and production use of the runtime may require a patent license once the patent grants. For licensing inquiries: **gatekeeper@vitron.ai**.
 
 ---
 
@@ -44,28 +44,17 @@ Alethia is a different shape entirely. The driver and the DOM live in **the same
 | Telemetry | on by default in cloud product | **off by default; opt-in only** |
 | Patent moat | none | **U.S. App 19/571,437** |
 
-Benchmarks: `click-assert-wait` scenario, 20 iterations. Numbers from `benchmarks/league-latest.json` in the [alethia-core](https://github.com/vitron-ai/alethia-core) repo.
+Benchmarks: `click-assert-wait` scenario, 20 iterations.
 
 ---
 
 ## Install
 
-### Step 1 — Install the MCP bridge from npm (this package)
-
 ```bash
 npm install -g @vitronai/alethia
 ```
 
-### Step 2 — Get the Alethia desktop runtime
-
-The bridge alone does nothing — it's a relay. You also need the **Alethia desktop runtime** (the patent-pending closed-source Electron app) running locally on `127.0.0.1:47432`.
-
-The desktop runtime is currently in **design-partner alpha**. To request access:
-
-👉 **Landing page:** [github.com/vitron-ai/alethia](https://github.com/vitron-ai/alethia)
-👉 **Request access:** **gatekeeper@vitron.ai**
-
-Public binary releases ship with the v0.3 milestone. During the alpha, runtime access is free for design partners (typically AI coding agent tool builders integrating Alethia into their product).
+That's it. The bridge auto-downloads the signed headless runtime on first use — Ed25519 verified, SHA-256 checked, no signup required.
 
 ### Verify the install
 
@@ -202,13 +191,13 @@ Clear an active kill switch and reset the shared executor state. Re-enables `tel
            │ HTTP POST 127.0.0.1:47432 (loopback only, never networked)
            ↓
 ┌────────────────────────┐
-│  Alethia desktop app   │  Electron main process
+│  Alethia desktop app   │  Desktop runtime — main process
 │  local JSON-RPC server │  - tools/list, tools/call
 └──────────┬─────────────┘  - loopback bind, never reachable from network
-           │ webContents.executeJavaScript('window.__alethia.tell(...)')
+           │ in-process JS bridge
            ↓
 ┌────────────────────────┐
-│  Alethia renderer      │  Electron renderer process — IS the browser
+│  Alethia renderer      │  Embedded browser — IS the browser
 │  zero-IPC runtime      │  - tell() → NLP compiler → Action IR
 └──────────┬─────────────┘  - VITRON-EA1 policy gate (per-step, fail-closed)
            │ direct DOM access (no protocol, no marshalling)
@@ -218,7 +207,7 @@ Clear an active kill switch and reset the shared executor state. Re-enables `tel
 └────────────────────────┘
 ```
 
-**Two process boundaries** between your agent and the runtime (agent ↔ shim, shim ↔ Electron). Then **zero** boundaries between the runtime and the DOM. That's the architectural difference that makes Alethia 45× faster than Playwright.
+**Two process boundaries** between your agent and the runtime (agent ↔ shim, shim ↔ desktop app). Then **zero** boundaries between the runtime and the DOM. That's the architectural difference that makes Alethia 45× faster than Playwright.
 
 ---
 
@@ -247,13 +236,13 @@ alethia-mcp --debug          Run with debug logging on stderr
 
 ### "Alethia desktop runtime is not running on 127.0.0.1:47432"
 
-The npm package you installed is the **MCP bridge only** — a thin relay. The actual runtime (the Electron app containing the patent-pending zero-IPC executor) is a separate, closed-source artifact distributed through the design-partner program.
+The bridge auto-installs the headless runtime on first use. If you're seeing this error:
 
-**To get runtime access:**
-👉 [github.com/vitron-ai/alethia](https://github.com/vitron-ai/alethia)
-👉 **gatekeeper@vitron.ai**
+1. Run `alethia-mcp --health-check` — this will trigger auto-install if the runtime isn't present yet
+2. Check that the runtime process is running (it binds to `127.0.0.1:47432`)
+3. If auto-install failed, check your network connection and try again
 
-Public binary releases ship in v0.3. Once you have the runtime and launch it, you should see in its console:
+Once the runtime is running, you should see:
 
 ```
 [alethia] local RPC server listening on 127.0.0.1:47432
@@ -286,7 +275,7 @@ Only do this when you are knowingly testing a real auth or payment flow.
 
 ### `Script failed to execute`
 
-The Electron renderer hasn't loaded `window.__alethia` yet (or crashed). Restart the desktop app. If it persists, file an issue.
+The runtime hasn't loaded `window.__alethia` yet (or crashed). Restart the desktop app. If it persists, file an issue.
 
 ---
 
@@ -295,7 +284,7 @@ The Electron renderer hasn't loaded `window.__alethia` yet (or crashed). Restart
 Alethia is **local-first with zero telemetry by default.**
 
 - **The MCP bridge** (this npm package) only speaks to `127.0.0.1` (loopback). It cannot reach any other host. No data leaves your machine through the bridge — verify yourself by reading [`src/index.ts`](./src/index.ts), it's ~590 lines, single file.
-- **The desktop runtime** has a production webRequest filter that blocks all non-`file://`, non-`app://`, non-`localhost` requests. The runtime is **architecturally loopback-only** in production builds.
+- **The desktop runtime** has a production request filter that blocks all non-`file://`, non-`app://`, non-`localhost` requests. The runtime is **architecturally loopback-only** in production builds.
 - **Zero telemetry collection** in v0.2 — the runtime does not phone home, does not collect usage metrics, does not report crashes anywhere by default.
 - **Future cloud features** (signed evidence as a service, team dashboards, agent observability) will be **opt-in only**, clearly labeled, with disclosed data flow. They are separate paid products you explicitly enroll in — not defaults that turn on silently.
 
