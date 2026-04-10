@@ -1,6 +1,6 @@
 // Smoke tests for @vitronai/alethia
 //
-// These tests do NOT require a running Alethia desktop app. They verify:
+// These tests do NOT require a running Alethia runtime. They verify:
 //   - The CLI binary launches and responds to --version, --help
 //   - The stdio protocol parses cleanly and returns correct shapes for
 //     initialize, tools/list, and unknown methods
@@ -119,7 +119,7 @@ test('-h is an alias for --help', async () => {
   assert.match(stdout, /USAGE/);
 });
 
-test('--health-check exits non-zero when no Alethia desktop app is reachable', async () => {
+test('--health-check exits non-zero when no Alethia runtime is reachable', async () => {
   const proc = spawn('node', [BIN, '--health-check'], {
     stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...process.env, ALETHIA_HOST: '127.0.0.1', ALETHIA_PORT: '1', ALETHIA_TIMEOUT_MS: '500' },
