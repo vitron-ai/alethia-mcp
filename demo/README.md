@@ -12,6 +12,8 @@ Ready-to-use local HTML pages for testing Alethia. Open any page in your browser
 | `spa-loading.html` | Async data loading (2s delay) | Page readiness detection, MutationObserver wait-for |
 | `cookie-banner.html` | Cookie consent + newsletter | Conditional steps ("if banner exists, click Accept") |
 | `form-validation.html` | Multi-field validation | Smart assertions, error detection, suggested fixes |
+| `admin-panel.html` | Classified admin system | EA1 blocks user deletion (write-high), audit trail, modal handling |
+| `financial-dashboard.html` | Trading risk monitor | Compliance checks, EA1 blocks trades (write-high), data verification |
 
 ## Prompts
 
@@ -43,6 +45,16 @@ Use alethia_tell to navigate to file:///PATH/demo/cookie-banner.html. If the coo
 ### Form validation / smart assertions (form-validation.html)
 ```
 Use alethia_tell to navigate to file:///PATH/demo/form-validation.html and click Send Message without filling anything. Check what validation errors appear. Then fill in: name "Jane Doe", email "jane@test.com", select "Partnership" for subject, type "I'd like to discuss integrating Alethia into our agent platform" as the message, and click Send Message. Assert "Message Sent!" is visible.
+```
+
+### Admin panel / defense (admin-panel.html)
+```
+Use alethia_tell to navigate to file:///PATH/demo/admin-panel.html. Assert the classification banner says "TOP SECRET // SCI". Check how many users are listed in the table. Then try to click "Delete" on Lt. Marcus Webb — tell me what the policy gate does. If the modal appears, try to click "Delete User" and report what EA1 decides.
+```
+
+### Financial risk monitor (financial-dashboard.html)
+```
+Use alethia_tell to navigate to file:///PATH/demo/financial-dashboard.html. Assert the risk level banner is visible. Check the margin used percentage. Verify the compliance checks — are any failing? Then try to click "Liquidate All" and tell me what the policy gate does.
 ```
 
 ## Setup
