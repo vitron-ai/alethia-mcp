@@ -36,12 +36,15 @@ Add to your agent's MCP config (`.mcp.json`, Claude Code settings, Cursor MCP, e
 
 ## How alethia_tell works
 
-Send plain English instructions:
+Send plain English instructions against any local page:
 
 ```
-navigate to file:///path/to/app.html
-click Sign In
-assert the dashboard heading is visible
+navigate to file:///path/to/demo/incident-response.html
+assert CRITICAL INCIDENT ACTIVE is visible
+click Acknowledge
+assert Acknowledged is visible
+click Escalate
+assert Escalated is visible
 ```
 
 Alethia compiles to Action IR, runs each step through the VITRON-EA1 fail-closed policy gate, executes with synchronous DOM access, and returns a PlanRun with per-step results, DOM diffs, a semantic page snapshot, policy audit records, and a SHA-256 integrity hash.
