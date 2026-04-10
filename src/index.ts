@@ -68,7 +68,7 @@ const debug = (...args: unknown[]): void => {
 // Auto-install: download, verify, extract, and spawn the headless runtime
 // ---------------------------------------------------------------------------
 
-const RUNTIME_VERSION = '0.1.0-alpha.2';
+const RUNTIME_VERSION = '0.1.0-alpha.3';
 const RUNTIME_DIR = join(homedir(), '.alethia', 'runtime');
 const RUNTIME_MARKER = join(RUNTIME_DIR, '.installed');
 const GITHUB_RELEASE_BASE = `https://github.com/vitron-ai/alethia/releases/download/v${RUNTIME_VERSION}`;
