@@ -3,10 +3,10 @@
  * @vitronai/alethia — MCP bridge
  *
  * Stdio MCP server that connects AI agents (Claude Code, Cursor, Cline,
- * Continue, etc.) to a running Alethia desktop app via JSON-RPC over a
+ * Continue, etc.) to a running Alethia runtime via JSON-RPC over a
  * loopback HTTP socket on 127.0.0.1:47432.
  *
- * The Alethia desktop app must be running locally. Download it at:
+ * The Alethia runtime auto-installs on first use. Details at:
  * https://github.com/vitron-ai/alethia/releases
  *
  * Alethia is the patent-pending zero-IPC E2E test runtime built for AI agents.
@@ -395,7 +395,7 @@ type AlethiaHttpResponse = {
 };
 
 // ---------------------------------------------------------------------------
-// HTTP client — calls the Alethia desktop app's local RPC server
+// HTTP client — calls the Alethia runtime's local RPC server
 // ---------------------------------------------------------------------------
 
 class AlethiaConnectionError extends Error {
@@ -430,14 +430,14 @@ const callAlethia = (body: unknown, timeoutMs = ALETHIA_TIMEOUT_MS): Promise<Ale
           try {
             resolveCall(JSON.parse(data) as AlethiaHttpResponse);
           } catch {
-            rejectCall(new Error(`Invalid JSON from Alethia desktop app: ${data.slice(0, 200)}`));
+            rejectCall(new Error(`Invalid JSON from Alethia runtime: ${data.slice(0, 200)}`));
           }
         });
       }
     );
 
     req.setTimeout(timeoutMs, () => {
-      req.destroy(new Error(`Alethia desktop app timed out after ${timeoutMs}ms`));
+      req.destroy(new Error(`Alethia runtime timed out after ${timeoutMs}ms`));
     });
 
     req.on('error', (err) => {
@@ -751,7 +751,7 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
           instructions:
             'Alethia is the patent-pending zero-IPC E2E test runtime built for AI agents. ' +
             'Use alethia_tell to drive a real browser with plain English. ' +
-            'The Alethia desktop app must be running locally on 127.0.0.1:47432.',
+            'The Alethia runtime auto-installs on first use and runs locally on 127.0.0.1:47432.',
         },
       };
     }
