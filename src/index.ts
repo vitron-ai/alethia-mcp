@@ -565,6 +565,15 @@ const TOOLS = [
           type: 'string',
           description: 'Optional run name for audit logs and replay.',
         },
+        allowSensitiveInput: {
+          type: 'boolean',
+          description: 'Set to true to allow typing into password, token, credit card, and other sensitive fields. Only use for legitimate auth or payment flow tests.',
+        },
+        profile: {
+          type: 'string',
+          description: 'EA1 policy profile: "strict-local" (most restrictive), "controlled-web" (default — blocks destructive actions), or "open-web" (allows all actions).',
+          enum: ['strict-local', 'controlled-web', 'open-web'],
+        },
       },
       required: ['nlp'],
     },
