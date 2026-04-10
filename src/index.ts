@@ -746,8 +746,23 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
           },
           instructions:
             'Alethia is the patent-pending zero-IPC E2E test runtime built for AI agents. ' +
-            'Use alethia_tell to drive a real browser with plain English. ' +
-            'The Alethia runtime auto-installs on first use and runs locally on 127.0.0.1:47432.',
+            '~13ms per step, 45x faster than CDP-based tools. Local-first, zero telemetry by default.\n\n' +
+            'Core tools:\n' +
+            '- alethia_tell: Drive a real browser with plain English. Returns per-step results, DOM diffs (what changed), ' +
+            'a semantic page snapshot (~200 tokens), EA1 policy audits, and a SHA-256 integrity hash.\n' +
+            '- alethia_compile: Preview what tell() will run without executing.\n' +
+            '- alethia_status: Health check — version, policy profile, kill switch state.\n' +
+            '- alethia_screenshot: Capture a PNG screenshot of the current page.\n' +
+            '- alethia_eval: Run JavaScript in the page under test.\n' +
+            '- alethia_activate_kill_switch / alethia_reset_kill_switch: Emergency halt and resume.\n\n' +
+            'Key capabilities:\n' +
+            '- Smart assertions: on failure, returns near-matches, page context, and suggested fixes.\n' +
+            '- Page readiness: auto-waits for loading indicators before assertions.\n' +
+            '- Conditional steps: "if cookie banner exists, click Accept" — skips gracefully.\n' +
+            '- Interaction checks: verifies elements are visible, enabled, and not blocked by overlays.\n' +
+            '- EA1 safety gate: destructive actions (delete, purchase, transfer) are blocked by default.\n\n' +
+            'The runtime auto-installs on first use and runs locally on 127.0.0.1:47432. ' +
+            'Works with local files (file://) and localhost dev servers.',
         },
       };
     }
