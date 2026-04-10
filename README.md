@@ -133,6 +133,35 @@ The agent calls `alethia_tell` with plain English. Alethia compiles it to Action
 
 ---
 
+## Demos
+
+This package ships with ready-to-use demo pages in the `demo/` folder. Each page showcases different Alethia capabilities — copy the prompt into Claude Code, Cursor, or any MCP client:
+
+| Demo | What it shows |
+|---|---|
+| `signup-form.html` | Login flow — navigate, type, click, assert, error detection |
+| `todo-app.html` | Dynamic lists — list awareness in snapshots |
+| `ecommerce.html` | EA1 policy gate blocks purchase (write-high) |
+| `spa-loading.html` | Page readiness — auto-waits for 2s async load |
+| `cookie-banner.html` | Conditional steps — "if banner exists, click Accept" |
+| `form-validation.html` | Smart assertions — error detection, suggested fixes |
+| `admin-panel.html` | Defense/classified — EA1 blocks user deletion, audit trail |
+| `financial-dashboard.html` | Finance — compliance checks, EA1 blocks liquidation |
+
+Find the demos at:
+```bash
+# Global install
+ls $(npm root -g)/@vitronai/alethia/demo/
+
+# Or clone the source
+git clone https://github.com/vitron-ai/alethia-mcp.git
+ls alethia-mcp/demo/
+```
+
+Full prompts for each demo: [`demo/README.md`](./demo/README.md)
+
+---
+
 ## Tools
 
 ### `alethia_tell`
