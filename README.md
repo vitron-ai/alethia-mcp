@@ -197,7 +197,7 @@ Evaluate a JavaScript expression in the page under test and return the result. R
            │ HTTP POST 127.0.0.1:47432 (loopback only, never networked)
            ↓
 ┌────────────────────────┐
-│  Alethia desktop app   │  Desktop runtime — main process
+│  Alethia runtime   │  Desktop runtime — main process
 │  local JSON-RPC server │  - tools/list, tools/call
 └──────────┬─────────────┘  - loopback bind, never reachable from network
            │ in-process JS bridge
@@ -213,7 +213,7 @@ Evaluate a JavaScript expression in the page under test and return the result. R
 └────────────────────────┘
 ```
 
-**Two process boundaries** between your agent and the runtime (agent ↔ shim, shim ↔ desktop app). Then **zero** boundaries between the runtime and the DOM. That's the architectural difference that makes Alethia 45× faster than Playwright.
+**Two process boundaries** between your agent and the runtime (agent ↔ shim, shim ↔ runtime). Then **zero** boundaries between the runtime and the DOM. That's the architectural difference that makes Alethia 45× faster than Playwright.
 
 ---
 
@@ -223,7 +223,7 @@ Evaluate a JavaScript expression in the page under test and return the result. R
 alethia-mcp                  Run as a stdio MCP server (default)
 alethia-mcp --version        Print the version and exit
 alethia-mcp --help           Print usage and exit
-alethia-mcp --health-check   Probe the Alethia desktop app and exit 0/1
+alethia-mcp --health-check   Probe the Alethia runtime and exit 0/1
 alethia-mcp --debug          Run with debug logging on stderr
 ```
 
@@ -231,8 +231,8 @@ alethia-mcp --debug          Run with debug logging on stderr
 
 | Variable | Default | Description |
 |---|---|---|
-| `ALETHIA_HOST` | `127.0.0.1` | Host of the Alethia desktop app |
-| `ALETHIA_PORT` | `47432` | Port of the Alethia desktop app |
+| `ALETHIA_HOST` | `127.0.0.1` | Host of the Alethia runtime |
+| `ALETHIA_PORT` | `47432` | Port of the Alethia runtime |
 | `ALETHIA_TIMEOUT_MS` | `60000` | Per-request timeout in milliseconds |
 | `ALETHIA_DEBUG` | (unset) | Set to `1` to enable debug logging on stderr |
 
@@ -274,14 +274,14 @@ Only do this when you are knowingly testing a real auth or payment flow.
 
 ### MCP client doesn't see the tools
 
-1. Verify the desktop app is running: `alethia-mcp --health-check`
+1. Verify the runtime is running: `alethia-mcp --health-check`
 2. Verify your MCP config points at the correct command
 3. Restart your MCP client (some clients cache server lists)
 4. Run with debug logging: set `ALETHIA_DEBUG=1` in your MCP config's `env` section
 
 ### `Script failed to execute`
 
-The runtime hasn't loaded `window.__alethia` yet (or crashed). Restart the desktop app. If it persists, file an issue.
+The runtime hasn't loaded `window.__alethia` yet (or crashed). Restart the runtime. If it persists, file an issue.
 
 ---
 
