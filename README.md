@@ -123,7 +123,7 @@ After saving the config, restart your MCP client.
 
 ## Usage
 
-Once configured, your agent has seven Alethia tools available. The most common one:
+Once configured, your agent has the full Alethia tool suite available. The most common one:
 
 > *"Use alethia_tell to navigate to localhost:3000, sign in as admin@example.com / password123, and verify the dashboard heading is visible."*
 
