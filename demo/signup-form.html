@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Acme Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .container { width: 360px; }
+    h1 { font-size: 1.8rem; margin-bottom: 1.2rem; }
+    form { display: flex; flex-direction: column; gap: 0.8rem; }
+    input { padding: 0.7rem; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font-size: 1rem; }
+    input::placeholder { color: #64748b; }
+    button { padding: 0.75rem; border-radius: 8px; border: none; background: #3b82f6; color: white; font-size: 1rem; font-weight: 600; cursor: pointer; }
+    button:hover { background: #2563eb; }
+    .error { color: #f87171; font-size: 0.9rem; display: none; }
+    .error.visible { display: block; }
+    #dashboard { display: none; }
+    #dashboard h1 { color: #34d399; }
+    #dashboard ul { list-style: none; margin-top: 1rem; }
+    #dashboard li { padding: 0.5rem 0; border-bottom: 1px solid #1e293b; }
+    #dashboard button { background: #ef4444; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="login">
+      <h1>Sign In</h1>
+      <div id="error" class="error" role="alert">Please fill in all fields</div>
+      <form onsubmit="return false;">
+        <input id="email" type="email" placeholder="Email" aria-label="Email" />
+        <input id="password" type="password" placeholder="Password" aria-label="Password" />
+        <button type="button" id="signin-btn">Sign In</button>
+      </form>
+    </div>
+    <div id="dashboard">
+      <h1>Welcome back!</h1>
+      <p id="user-greeting"></p>
+      <ul id="tasks">
+        <li>Deploy v2.1</li>
+        <li>Review PR #42</li>
+        <li>Update docs</li>
+      </ul>
+      <button type="button" id="logout-btn">Sign Out</button>
+    </div>
+  </div>
+  <script>
+    document.getElementById('signin-btn').addEventListener('click', function() {
+      var email = document.getElementById('email').value;
+      var password = document.getElementById('password').value;
+      var error = document.getElementById('error');
+      if (!email || !password) {
+        error.classList.add('visible');
+        return;
+      }
+      error.classList.remove('visible');
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      document.getElementById('user-greeting').textContent = 'Logged in as ' + email;
+      document.title = 'Dashboard — Acme';
+    });
+    document.getElementById('logout-btn').addEventListener('click', function() {
+      document.getElementById('login').style.display = 'block';
+      document.getElementById('dashboard').style.display = 'none';
+      document.getElementById('email').value = '';
+      document.getElementById('password').value = '';
+      document.title = 'Acme Dashboard';
+    });
+  </script>
+</body>
+</html>
