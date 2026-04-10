@@ -307,7 +307,7 @@ MCP bridge for Alethia — the patent-pending zero-IPC E2E test runtime for AI a
 WHAT THIS IS
   This npm package is the MIT-licensed open-source MCP bridge — a thin
   stdio→HTTP relay (~9 KB) that lets MCP-capable AI agents talk to the
-  Alethia desktop runtime running locally on 127.0.0.1:47432.
+  Alethia runtime running locally on 127.0.0.1:47432.
 
   The runtime itself (in-process zero-IPC executor, VITRON-EA1 policy
   gate, NLP compiler) is closed-source and patent-pending — U.S. Patent
@@ -319,20 +319,19 @@ USAGE
   alethia-mcp                      Run as a stdio MCP server (default)
   alethia-mcp --version            Print the version and exit
   alethia-mcp --help               Print this message and exit
-  alethia-mcp --health-check       Probe the Alethia desktop runtime and exit 0/1
+  alethia-mcp --health-check       Probe the Alethia runtime and exit 0/1
   alethia-mcp --debug              Run with debug logging on stderr
 
-GETTING THE DESKTOP RUNTIME
-  The runtime is currently in design-partner alpha:
+RUNTIME
+  The runtime auto-installs on first use from GitHub Releases.
+  Ed25519-signed, SHA-256 verified. No signup required.
 
-      Landing page:    https://github.com/vitron-ai/alethia
-      Request access:  gatekeeper@vitron.ai
-
-  Public binary releases ship with the v0.3 milestone.
+      Releases:        https://github.com/vitron-ai/alethia/releases
+      Licensing:       gatekeeper@vitron.ai
 
 ENVIRONMENT
-  ALETHIA_HOST          Host of the Alethia desktop runtime (default: 127.0.0.1)
-  ALETHIA_PORT          Port of the Alethia desktop runtime (default: 47432)
+  ALETHIA_HOST          Host of the Alethia runtime (default: 127.0.0.1)
+  ALETHIA_PORT          Port of the Alethia runtime (default: 47432)
   ALETHIA_TIMEOUT_MS    Per-request timeout in milliseconds (default: 60000)
   ALETHIA_DEBUG         Set to "1" to enable debug logging on stderr
 
@@ -444,19 +443,17 @@ const callAlethia = (body: unknown, timeoutMs = ALETHIA_TIMEOUT_MS): Promise<Ale
       const code = (err as NodeJS.ErrnoException).code;
       if (code === 'ECONNREFUSED' || code === 'ENOTFOUND' || code === 'EHOSTUNREACH') {
         rejectCall(new AlethiaConnectionError(
-          `Alethia desktop runtime is not running on ${ALETHIA_HOST}:${ALETHIA_PORT}.\n` +
+          `Alethia runtime is not running on ${ALETHIA_HOST}:${ALETHIA_PORT}.\n` +
           `\n` +
-          `This npm package is the open-source MCP bridge — a thin stdio→HTTP relay\n` +
-          `to the Alethia desktop runtime. The runtime contains the patent-pending\n` +
-          `in-process zero-IPC executor (U.S. Patent App. No. 19/571,437) and is\n` +
-          `distributed separately under the design partner program.\n` +
+          `The runtime auto-installs on first use. If this is your first run,\n` +
+          `the bridge will download and verify the signed runtime binary.\n` +
+          `If the runtime was previously installed, it may have exited.\n` +
           `\n` +
-          `To get access to the desktop runtime:\n` +
-          `  → Design-partner alpha is open: https://github.com/vitron-ai/alethia\n` +
-          `  → Request access: gatekeeper@vitron.ai\n` +
-          `  → Public binary releases ship with the v0.3 milestone.\n` +
+          `Troubleshooting:\n` +
+          `  → Run: alethia-mcp --health-check\n` +
+          `  → Releases: https://github.com/vitron-ai/alethia/releases\n` +
+          `  → Licensing: gatekeeper@vitron.ai\n` +
           `\n` +
-          `Once the desktop runtime is running locally, re-run your MCP client.\n` +
           `Override host/port with ALETHIA_HOST / ALETHIA_PORT environment vars\n` +
           `if your runtime listens on a non-default address.`
         ));
@@ -474,7 +471,7 @@ const callAlethia = (body: unknown, timeoutMs = ALETHIA_TIMEOUT_MS): Promise<Ale
 // ---------------------------------------------------------------------------
 
 const runHealthCheck = async (): Promise<never> => {
-  process.stdout.write(`Probing Alethia desktop runtime at ${ALETHIA_HOST}:${ALETHIA_PORT}...\n`);
+  process.stdout.write(`Probing Alethia runtime at ${ALETHIA_HOST}:${ALETHIA_PORT}...\n`);
   const probeRuntime = async (): Promise<AlethiaHttpResponse> => {
     try {
       return await callAlethia({ jsonrpc: '2.0', id: 1, method: 'tools/list' }, 5_000);
@@ -524,12 +521,11 @@ const runHealthCheck = async (): Promise<never> => {
     process.stdout.write(
       `\n` +
       `This npm package is the MIT-licensed MCP bridge — a stdio→HTTP relay only.\n` +
-      `The Alethia desktop runtime (which contains the patent-pending in-process\n` +
-      `zero-IPC executor) is required and is currently in design-partner alpha.\n` +
+      `The Alethia runtime (patent-pending in-process zero-IPC executor) auto-installs\n` +
+      `on first use from GitHub Releases. Ed25519-signed, no signup required.\n` +
       `\n` +
-      `Request runtime access:\n` +
-      `  → https://github.com/vitron-ai/alethia\n` +
-      `  → gatekeeper@vitron.ai\n`
+      `  → https://github.com/vitron-ai/alethia/releases\n` +
+      `  → Licensing: gatekeeper@vitron.ai\n`
     );
     process.exit(1);
   }
