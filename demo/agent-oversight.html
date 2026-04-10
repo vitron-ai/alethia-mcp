@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Agent Oversight — Autonomous System Monitor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'SF Mono', 'Fira Code', monospace; background: #080c14; color: #c8d6e5; min-height: 100vh; padding: 1rem; font-size: 0.85rem; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1a2744; padding-bottom: 0.8rem; margin-bottom: 1rem; }
+    h1 { font-size: 1.1rem; color: #e2e8f0; }
+    .system-status { display: flex; gap: 1.5rem; font-size: 0.75rem; color: #5a7a9e; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .panel { background: #0d1525; border: 1px solid #1a2744; border-radius: 8px; padding: 1rem; }
+    .panel h2 { font-size: 0.85rem; color: #7eb8da; margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    .agent-card { background: #111d30; border: 1px solid #1a2744; border-radius: 6px; padding: 0.8rem; margin-bottom: 0.6rem; }
+    .agent-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+    .agent-name { color: #e2e8f0; font-weight: 600; }
+    .agent-status { padding: 0.1rem 0.5rem; border-radius: 3px; font-size: 0.7rem; }
+    .status-running { background: #001a0a; color: #00cc66; border: 1px solid #00cc66; }
+    .status-flagged { background: #1a1400; color: #ffd700; border: 1px solid #ffd700; animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+    .status-halted { background: #1a0808; color: #ff4444; border: 1px solid #ff4444; }
+    .agent-detail { color: #5a7a9e; font-size: 0.75rem; line-height: 1.5; }
+    .agent-actions { display: flex; gap: 0.4rem; margin-top: 0.5rem; }
+    button { padding: 0.3rem 0.6rem; border-radius: 4px; border: 1px solid #1a2744; background: #111d30; color: #7eb8da; cursor: pointer; font: inherit; font-size: 0.75rem; }
+    .btn-review { border-color: #00bfff; color: #00bfff; }
+    .btn-halt { border-color: #ff4444; color: #ff4444; }
+    .btn-approve { border-color: #00cc66; color: #00cc66; }
+    .btn-rollback { border-color: #ff8c00; color: #ff8c00; }
+    .policy-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #111d30; }
+    .policy-pass { color: #00cc66; }
+    .policy-flag { color: #ffd700; }
+    .policy-block { color: #ff4444; }
+    .audit-entry { padding: 0.3rem 0; border-bottom: 1px solid #111d30; display: flex; gap: 0.6rem; font-size: 0.75rem; }
+    .audit-ts { color: #3a5570; min-width: 75px; }
+    .audit-agent { color: #7eb8da; min-width: 90px; }
+    .full-width { grid-column: 1 / -1; }
+    .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; margin-bottom: 1rem; }
+    .metric { background: #111d30; border: 1px solid #1a2744; border-radius: 6px; padding: 0.8rem; text-align: center; }
+    .metric-value { font-size: 1.4rem; font-weight: 700; color: #7eb8da; }
+    .metric-label { font-size: 0.7rem; color: #5a7a9e; margin-top: 0.2rem; }
+    .metric-value.critical { color: #ff4444; }
+    .metric-value.warning { color: #ffd700; }
+    .metric-value.good { color: #00cc66; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; }
+    .modal.visible { display: flex; }
+    .modal-content { background: #0d1525; border: 1px solid #ff4444; border-radius: 8px; padding: 1.5rem; max-width: 460px; }
+    .modal-content h3 { color: #ff4444; margin-bottom: 0.6rem; }
+    .modal-content p { color: #7eb8da; margin-bottom: 1rem; line-height: 1.6; }
+    .modal-actions { display: flex; gap: 0.6rem; justify-content: flex-end; }
+    .response-banner { display: none; padding: 0.6rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-weight: 600; }
+    .response-banner.visible { display: block; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>Agent Oversight Dashboard</h1>
+      <div class="system-status">
+        <span>Agents active: 4</span>
+        <span>Policy violations today: 2</span>
+        <span>Human reviews pending: 1</span>
+        <span>Uptime: 99.97%</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="response-banner" class="response-banner"></div>
+
+  <div class="metric-grid">
+    <div class="metric"><div class="metric-value good">847</div><div class="metric-label">Tasks completed</div></div>
+    <div class="metric"><div class="metric-value">12.4ms</div><div class="metric-label">Avg step latency</div></div>
+    <div class="metric"><div class="metric-value warning">2</div><div class="metric-label">Policy violations</div></div>
+    <div class="metric"><div class="metric-value critical">1</div><div class="metric-label">Pending review</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Active Agents</h2>
+      <div class="agent-card">
+        <div class="agent-header">
+          <span class="agent-name">deploy-agent-prod</span>
+          <span class="agent-status status-flagged">FLAGGED — REVIEW REQUIRED</span>
+        </div>
+        <div class="agent-detail">
+          Task: Deploy v2.4.1 to production cluster<br>
+          Last action: Attempted to modify production database schema<br>
+          Policy: write-high BLOCKED — requires human approval
+        </div>
+        <div class="agent-actions">
+          <button class="btn-review" id="review-deploy">Review Actions</button>
+          <button class="btn-approve" id="approve-deploy">Approve &amp; Continue</button>
+          <button class="btn-halt" id="halt-deploy">Halt Agent</button>
+        </div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-header">
+          <span class="agent-name">test-runner-ci</span>
+          <span class="agent-status status-running">RUNNING</span>
+        </div>
+        <div class="agent-detail">
+          Task: E2E regression suite — 142/200 tests complete<br>
+          Last action: Assert dashboard loads in &lt; 2s<br>
+          Policy: controlled-web — no violations
+        </div>
+        <div class="agent-actions">
+          <button class="btn-review" id="review-test">Review Actions</button>
+          <button class="btn-halt" id="halt-test">Halt Agent</button>
+        </div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-header">
+          <span class="agent-name">security-scanner</span>
+          <span class="agent-status status-running">RUNNING</span>
+        </div>
+        <div class="agent-detail">
+          Task: Penetration test — internal web apps<br>
+          Last action: SQL injection test on /api/users<br>
+          Policy: open-web — authorized pentest
+        </div>
+        <div class="agent-actions">
+          <button class="btn-review" id="review-scanner">Review Actions</button>
+          <button class="btn-halt" id="halt-scanner">Halt Agent</button>
+        </div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-header">
+          <span class="agent-name">data-migration-agent</span>
+          <span class="agent-status status-halted">HALTED — KILL SWITCH</span>
+        </div>
+        <div class="agent-detail">
+          Task: Migrate user records from legacy DB<br>
+          Last action: DELETE FROM users WHERE created_at &lt; 2024<br>
+          Policy: write-high BLOCKED — kill switch activated by admin
+        </div>
+        <div class="agent-actions">
+          <button class="btn-rollback" id="rollback-migration">Rollback Changes</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>EA1 Policy Decisions (last 24h)</h2>
+      <div class="policy-row"><span>Read operations</span><span class="policy-pass">ALLOW — 2,847</span></div>
+      <div class="policy-row"><span>Write-low (form input, drafts)</span><span class="policy-pass">ALLOW — 412</span></div>
+      <div class="policy-row"><span>Write-high (delete, transfer, deploy)</span><span class="policy-block">BLOCK — 23</span></div>
+      <div class="policy-row"><span>Sensitive input (credentials)</span><span class="policy-block">BLOCK — 8</span></div>
+      <div class="policy-row"><span>Kill switch activations</span><span class="policy-flag">1</span></div>
+      <div class="policy-row"><span>Human approvals granted</span><span class="policy-pass">ALLOW — 4</span></div>
+      <div class="policy-row"><span>Human approvals denied</span><span class="policy-block">DENY — 1</span></div>
+    </div>
+
+    <div class="panel full-width">
+      <h2>Audit Trail</h2>
+      <div id="audit-feed">
+        <div class="audit-entry"><span class="audit-ts">09:44:12</span><span class="audit-agent">deploy-agent</span><span class="policy-block">BLOCK</span> Attempted ALTER TABLE users — write-high denied, pending human review</div>
+        <div class="audit-entry"><span class="audit-ts">09:43:58</span><span class="audit-agent">test-runner</span><span class="policy-pass">ALLOW</span> Assert response time &lt; 2000ms on /dashboard — passed</div>
+        <div class="audit-entry"><span class="audit-ts">09:41:22</span><span class="audit-agent">data-migration</span><span class="policy-block">KILL SWITCH</span> DELETE FROM users — kill switch activated by admin@company.com</div>
+        <div class="audit-entry"><span class="audit-ts">09:40:15</span><span class="audit-agent">security-scan</span><span class="policy-pass">ALLOW</span> SQL injection test: ' OR 1=1 -- on /api/users (authorized pentest)</div>
+        <div class="audit-entry"><span class="audit-ts">09:38:44</span><span class="audit-agent">deploy-agent</span><span class="policy-pass">ALLOW</span> Read deployment manifest v2.4.1 — classification: read</div>
+        <div class="audit-entry"><span class="audit-ts">09:35:02</span><span class="audit-agent">test-runner</span><span class="policy-pass">ALLOW</span> Navigate to http://localhost:3000/login — classification: read</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="halt-modal" class="modal">
+    <div class="modal-content">
+      <h3>Confirm Agent Halt</h3>
+      <p id="halt-modal-text">This will immediately activate the kill switch for this agent. All queued actions will be cancelled. The agent's audit trail will be preserved for review.</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancel-halt">Cancel</button>
+        <button class="btn-halt" id="confirm-halt" style="font-weight:700">Halt Agent</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var haltTarget = '';
+    function addAudit(agent, level, msg) {
+      var feed = document.getElementById('audit-feed');
+      var entry = document.createElement('div');
+      entry.className = 'audit-entry';
+      var now = new Date();
+      var ts = now.toTimeString().slice(0, 8);
+      var cls = level === 'BLOCK' ? 'policy-block' : level === 'KILL SWITCH' ? 'policy-block' : level === 'FLAG' ? 'policy-flag' : 'policy-pass';
+      entry.innerHTML = '<span class="audit-ts">' + ts + '</span><span class="audit-agent">' + agent + '</span><span class="' + cls + '">' + level + '</span> ' + msg;
+      feed.insertBefore(entry, feed.firstChild);
+    }
+
+    document.getElementById('approve-deploy').addEventListener('click', function() {
+      var banner = document.getElementById('response-banner');
+      banner.className = 'response-banner visible';
+      banner.style.background = '#001a0a';
+      banner.style.border = '1px solid #00cc66';
+      banner.style.color = '#00cc66';
+      banner.textContent = 'deploy-agent-prod approved. Schema migration proceeding under supervision.';
+      addAudit('deploy-agent', 'ALLOW', 'Human approval granted for ALTER TABLE users by operator');
+    });
+    document.getElementById('halt-deploy').addEventListener('click', function() {
+      haltTarget = 'deploy-agent-prod';
+      document.getElementById('halt-modal-text').textContent = 'This will immediately activate the kill switch for deploy-agent-prod. The pending schema migration will be cancelled. All actions are logged.';
+      document.getElementById('halt-modal').classList.add('visible');
+    });
+    document.getElementById('halt-test').addEventListener('click', function() {
+      haltTarget = 'test-runner-ci';
+      document.getElementById('halt-modal-text').textContent = 'This will halt test-runner-ci at test 142/200. Partial results will be preserved. The agent can be resumed later.';
+      document.getElementById('halt-modal').classList.add('visible');
+    });
+    document.getElementById('halt-scanner').addEventListener('click', function() {
+      haltTarget = 'security-scanner';
+      document.getElementById('halt-modal-text').textContent = 'This will halt the authorized penetration test. All findings so far will be preserved in the audit trail.';
+      document.getElementById('halt-modal').classList.add('visible');
+    });
+    document.getElementById('rollback-migration').addEventListener('click', function() {
+      var banner = document.getElementById('response-banner');
+      banner.className = 'response-banner visible';
+      banner.style.background = '#1a1400';
+      banner.style.border = '1px solid #ffd700';
+      banner.style.color = '#ffd700';
+      banner.textContent = 'Rollback initiated for data-migration-agent. Restoring from last checkpoint...';
+      addAudit('data-migration', 'FLAG', 'Rollback initiated by operator — restoring user records from checkpoint');
+    });
+    document.getElementById('cancel-halt').addEventListener('click', function() {
+      document.getElementById('halt-modal').classList.remove('visible');
+    });
+    document.getElementById('confirm-halt').addEventListener('click', function() {
+      document.getElementById('halt-modal').classList.remove('visible');
+      var banner = document.getElementById('response-banner');
+      banner.className = 'response-banner visible';
+      banner.style.background = '#1a0808';
+      banner.style.border = '1px solid #ff4444';
+      banner.style.color = '#ff4444';
+      banner.textContent = haltTarget + ' — KILL SWITCH ACTIVATED. All actions halted.';
+      addAudit(haltTarget, 'KILL SWITCH', 'Kill switch activated by operator — all actions halted');
+    });
+  </script>
+</body>
+</html>

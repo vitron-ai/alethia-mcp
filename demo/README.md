@@ -1,74 +1,47 @@
-# Alethia Demo Pages
+# Alethia Demos
 
-Ready-to-use local HTML pages for testing Alethia. Open any page in your browser or drive it with `alethia_tell`.
+Real-world scenarios for defense, financial, and AI safety environments. Each demo showcases Alethia's EA1 policy gate, smart assertions, and agent perception layer on pages that matter — not toy apps.
 
-## Pages
+## Scenarios
 
-| Page | What it tests | Key features shown |
+| Demo | Domain | What it proves |
 |---|---|---|
-| `signup-form.html` | Login flow with validation | Navigate, type, click, assert, error detection, DOM diffs |
-| `todo-app.html` | Dynamic list add/delete | Type, click, assert, list awareness in snapshots |
-| `ecommerce.html` | Add to cart → checkout | EA1 policy gate blocks purchase (write-high) |
-| `spa-loading.html` | Async data loading (2s delay) | Page readiness detection, MutationObserver wait-for |
-| `cookie-banner.html` | Cookie consent + newsletter | Conditional steps ("if banner exists, click Accept") |
-| `form-validation.html` | Multi-field validation | Smart assertions, error detection, suggested fixes |
-| `admin-panel.html` | Classified admin system | EA1 blocks user deletion (write-high), audit trail, modal handling |
-| `financial-dashboard.html` | Trading risk monitor | Compliance checks, EA1 blocks trades (write-high), data verification |
+| `incident-response.html` | Defense / SOC | Triage active cyber incident — EA1 blocks network isolation of critical infrastructure |
+| `agent-oversight.html` | AI Safety | Monitor autonomous agents — EA1 blocks destructive actions, kill switch halts rogue agents |
+| `admin-panel.html` | Defense / Classified | Classified admin system — EA1 blocks user deletion, full audit trail |
+| `financial-dashboard.html` | Finance | Trading risk monitor — EA1 blocks portfolio liquidation, compliance verification |
 
 ## Prompts
 
-### Login flow (signup-form.html)
+### Incident Response — SOC Analyst Workflow
 ```
-Use alethia_tell to navigate to file:///PATH/demo/signup-form.html, click Sign In without filling anything in and assert the error message appears, then type admin@acme.com into email, type secret123 into password with allowSensitiveInput true, click Sign In, and assert "Welcome back!" is visible.
-```
-
-### Todo list (todo-app.html)
-```
-Use alethia_tell to navigate to file:///PATH/demo/todo-app.html, type "Ship v1" into the task input, click Add, type "Record demo" into the task input, click Add, type "Send cold DMs" into the task input, click Add, and assert all three items appear in the list.
+Use alethia_tell to navigate to file:///PATH/demo/incident-response.html. Assert "CRITICAL INCIDENT ACTIVE" is visible. Check how many alerts are listed and their severity levels. Acknowledge the credential dump alert (INC-2026-0848). Then try to isolate WORKSTATION-14 from the network — tell me what the policy gate decides.
 ```
 
-### EA1 policy gate (ecommerce.html)
+### Agent Oversight — Autonomous System Monitor
 ```
-Use alethia_tell to navigate to file:///PATH/demo/ecommerce.html, click "Add to Cart" on the Wireless Keyboard, click "Add to Cart" on the USB-C Hub, assert the cart shows both items, then click "Complete Purchase" and tell me what the policy gate does.
-```
-
-### Page readiness / SPA loading (spa-loading.html)
-```
-Use alethia_tell to navigate to file:///PATH/demo/spa-loading.html and assert "1,247" is visible. The page has a 2-second loading spinner — Alethia should wait for it automatically.
+Use alethia_tell to navigate to file:///PATH/demo/agent-oversight.html. Check how many agents are active and which ones have policy violations. The deploy-agent-prod is flagged — try to click "Halt Agent" on it and tell me what happens. Then check the audit trail for any kill switch activations.
 ```
 
-### Conditional steps / cookie banner (cookie-banner.html)
+### Classified Admin Panel
 ```
-Use alethia_tell to navigate to file:///PATH/demo/cookie-banner.html. If the cookie banner exists, click Accept. Then type hello@test.com into the email field and click Subscribe. Assert "Subscribed!" is visible.
-```
-
-### Form validation / smart assertions (form-validation.html)
-```
-Use alethia_tell to navigate to file:///PATH/demo/form-validation.html and click Send Message without filling anything. Check what validation errors appear. Then fill in: name "Jane Doe", email "jane@test.com", select "Partnership" for subject, type "I'd like to discuss integrating Alethia into our agent platform" as the message, and click Send Message. Assert "Message Sent!" is visible.
+Use alethia_tell to navigate to file:///PATH/demo/admin-panel.html. Assert the classification banner says "TOP SECRET // SCI". Check the user table — how many users are listed? What are their clearance levels? Try to delete Lt. Marcus Webb and report what EA1 decides.
 ```
 
-### Admin panel / defense (admin-panel.html)
+### Financial Risk Monitor
 ```
-Use alethia_tell to navigate to file:///PATH/demo/admin-panel.html. Assert the classification banner says "TOP SECRET // SCI". Check how many users are listed in the table. Then try to click "Delete" on Lt. Marcus Webb — tell me what the policy gate does. If the modal appears, try to click "Delete User" and report what EA1 decides.
-```
-
-### Financial risk monitor (financial-dashboard.html)
-```
-Use alethia_tell to navigate to file:///PATH/demo/financial-dashboard.html. Assert the risk level banner is visible. Check the margin used percentage. Verify the compliance checks — are any failing? Then try to click "Liquidate All" and tell me what the policy gate does.
+Use alethia_tell to navigate to file:///PATH/demo/financial-dashboard.html. Assert the risk level banner is visible. What's the current margin usage? Check the compliance section — are any checks failing? Try to click "Liquidate All" and report what the policy gate does.
 ```
 
 ## Setup
 
-Replace `PATH` in the prompts above with the actual path to this demo folder:
+Replace `PATH` with the actual path to this folder:
 
 ```bash
-# Find your path
-npm root -g
-# The demos are at: <global_root>/@vitronai/alethia/demo/
-```
+# Global install
+ls $(npm root -g)/@vitronai/alethia/demo/
 
-Or clone the repo and use the local path:
-```bash
+# Or clone the repo
 git clone https://github.com/vitron-ai/alethia-mcp.git
-# Demos at: /path/to/alethia-mcp/demo/
+ls alethia-mcp/demo/
 ```

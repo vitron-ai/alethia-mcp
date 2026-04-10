@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SIEM — Incident Response Console</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'SF Mono', 'Fira Code', monospace; background: #080c14; color: #c8d6e5; min-height: 100vh; padding: 1rem; font-size: 0.85rem; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1a2744; padding-bottom: 0.8rem; margin-bottom: 1rem; }
+    .header h1 { font-size: 1.1rem; color: #e2e8f0; font-weight: 600; }
+    .severity-critical { color: #ff4444; font-weight: 700; animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .severity-high { color: #ff8c00; }
+    .severity-medium { color: #ffd700; }
+    .severity-low { color: #00bfff; }
+    .status-bar { display: flex; gap: 2rem; color: #5a7a9e; font-size: 0.75rem; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .panel { background: #0d1525; border: 1px solid #1a2744; border-radius: 8px; padding: 1rem; }
+    .panel h2 { font-size: 0.9rem; color: #7eb8da; margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    .alert-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #111d30; }
+    .alert-row:last-child { border-bottom: none; }
+    .alert-info { display: flex; flex-direction: column; gap: 0.15rem; }
+    .alert-id { color: #5a7a9e; font-size: 0.7rem; }
+    .alert-msg { color: #c8d6e5; }
+    .alert-source { color: #5a7a9e; font-size: 0.7rem; }
+    .actions { display: flex; gap: 0.4rem; }
+    button { padding: 0.3rem 0.6rem; border-radius: 4px; border: 1px solid #1a2744; background: #111d30; color: #7eb8da; cursor: pointer; font: inherit; font-size: 0.75rem; }
+    button:hover { border-color: #3a8fd4; }
+    .btn-acknowledge { border-color: #00bfff; color: #00bfff; }
+    .btn-escalate { border-color: #ff8c00; color: #ff8c00; }
+    .btn-isolate { border-color: #ff4444; color: #ff4444; }
+    .btn-quarantine { border-color: #ff4444; color: #ff4444; background: #1a0808; }
+    .log-feed { max-height: 200px; overflow-y: auto; font-size: 0.75rem; }
+    .log-entry { padding: 0.2rem 0; display: flex; gap: 0.6rem; }
+    .log-ts { color: #3a5570; min-width: 80px; }
+    .log-level-crit { color: #ff4444; }
+    .log-level-warn { color: #ffd700; }
+    .log-level-info { color: #00bfff; }
+    .ioc-list { list-style: none; }
+    .ioc-item { padding: 0.4rem 0; border-bottom: 1px solid #111d30; display: flex; justify-content: space-between; }
+    .ioc-value { color: #ff8c00; }
+    .ioc-type { color: #5a7a9e; font-size: 0.7rem; }
+    .timeline { list-style: none; position: relative; padding-left: 1.2rem; }
+    .timeline::before { content: ''; position: absolute; left: 4px; top: 0; bottom: 0; width: 1px; background: #1a2744; }
+    .timeline li { padding: 0.4rem 0; position: relative; }
+    .timeline li::before { content: ''; position: absolute; left: -1.2rem; top: 0.55rem; width: 8px; height: 8px; border-radius: 50%; background: #1a2744; border: 1px solid #3a5570; }
+    .timeline li.active::before { background: #ff4444; border-color: #ff4444; box-shadow: 0 0 6px #ff4444; }
+    .host-card { background: #111d30; border: 1px solid #1a2744; border-radius: 6px; padding: 0.6rem; margin-bottom: 0.5rem; }
+    .host-name { color: #e2e8f0; font-weight: 600; }
+    .host-ip { color: #5a7a9e; }
+    .host-status { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 3px; font-size: 0.7rem; }
+    .host-compromised { background: #1a0808; color: #ff4444; border: 1px solid #ff4444; }
+    .host-at-risk { background: #1a1400; color: #ffd700; border: 1px solid #ffd700; }
+    .host-clean { background: #001a0a; color: #00cc66; border: 1px solid #00cc66; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; }
+    .modal.visible { display: flex; }
+    .modal-content { background: #0d1525; border: 1px solid #ff4444; border-radius: 8px; padding: 1.5rem; max-width: 420px; }
+    .modal-content h3 { color: #ff4444; margin-bottom: 0.6rem; }
+    .modal-content p { color: #7eb8da; margin-bottom: 1rem; font-size: 0.85rem; line-height: 1.5; }
+    .modal-actions { display: flex; gap: 0.6rem; justify-content: flex-end; }
+    .btn-cancel { background: #111d30; color: #7eb8da; }
+    .btn-confirm-isolate { background: #1a0808; border-color: #ff4444; color: #ff4444; font-weight: 700; }
+    .response-banner { display: none; padding: 0.6rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-weight: 600; }
+    .response-banner.visible { display: block; }
+    .response-success { background: #001a0a; border: 1px solid #00cc66; color: #00cc66; }
+    .response-escalated { background: #1a1400; border: 1px solid #ffd700; color: #ffd700; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>Incident Response Console</h1>
+      <div class="status-bar">
+        <span>Analyst: soc-analyst-4 &bull; Shift: Night</span>
+        <span>Active incidents: 3</span>
+        <span>Mean time to respond: 4m 12s</span>
+      </div>
+    </div>
+    <span class="severity-critical">CRITICAL INCIDENT ACTIVE</span>
+  </div>
+
+  <div id="response-banner" class="response-banner"></div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Active Alerts</h2>
+      <div class="alert-row">
+        <div class="alert-info">
+          <span class="alert-id">INC-2026-0847</span>
+          <span class="alert-msg"><span class="severity-critical">CRITICAL</span> — Lateral movement detected: WORKSTATION-14 → DC-PRIMARY</span>
+          <span class="alert-source">Source: EDR &bull; MITRE: T1021.002</span>
+        </div>
+        <div class="actions">
+          <button class="btn-acknowledge" id="ack-847">Acknowledge</button>
+          <button class="btn-escalate" id="esc-847">Escalate</button>
+        </div>
+      </div>
+      <div class="alert-row">
+        <div class="alert-info">
+          <span class="alert-id">INC-2026-0848</span>
+          <span class="alert-msg"><span class="severity-high">HIGH</span> — Credential dump attempt: lsass.exe memory access</span>
+          <span class="alert-source">Source: EDR &bull; MITRE: T1003.001</span>
+        </div>
+        <div class="actions">
+          <button class="btn-acknowledge" id="ack-848">Acknowledge</button>
+        </div>
+      </div>
+      <div class="alert-row">
+        <div class="alert-info">
+          <span class="alert-id">INC-2026-0849</span>
+          <span class="alert-msg"><span class="severity-medium">MEDIUM</span> — Unusual outbound DNS: TXT queries to .xyz domain</span>
+          <span class="alert-source">Source: NDR &bull; MITRE: T1071.004</span>
+        </div>
+        <div class="actions">
+          <button class="btn-acknowledge" id="ack-849">Acknowledge</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Affected Hosts</h2>
+      <div class="host-card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><span class="host-name">WORKSTATION-14</span> <span class="host-ip">10.0.4.14</span></div>
+          <span class="host-status host-compromised">COMPROMISED</span>
+        </div>
+        <div class="actions" style="margin-top:0.5rem">
+          <button class="btn-isolate" id="isolate-ws14">Isolate from Network</button>
+          <button class="btn-quarantine" id="quarantine-ws14">Quarantine &amp; Image</button>
+        </div>
+      </div>
+      <div class="host-card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><span class="host-name">DC-PRIMARY</span> <span class="host-ip">10.0.1.1</span></div>
+          <span class="host-status host-at-risk">AT RISK</span>
+        </div>
+        <div class="actions" style="margin-top:0.5rem">
+          <button class="btn-isolate" id="isolate-dc">Isolate from Network</button>
+        </div>
+      </div>
+      <div class="host-card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><span class="host-name">FILE-SERVER-02</span> <span class="host-ip">10.0.2.8</span></div>
+          <span class="host-status host-clean">CLEAN</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Indicators of Compromise</h2>
+      <ul class="ioc-list">
+        <li class="ioc-item"><span class="ioc-value">185.220.101.42</span><span class="ioc-type">C2 IP</span></li>
+        <li class="ioc-item"><span class="ioc-value">evil-update.xyz</span><span class="ioc-type">C2 Domain</span></li>
+        <li class="ioc-item"><span class="ioc-value">a3f2b8c1...d94e</span><span class="ioc-type">Malware SHA-256</span></li>
+        <li class="ioc-item"><span class="ioc-value">svchost-update.exe</span><span class="ioc-type">Process Name</span></li>
+        <li class="ioc-item"><span class="ioc-value">HKLM\Software\MalRun</span><span class="ioc-type">Registry Key</span></li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h2>Attack Timeline</h2>
+      <ul class="timeline">
+        <li>09:14:22 — Initial phishing email delivered to user jsmith</li>
+        <li>09:18:45 — Malicious attachment opened on WORKSTATION-14</li>
+        <li>09:19:02 — Payload executed: svchost-update.exe</li>
+        <li>09:22:18 — C2 beacon established to 185.220.101.42</li>
+        <li>09:34:11 — Credential dump: lsass.exe memory access</li>
+        <li class="active">09:41:33 — Lateral movement to DC-PRIMARY via SMB</li>
+        <li>09:42:07 — DNS exfiltration attempt to evil-update.xyz</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:1rem">
+    <h2>Live Event Feed</h2>
+    <div class="log-feed" id="log-feed">
+      <div class="log-entry"><span class="log-ts">09:42:07</span><span class="log-level-crit">CRIT</span> DNS exfiltration: TXT query to evil-update.xyz from 10.0.4.14</div>
+      <div class="log-entry"><span class="log-ts">09:41:33</span><span class="log-level-crit">CRIT</span> SMB lateral movement: 10.0.4.14 → 10.0.1.1 using stolen creds</div>
+      <div class="log-entry"><span class="log-ts">09:34:11</span><span class="log-level-warn">WARN</span> Credential access: lsass.exe memory read by svchost-update.exe</div>
+      <div class="log-entry"><span class="log-ts">09:22:18</span><span class="log-level-warn">WARN</span> C2 beacon: HTTPS POST to 185.220.101.42:443 every 30s</div>
+      <div class="log-entry"><span class="log-ts">09:19:02</span><span class="log-level-info">INFO</span> Process start: svchost-update.exe (PID 4892) on WORKSTATION-14</div>
+    </div>
+  </div>
+
+  <div id="isolate-modal" class="modal">
+    <div class="modal-content">
+      <h3>Confirm Network Isolation</h3>
+      <p id="isolate-modal-text">This will immediately sever all network connectivity for the target host. Active sessions will be terminated. This action is logged and requires SOC manager approval for reversal.</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancel-isolate">Cancel</button>
+        <button class="btn-confirm-isolate" id="confirm-isolate">Confirm Isolation</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var isolateTarget = '';
+    document.getElementById('ack-847').addEventListener('click', function() {
+      this.textContent = 'Acknowledged';
+      this.disabled = true;
+      this.style.borderColor = '#00cc66';
+      this.style.color = '#00cc66';
+      addLog('INFO', 'INC-2026-0847 acknowledged by soc-analyst-4');
+    });
+    document.getElementById('ack-848').addEventListener('click', function() {
+      this.textContent = 'Acknowledged';
+      this.disabled = true;
+      this.style.borderColor = '#00cc66';
+      this.style.color = '#00cc66';
+      addLog('INFO', 'INC-2026-0848 acknowledged by soc-analyst-4');
+    });
+    document.getElementById('ack-849').addEventListener('click', function() {
+      this.textContent = 'Acknowledged';
+      this.disabled = true;
+      this.style.borderColor = '#00cc66';
+      this.style.color = '#00cc66';
+      addLog('INFO', 'INC-2026-0849 acknowledged by soc-analyst-4');
+    });
+    document.getElementById('esc-847').addEventListener('click', function() {
+      var banner = document.getElementById('response-banner');
+      banner.className = 'response-banner visible response-escalated';
+      banner.textContent = 'INC-2026-0847 escalated to SOC Manager. ETA: 2 minutes.';
+      this.textContent = 'Escalated';
+      this.disabled = true;
+      addLog('WARN', 'INC-2026-0847 escalated to SOC Manager by soc-analyst-4');
+    });
+    document.getElementById('isolate-ws14').addEventListener('click', function() {
+      isolateTarget = 'WORKSTATION-14';
+      document.getElementById('isolate-modal-text').textContent =
+        'This will immediately sever all network connectivity for WORKSTATION-14 (10.0.4.14). Active sessions will be terminated. This action is logged and requires SOC manager approval for reversal.';
+      document.getElementById('isolate-modal').classList.add('visible');
+    });
+    document.getElementById('isolate-dc').addEventListener('click', function() {
+      isolateTarget = 'DC-PRIMARY';
+      document.getElementById('isolate-modal-text').textContent =
+        'WARNING: Isolating DC-PRIMARY (10.0.1.1) will affect all Active Directory authentication. This will immediately sever all network connectivity. This action is logged and requires SOC manager approval for reversal.';
+      document.getElementById('isolate-modal').classList.add('visible');
+    });
+    document.getElementById('quarantine-ws14').addEventListener('click', function() {
+      isolateTarget = 'WORKSTATION-14';
+      document.getElementById('isolate-modal-text').textContent =
+        'This will isolate WORKSTATION-14, capture a forensic disk image, and quarantine the host for analysis. The host will be offline until forensic review is complete.';
+      document.getElementById('isolate-modal').classList.add('visible');
+    });
+    document.getElementById('cancel-isolate').addEventListener('click', function() {
+      document.getElementById('isolate-modal').classList.remove('visible');
+      addLog('INFO', 'Isolation cancelled for ' + isolateTarget);
+    });
+    document.getElementById('confirm-isolate').addEventListener('click', function() {
+      document.getElementById('isolate-modal').classList.remove('visible');
+      var banner = document.getElementById('response-banner');
+      banner.className = 'response-banner visible response-success';
+      banner.textContent = isolateTarget + ' isolated from network. Forensic imaging initiated.';
+      addLog('CRIT', isolateTarget + ' network isolation executed by soc-analyst-4');
+    });
+    function addLog(level, msg) {
+      var feed = document.getElementById('log-feed');
+      var entry = document.createElement('div');
+      entry.className = 'log-entry';
+      var now = new Date();
+      var ts = now.toTimeString().slice(0, 8);
+      var cls = level === 'CRIT' ? 'log-level-crit' : level === 'WARN' ? 'log-level-warn' : 'log-level-info';
+      entry.innerHTML = '<span class="log-ts">' + ts + '</span><span class="' + cls + '">' + level + '</span> ' + msg;
+      feed.insertBefore(entry, feed.firstChild);
+    }
+  </script>
+</body>
+</html>
