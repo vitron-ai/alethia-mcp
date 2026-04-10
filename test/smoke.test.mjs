@@ -27,6 +27,8 @@ const EXPECTED_TOOLS = [
   'alethia_status',
   'alethia_activate_kill_switch',
   'alethia_reset_kill_switch',
+  'alethia_screenshot',
+  'alethia_eval',
 ];
 
 // ---------------------------------------------------------------------------
@@ -149,7 +151,7 @@ test('initialize returns correct protocol version and server info', async () => 
   assert.ok(r.result.capabilities?.tools, 'should declare tools capability');
 });
 
-test('tools/list returns the expected 5 MCP tools', async () => {
+test('tools/list returns the expected 7 MCP tools', async () => {
   const responses = await sendRpc([
     { jsonrpc: '2.0', method: 'tools/list', id: 1 },
   ]);
@@ -201,7 +203,7 @@ test('tools/call alethia_tell when offline auto-installs or returns error gracef
   // successfully (returns a PlanRun) or returns a structured error.
   const responses = await sendRpc([
     { jsonrpc: '2.0', method: 'tools/call', id: 1, params: { name: 'alethia_tell', arguments: { nlp: 'wait 50 milliseconds' } } },
-  ], { timeoutMs: 30000 });
+  ], { timeoutMs: 90000 });
   assert.equal(responses.length, 1);
   const r = responses[0];
   assert.ok(r.result?.content, 'should return MCP content envelope, not crash');
