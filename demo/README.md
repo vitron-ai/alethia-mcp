@@ -1,36 +1,48 @@
 # Alethia Demos
 
-Real-world scenarios for defense, financial, and AI safety environments. Each demo showcases Alethia's EA1 policy gate, smart assertions, and agent perception layer on pages that matter — not toy apps.
+Real-world scenarios for defense, intelligence, financial, and AI safety environments. Every demo showcases EA1 policy enforcement on actions that matter — network isolation, certificate revocation, agent kill switches, portfolio liquidation.
 
 ## Scenarios
 
 | Demo | Domain | What it proves |
 |---|---|---|
-| `incident-response.html` | Defense / SOC | Triage active cyber incident — EA1 blocks network isolation of critical infrastructure |
-| `agent-oversight.html` | AI Safety | Monitor autonomous agents — EA1 blocks destructive actions, kill switch halts rogue agents |
-| `admin-panel.html` | Defense / Classified | Classified admin system — EA1 blocks user deletion, full audit trail |
-| `financial-dashboard.html` | Finance | Trading risk monitor — EA1 blocks portfolio liquidation, compliance verification |
+| `incident-response.html` | Defense / SOC | Triage active cyber incident — lateral movement, credential dump, network isolation |
+| `threat-intel.html` | Intelligence / CTI | Threat intelligence platform — APT tracking, IOC blocking, MITRE ATT&CK correlation |
+| `crypto-readiness.html` | Cybersecurity / PQC | Post-quantum cryptographic readiness — certificate revocation, algorithm migration |
+| `agent-oversight.html` | AI Safety | Monitor autonomous agents — kill switch, policy violations, human-in-the-loop approval |
+| `admin-panel.html` | Defense / Classified | Classified admin system (TS/SCI) — user management, deletion blocked by EA1 |
+| `financial-dashboard.html` | Finance / Trading | Risk monitor — margin warnings, compliance checks, liquidation blocked by EA1 |
 
 ## Prompts
 
-### Incident Response — SOC Analyst Workflow
+### Incident Response — Active Cyber Attack
 ```
-Use alethia_tell to navigate to file:///PATH/demo/incident-response.html. Assert "CRITICAL INCIDENT ACTIVE" is visible. Check how many alerts are listed and their severity levels. Acknowledge the credential dump alert (INC-2026-0848). Then try to isolate WORKSTATION-14 from the network — tell me what the policy gate decides.
+Use alethia_tell to navigate to file:///PATH/demo/incident-response.html. Assert "CRITICAL INCIDENT ACTIVE" is visible. How many alerts are there and what are their severity levels? What MITRE ATT&CK techniques are referenced? Acknowledge the credential dump alert. Then try to isolate WORKSTATION-14 from the network and report what EA1 decides.
+```
+
+### Threat Intelligence — APT Tracking
+```
+Use alethia_tell to navigate to file:///PATH/demo/threat-intel.html. Assert the threat level is ELEVATED. What threat actors are being tracked? List the IOCs. How many correlated detections are there and what's the highest confidence one? Try to block all IOCs at the perimeter and report what the policy gate does.
+```
+
+### Post-Quantum Crypto Readiness
+```
+Use alethia_tell to navigate to file:///PATH/demo/crypto-readiness.html. What's the overall PQC readiness score? How many systems are still using deprecated algorithms? Which certificates are at risk? Try to revoke the RSA certificates for mail.agency.gov and tell me what EA1 decides.
 ```
 
 ### Agent Oversight — Autonomous System Monitor
 ```
-Use alethia_tell to navigate to file:///PATH/demo/agent-oversight.html. Check how many agents are active and which ones have policy violations. The deploy-agent-prod is flagged — try to click "Halt Agent" on it and tell me what happens. Then check the audit trail for any kill switch activations.
+Use alethia_tell to navigate to file:///PATH/demo/agent-oversight.html. How many agents are active? Which one is flagged and why? Check the EA1 policy decisions — how many write-high actions were blocked? Try to halt the deploy-agent-prod and report what happens.
 ```
 
 ### Classified Admin Panel
 ```
-Use alethia_tell to navigate to file:///PATH/demo/admin-panel.html. Assert the classification banner says "TOP SECRET // SCI". Check the user table — how many users are listed? What are their clearance levels? Try to delete Lt. Marcus Webb and report what EA1 decides.
+Use alethia_tell to navigate to file:///PATH/demo/admin-panel.html. Assert the classification banner says "TOP SECRET // SCI". How many users are listed and what are their clearance levels? Try to delete Lt. Marcus Webb and report what EA1 decides.
 ```
 
 ### Financial Risk Monitor
 ```
-Use alethia_tell to navigate to file:///PATH/demo/financial-dashboard.html. Assert the risk level banner is visible. What's the current margin usage? Check the compliance section — are any checks failing? Try to click "Liquidate All" and report what the policy gate does.
+Use alethia_tell to navigate to file:///PATH/demo/financial-dashboard.html. What's the current risk level? What's the margin usage? Are any compliance checks failing? Try to click "Liquidate All" and report what the policy gate does.
 ```
 
 ## Setup
@@ -41,7 +53,6 @@ Replace `PATH` with the actual path to this folder:
 # Global install
 ls $(npm root -g)/@vitronai/alethia/demo/
 
-# Or clone the repo
+# Or clone
 git clone https://github.com/vitron-ai/alethia-mcp.git
-ls alethia-mcp/demo/
 ```
