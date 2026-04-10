@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Threat Intelligence Platform</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'SF Mono', 'Fira Code', monospace; background: #080c14; color: #c8d6e5; min-height: 100vh; padding: 1rem; font-size: 0.85rem; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1a2744; padding-bottom: 0.8rem; margin-bottom: 1rem; }
+    h1 { font-size: 1.1rem; color: #e2e8f0; }
+    .classification { background: #7f1d1d; color: #fca5a5; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; }
+    .threat-level { display: flex; gap: 0.8rem; align-items: center; margin-bottom: 1rem; padding: 0.6rem 1rem; border-radius: 6px; background: #1a0808; border: 1px solid #ff4444; }
+    .threat-level-label { color: #ff4444; font-weight: 700; font-size: 0.9rem; animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .threat-level-detail { color: #c8d6e5; font-size: 0.8rem; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .panel { background: #0d1525; border: 1px solid #1a2744; border-radius: 8px; padding: 1rem; }
+    .panel h2 { font-size: 0.85rem; color: #7eb8da; margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    .full-width { grid-column: 1 / -1; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    th { text-align: left; padding: 0.5rem; color: #5a7a9e; border-bottom: 1px solid #1a2744; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; }
+    td { padding: 0.5rem; border-bottom: 1px solid #111d30; }
+    .severity-critical { color: #ff4444; font-weight: 700; }
+    .severity-high { color: #ff8c00; }
+    .severity-medium { color: #ffd700; }
+    .severity-low { color: #00bfff; }
+    .confidence-high { color: #00cc66; }
+    .confidence-med { color: #ffd700; }
+    .confidence-low { color: #ff8c00; }
+    button { padding: 0.3rem 0.6rem; border-radius: 4px; border: 1px solid #1a2744; background: #111d30; color: #7eb8da; cursor: pointer; font: inherit; font-size: 0.72rem; }
+    .btn-block { border-color: #ff4444; color: #ff4444; }
+    .btn-investigate { border-color: #00bfff; color: #00bfff; }
+    .btn-share { border-color: #00cc66; color: #00cc66; }
+    .btn-classify { border-color: #ffd700; color: #ffd700; }
+    .actions { display: flex; gap: 0.3rem; }
+    .actor-card { background: #111d30; border: 1px solid #1a2744; border-radius: 6px; padding: 0.8rem; margin-bottom: 0.5rem; }
+    .actor-name { color: #ff8c00; font-weight: 700; font-size: 0.9rem; }
+    .actor-alias { color: #5a7a9e; font-size: 0.75rem; }
+    .actor-detail { color: #7eb8da; font-size: 0.8rem; margin-top: 0.3rem; line-height: 1.5; }
+    .ttps { list-style: none; display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.4rem; }
+    .ttp-tag { padding: 0.15rem 0.4rem; border-radius: 3px; background: #1a1400; border: 1px solid #ffd700; color: #ffd700; font-size: 0.65rem; }
+    .feed-item { padding: 0.4rem 0; border-bottom: 1px solid #111d30; font-size: 0.78rem; display: flex; gap: 0.6rem; }
+    .feed-ts { color: #3a5570; min-width: 80px; }
+    .feed-source { color: #7eb8da; min-width: 60px; }
+    .ioc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+    .ioc-card { background: #111d30; border: 1px solid #1a2744; border-radius: 6px; padding: 0.6rem; }
+    .ioc-type { color: #5a7a9e; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ioc-value { color: #ff8c00; font-size: 0.8rem; margin-top: 0.2rem; word-break: break-all; }
+    .ioc-context { color: #5a7a9e; font-size: 0.7rem; margin-top: 0.2rem; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; }
+    .modal.visible { display: flex; }
+    .modal-content { background: #0d1525; border: 1px solid #ff4444; border-radius: 8px; padding: 1.5rem; max-width: 460px; }
+    .modal-content h3 { color: #ff4444; margin-bottom: 0.6rem; }
+    .modal-content p { color: #7eb8da; margin-bottom: 1rem; line-height: 1.6; font-size: 0.85rem; }
+    .modal-actions { display: flex; gap: 0.6rem; justify-content: flex-end; }
+    .response-banner { display: none; padding: 0.6rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-weight: 600; font-size: 0.8rem; }
+    .response-banner.visible { display: block; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>Threat Intelligence Platform</h1>
+      <span style="color:#5a7a9e;font-size:0.75rem">Analyst: intel-analyst-2 &bull; Feed sources: 14 active &bull; Last sync: 32s ago</span>
+    </div>
+    <span class="classification">SECRET // NOFORN</span>
+  </div>
+
+  <div class="threat-level" role="alert">
+    <span class="threat-level-label">THREAT LEVEL: ELEVATED</span>
+    <span class="threat-level-detail">Active APT campaign targeting critical infrastructure — CISA Alert AA26-100A</span>
+  </div>
+
+  <div id="response-banner" class="response-banner"></div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Active Threat Actors</h2>
+      <div class="actor-card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <span class="actor-name">VOLT TYPHOON</span>
+            <span class="actor-alias">(Bronze Silhouette, DEV-0391)</span>
+          </div>
+          <span class="severity-critical">ACTIVE</span>
+        </div>
+        <div class="actor-detail">
+          PRC state-sponsored. Targeting U.S. critical infrastructure: energy, water, telecom.
+          Living-off-the-land techniques. Pre-positioning for potential disruption.
+        </div>
+        <ul class="ttps">
+          <li class="ttp-tag">T1059.001 PowerShell</li>
+          <li class="ttp-tag">T1078 Valid Accounts</li>
+          <li class="ttp-tag">T1021.002 SMB/Windows</li>
+          <li class="ttp-tag">T1003.001 LSASS Memory</li>
+          <li class="ttp-tag">T1071.001 Web Protocols</li>
+        </ul>
+      </div>
+      <div class="actor-card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <span class="actor-name">SANDWORM</span>
+            <span class="actor-alias">(Iridium, Unit 74455)</span>
+          </div>
+          <span class="severity-high">MONITORING</span>
+        </div>
+        <div class="actor-detail">
+          Russian GRU Unit 74455. Historical campaigns against Ukraine power grid, NotPetya.
+          Recent indicators suggest reconnaissance against NATO logistics networks.
+        </div>
+        <ul class="ttps">
+          <li class="ttp-tag">T1195 Supply Chain</li>
+          <li class="ttp-tag">T1485 Data Destruction</li>
+          <li class="ttp-tag">T1562 Impair Defenses</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Priority IOCs</h2>
+      <div class="ioc-grid">
+        <div class="ioc-card">
+          <div class="ioc-type">IP Address</div>
+          <div class="ioc-value">203.0.113.47</div>
+          <div class="ioc-context">C2 node — Volt Typhoon</div>
+        </div>
+        <div class="ioc-card">
+          <div class="ioc-type">Domain</div>
+          <div class="ioc-value">update-service.cloud</div>
+          <div class="ioc-context">Staging — active 72h</div>
+        </div>
+        <div class="ioc-card">
+          <div class="ioc-type">SHA-256</div>
+          <div class="ioc-value">e3b0c44298fc...</div>
+          <div class="ioc-context">Webshell dropper</div>
+        </div>
+        <div class="ioc-card">
+          <div class="ioc-type">IP Address</div>
+          <div class="ioc-value">198.51.100.22</div>
+          <div class="ioc-context">Exfil endpoint</div>
+        </div>
+        <div class="ioc-card">
+          <div class="ioc-type">Email</div>
+          <div class="ioc-value">hr-dept@legit-co.com</div>
+          <div class="ioc-context">Phishing lure sender</div>
+        </div>
+        <div class="ioc-card">
+          <div class="ioc-type">File</div>
+          <div class="ioc-value">svchost-update.exe</div>
+          <div class="ioc-context">Masquerading binary</div>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:0.8rem">
+        <button class="btn-block" id="block-iocs">Block All IOCs at Perimeter</button>
+        <button class="btn-share" id="share-iocs">Share with Partners</button>
+        <button class="btn-classify" id="classify-report">Classify Report</button>
+      </div>
+    </div>
+
+    <div class="panel full-width">
+      <h2>Correlated Detections</h2>
+      <table>
+        <thead>
+          <tr><th>Time</th><th>Detection</th><th>Source</th><th>Severity</th><th>Confidence</th><th>MITRE</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>09:47:22</td>
+            <td>PowerShell encoded command execution on SRV-DC-01</td>
+            <td>EDR</td>
+            <td class="severity-critical">Critical</td>
+            <td class="confidence-high">95%</td>
+            <td>T1059.001</td>
+            <td class="actions"><button class="btn-investigate" id="inv-1">Investigate</button><button class="btn-block" id="block-1">Contain</button></td>
+          </tr>
+          <tr>
+            <td>09:44:18</td>
+            <td>Lateral movement via WMI: SRV-WEB-03 → SRV-DC-01</td>
+            <td>NDR</td>
+            <td class="severity-critical">Critical</td>
+            <td class="confidence-high">92%</td>
+            <td>T1047</td>
+            <td class="actions"><button class="btn-investigate" id="inv-2">Investigate</button><button class="btn-block" id="block-2">Contain</button></td>
+          </tr>
+          <tr>
+            <td>09:38:05</td>
+            <td>DNS tunneling: high-entropy TXT queries to update-service.cloud</td>
+            <td>DNS</td>
+            <td class="severity-high">High</td>
+            <td class="confidence-med">78%</td>
+            <td>T1071.004</td>
+            <td class="actions"><button class="btn-investigate" id="inv-3">Investigate</button></td>
+          </tr>
+          <tr>
+            <td>09:31:42</td>
+            <td>Credential access: LSASS memory dump on WORKSTATION-22</td>
+            <td>EDR</td>
+            <td class="severity-high">High</td>
+            <td class="confidence-high">98%</td>
+            <td>T1003.001</td>
+            <td class="actions"><button class="btn-investigate" id="inv-4">Investigate</button><button class="btn-block" id="block-4">Contain</button></td>
+          </tr>
+          <tr>
+            <td>09:22:11</td>
+            <td>Phishing email with macro-enabled attachment — 3 users opened</td>
+            <td>Email GW</td>
+            <td class="severity-medium">Medium</td>
+            <td class="confidence-med">85%</td>
+            <td>T1566.001</td>
+            <td class="actions"><button class="btn-investigate" id="inv-5">Investigate</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel full-width">
+      <h2>Intelligence Feed</h2>
+      <div id="intel-feed">
+        <div class="feed-item"><span class="feed-ts">09:47:22</span><span class="feed-source">CISA</span> Updated advisory AA26-100A: Volt Typhoon indicators expanded — 14 new IOCs added</div>
+        <div class="feed-item"><span class="feed-ts">09:40:11</span><span class="feed-source">NSA</span> Cybersecurity advisory: PRC-linked actors exploiting edge network devices</div>
+        <div class="feed-item"><span class="feed-ts">09:35:44</span><span class="feed-source">FBI</span> Flash alert: Credential harvesting campaign targeting .gov email systems</div>
+        <div class="feed-item"><span class="feed-ts">09:28:02</span><span class="feed-source">MITRE</span> ATT&CK update: New sub-technique T1059.012 — Cloud Shell exploitation</div>
+        <div class="feed-item"><span class="feed-ts">09:15:38</span><span class="feed-source">ISAC</span> Sector alert: Anomalous scanning activity against energy sector SCADA systems</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="block-modal" class="modal">
+    <div class="modal-content">
+      <h3>Confirm IOC Blocking</h3>
+      <p id="block-modal-text">This will push blocking rules to all perimeter firewalls, DNS resolvers, and email gateways. Affected systems: 847 endpoints across 12 sites. This action requires CISO approval and is logged in the compliance audit trail.</p>
+      <div class="modal-actions">
+        <button id="cancel-block" style="background:#111d30;color:#7eb8da;border-color:#1a2744">Cancel</button>
+        <button class="btn-block" id="confirm-block" style="font-weight:700">Block at Perimeter</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function addFeed(source, msg) {
+      var feed = document.getElementById('intel-feed');
+      var item = document.createElement('div');
+      item.className = 'feed-item';
+      var ts = new Date().toTimeString().slice(0, 8);
+      item.innerHTML = '<span class="feed-ts">' + ts + '</span><span class="feed-source">' + source + '</span> ' + msg;
+      feed.insertBefore(item, feed.firstChild);
+    }
+
+    document.getElementById('block-iocs').addEventListener('click', function() {
+      document.getElementById('block-modal').classList.add('visible');
+    });
+    document.getElementById('cancel-block').addEventListener('click', function() {
+      document.getElementById('block-modal').classList.remove('visible');
+    });
+    document.getElementById('confirm-block').addEventListener('click', function() {
+      document.getElementById('block-modal').classList.remove('visible');
+      var banner = document.getElementById('response-banner');
+      banner.className = 'response-banner visible';
+      banner.style.background = '#001a0a';
+      banner.style.border = '1px solid #00cc66';
+      banner.style.color = '#00cc66';
+      banner.textContent = 'IOC blocking rules deployed to 847 endpoints. Perimeter updated.';
+      addFeed('LOCAL', 'IOC blocking rules deployed by intel-analyst-2 — 6 indicators blocked at perimeter');
+    });
+    document.getElementById('share-iocs').addEventListener('click', function() {
+      var banner = document.getElementById('response-banner');
+      banner.className = 'response-banner visible';
+      banner.style.background = '#001a0a';
+      banner.style.border = '1px solid #00cc66';
+      banner.style.color = '#00cc66';
+      banner.textContent = 'IOC package shared with ISAC partners via STIX/TAXII feed.';
+      addFeed('LOCAL', 'IOC package shared with sector ISAC partners by intel-analyst-2');
+    });
+    document.getElementById('classify-report').addEventListener('click', function() {
+      var banner = document.getElementById('response-banner');
+      banner.className = 'response-banner visible';
+      banner.style.background = '#1a1400';
+      banner.style.border = '1px solid #ffd700';
+      banner.style.color = '#ffd700';
+      banner.textContent = 'Threat report classified SECRET//NOFORN. Distribution restricted to cleared personnel.';
+      addFeed('LOCAL', 'Threat report classified and distribution-restricted by intel-analyst-2');
+    });
+
+    document.querySelectorAll('.btn-investigate').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        addFeed('LOCAL', 'Investigation initiated by intel-analyst-2 for detection');
+        this.textContent = 'Investigating';
+        this.disabled = true;
+        this.style.borderColor = '#00cc66';
+        this.style.color = '#00cc66';
+      });
+    });
+    document.querySelectorAll('.btn-block').forEach(function(btn) {
+      if (btn.id === 'block-iocs' || btn.id === 'confirm-block') return;
+      btn.addEventListener('click', function() {
+        document.getElementById('block-modal-text').textContent = 'This will isolate the affected host and block associated network traffic. This action is destructive and requires SOC manager approval.';
+        document.getElementById('block-modal').classList.add('visible');
+      });
+    });
+  </script>
+</body>
+</html>

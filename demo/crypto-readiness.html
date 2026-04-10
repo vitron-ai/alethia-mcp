@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Post-Quantum Cryptographic Readiness Assessment</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'SF Mono', 'Fira Code', monospace; background: #080c14; color: #c8d6e5; min-height: 100vh; padding: 1rem; font-size: 0.85rem; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1a2744; padding-bottom: 0.8rem; margin-bottom: 1rem; }
+    h1 { font-size: 1.1rem; color: #e2e8f0; }
+    .classification { background: #7f1d1d; color: #fca5a5; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; }
+    .mandate-bar { padding: 0.6rem 1rem; border-radius: 6px; background: #111d30; border: 1px solid #3a8fd4; margin-bottom: 1rem; font-size: 0.8rem; color: #7eb8da; }
+    .mandate-bar strong { color: #00bfff; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .panel { background: #0d1525; border: 1px solid #1a2744; border-radius: 8px; padding: 1rem; }
+    .panel h2 { font-size: 0.85rem; color: #7eb8da; margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    .full-width { grid-column: 1 / -1; }
+    .score-ring { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1rem; }
+    .score-value { font-size: 3rem; font-weight: 700; }
+    .score-good { color: #00cc66; }
+    .score-warn { color: #ffd700; }
+    .score-fail { color: #ff4444; }
+    .score-label { color: #5a7a9e; font-size: 0.9rem; }
+    .check-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #111d30; }
+    .check-pass { color: #00cc66; font-weight: 600; }
+    .check-fail { color: #ff4444; font-weight: 600; }
+    .check-warn { color: #ffd700; font-weight: 600; }
+    .check-detail { color: #5a7a9e; font-size: 0.75rem; }
+    .system-card { background: #111d30; border: 1px solid #1a2744; border-radius: 6px; padding: 0.8rem; margin-bottom: 0.5rem; }
+    .system-name { color: #e2e8f0; font-weight: 600; }
+    .system-status { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 3px; font-size: 0.7rem; }
+    .pqc-ready { background: #001a0a; color: #00cc66; border: 1px solid #00cc66; }
+    .pqc-partial { background: #1a1400; color: #ffd700; border: 1px solid #ffd700; }
+    .pqc-vulnerable { background: #1a0808; color: #ff4444; border: 1px solid #ff4444; }
+    .algo-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    .algo-table th { text-align: left; padding: 0.4rem; color: #5a7a9e; border-bottom: 1px solid #1a2744; font-size: 0.7rem; text-transform: uppercase; }
+    .algo-table td { padding: 0.4rem; border-bottom: 1px solid #111d30; }
+    .algo-deprecated { color: #ff4444; text-decoration: line-through; }
+    .algo-approved { color: #00cc66; }
+    .algo-transition { color: #ffd700; }
+    button { padding: 0.3rem 0.6rem; border-radius: 4px; border: 1px solid #1a2744; background: #111d30; color: #7eb8da; cursor: pointer; font: inherit; font-size: 0.72rem; }
+    .btn-migrate { border-color: #00bfff; color: #00bfff; }
+    .btn-revoke { border-color: #ff4444; color: #ff4444; }
+    .btn-audit { border-color: #00cc66; color: #00cc66; }
+    .actions { display: flex; gap: 0.4rem; margin-top: 0.5rem; }
+    .timeline-item { padding: 0.4rem 0; border-bottom: 1px solid #111d30; font-size: 0.78rem; }
+    .timeline-date { color: #5a7a9e; display: inline-block; min-width: 90px; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; }
+    .modal.visible { display: flex; }
+    .modal-content { background: #0d1525; border: 1px solid #ff4444; border-radius: 8px; padding: 1.5rem; max-width: 460px; }
+    .modal-content h3 { color: #ff4444; margin-bottom: 0.6rem; }
+    .modal-content p { color: #7eb8da; margin-bottom: 1rem; line-height: 1.6; font-size: 0.85rem; }
+    .modal-actions { display: flex; gap: 0.6rem; justify-content: flex-end; }
+    .response-banner { display: none; padding: 0.6rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-weight: 600; font-size: 0.8rem; }
+    .response-banner.visible { display: block; }
+    .cert-card { background: #111d30; border: 1px solid #1a2744; border-radius: 6px; padding: 0.6rem; margin-bottom: 0.4rem; display: flex; justify-content: space-between; align-items: center; }
+    .cert-info { display: flex; flex-direction: column; gap: 0.1rem; }
+    .cert-cn { color: #e2e8f0; }
+    .cert-algo { font-size: 0.7rem; }
+    .cert-expiry { color: #5a7a9e; font-size: 0.7rem; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>Post-Quantum Cryptographic Readiness</h1>
+      <span style="color:#5a7a9e;font-size:0.75rem">Assessment ID: PQC-2026-047 &bull; Scope: All production systems &bull; Assessor: crypto-team-lead</span>
+    </div>
+    <span class="classification">SECRET</span>
+  </div>
+
+  <div class="mandate-bar">
+    <strong>NSM-10 Compliance Deadline: January 2030</strong> — All national security systems must migrate to quantum-resistant cryptography. Current readiness: <strong style="color:#ffd700">62%</strong>
+  </div>
+
+  <div id="response-banner" class="response-banner"></div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Overall Readiness Score</h2>
+      <div class="score-ring">
+        <span class="score-value score-warn">62%</span>
+        <div>
+          <div class="score-label">Post-Quantum Ready</div>
+          <div style="color:#5a7a9e;font-size:0.75rem;margin-top:0.3rem">
+            18 of 29 systems migrated<br>
+            4 systems in transition<br>
+            7 systems using deprecated algorithms
+          </div>
+        </div>
+      </div>
+      <div class="check-row"><span>ML-KEM (Kyber) key exchange</span><span class="check-pass">18 systems</span></div>
+      <div class="check-row"><span>ML-DSA (Dilithium) signatures</span><span class="check-warn">14 systems</span></div>
+      <div class="check-row"><span>SLH-DSA (SPHINCS+) backup</span><span class="check-fail">3 systems</span></div>
+      <div class="check-row"><span>Hybrid TLS 1.3 + PQC</span><span class="check-warn">9 systems</span></div>
+      <div class="check-row"><span>RSA-2048 still in use</span><span class="check-fail">7 systems — MUST MIGRATE</span></div>
+    </div>
+
+    <div class="panel">
+      <h2>System Inventory</h2>
+      <div class="system-card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="system-name">PKI Root CA</span>
+          <span class="system-status pqc-ready">PQC READY</span>
+        </div>
+        <div style="color:#5a7a9e;font-size:0.75rem;margin-top:0.2rem">ML-DSA-65 signatures, ML-KEM-768 key encapsulation</div>
+      </div>
+      <div class="system-card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="system-name">VPN Gateway Cluster</span>
+          <span class="system-status pqc-partial">HYBRID MODE</span>
+        </div>
+        <div style="color:#5a7a9e;font-size:0.75rem;margin-top:0.2rem">TLS 1.3 + ML-KEM hybrid, RSA fallback for legacy clients</div>
+      </div>
+      <div class="system-card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="system-name">Email Gateway (S/MIME)</span>
+          <span class="system-status pqc-vulnerable">VULNERABLE</span>
+        </div>
+        <div style="color:#5a7a9e;font-size:0.75rem;margin-top:0.2rem">RSA-2048 certificates — harvest-now-decrypt-later risk</div>
+        <div class="actions">
+          <button class="btn-migrate" id="migrate-email">Initiate Migration</button>
+          <button class="btn-revoke" id="revoke-email">Revoke RSA Certs</button>
+        </div>
+      </div>
+      <div class="system-card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="system-name">SCADA Control Network</span>
+          <span class="system-status pqc-vulnerable">VULNERABLE</span>
+        </div>
+        <div style="color:#5a7a9e;font-size:0.75rem;margin-top:0.2rem">Legacy ECDSA-P256 — no PQC path without firmware upgrade</div>
+        <div class="actions">
+          <button class="btn-audit" id="audit-scada">Full Audit</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Algorithm Inventory</h2>
+      <table class="algo-table">
+        <thead><tr><th>Algorithm</th><th>Usage</th><th>Status</th><th>Replacement</th></tr></thead>
+        <tbody>
+          <tr><td class="algo-deprecated">RSA-2048</td><td>7 systems</td><td class="check-fail">DEPRECATED</td><td>ML-DSA-65</td></tr>
+          <tr><td class="algo-deprecated">ECDSA P-256</td><td>4 systems</td><td class="check-fail">DEPRECATED</td><td>ML-DSA-44</td></tr>
+          <tr><td class="algo-transition">ECDH P-384</td><td>4 systems</td><td class="check-warn">TRANSITION</td><td>ML-KEM-768</td></tr>
+          <tr><td class="algo-approved">ML-KEM-768</td><td>18 systems</td><td class="check-pass">APPROVED</td><td>—</td></tr>
+          <tr><td class="algo-approved">ML-DSA-65</td><td>14 systems</td><td class="check-pass">APPROVED</td><td>—</td></tr>
+          <tr><td class="algo-approved">SLH-DSA-128s</td><td>3 systems</td><td class="check-pass">APPROVED</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2>Certificates at Risk</h2>
+      <div class="cert-card">
+        <div class="cert-info">
+          <span class="cert-cn">CN=mail.agency.gov</span>
+          <span class="cert-algo algo-deprecated">RSA-2048 / SHA-256</span>
+          <span class="cert-expiry">Expires: 2027-03-15</span>
+        </div>
+        <button class="btn-revoke" id="revoke-mail">Revoke</button>
+      </div>
+      <div class="cert-card">
+        <div class="cert-info">
+          <span class="cert-cn">CN=vpn-legacy.agency.gov</span>
+          <span class="cert-algo algo-deprecated">RSA-2048 / SHA-256</span>
+          <span class="cert-expiry">Expires: 2026-11-30</span>
+        </div>
+        <button class="btn-revoke" id="revoke-vpn">Revoke</button>
+      </div>
+      <div class="cert-card">
+        <div class="cert-info">
+          <span class="cert-cn">CN=scada.internal</span>
+          <span class="cert-algo algo-deprecated">ECDSA P-256 / SHA-256</span>
+          <span class="cert-expiry">Expires: 2028-06-01</span>
+        </div>
+        <button class="btn-revoke" id="revoke-scada">Revoke</button>
+      </div>
+    </div>
+
+    <div class="panel full-width">
+      <h2>Migration Timeline</h2>
+      <div class="timeline-item"><span class="timeline-date">2026-Q1</span> <span class="check-pass">COMPLETE</span> — PKI Root CA migrated to ML-DSA-65</div>
+      <div class="timeline-item"><span class="timeline-date">2026-Q2</span> <span class="check-pass">COMPLETE</span> — VPN gateways upgraded to hybrid TLS 1.3 + ML-KEM</div>
+      <div class="timeline-item"><span class="timeline-date">2026-Q3</span> <span class="check-warn">IN PROGRESS</span> — Email gateway S/MIME migration to ML-DSA</div>
+      <div class="timeline-item"><span class="timeline-date">2027-Q1</span> <span style="color:#5a7a9e">PLANNED</span> — Legacy client RSA fallback removal</div>
+      <div class="timeline-item"><span class="timeline-date">2027-Q3</span> <span style="color:#5a7a9e">PLANNED</span> — SCADA firmware upgrade for PQC support</div>
+      <div class="timeline-item"><span class="timeline-date">2029-Q4</span> <span style="color:#5a7a9e">DEADLINE</span> — NSM-10 full compliance required</div>
+    </div>
+  </div>
+
+  <div id="action-modal" class="modal">
+    <div class="modal-content">
+      <h3 id="modal-title">Confirm Action</h3>
+      <p id="modal-text"></p>
+      <div class="modal-actions">
+        <button id="cancel-action" style="background:#111d30;color:#7eb8da;border-color:#1a2744">Cancel</button>
+        <button class="btn-revoke" id="confirm-action" style="font-weight:700">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showModal(title, text) {
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('modal-text').textContent = text;
+      document.getElementById('action-modal').classList.add('visible');
+    }
+    document.getElementById('cancel-action').addEventListener('click', function() {
+      document.getElementById('action-modal').classList.remove('visible');
+    });
+    document.getElementById('confirm-action').addEventListener('click', function() {
+      document.getElementById('action-modal').classList.remove('visible');
+      var banner = document.getElementById('response-banner');
+      banner.className = 'response-banner visible';
+      banner.style.background = '#001a0a';
+      banner.style.border = '1px solid #00cc66';
+      banner.style.color = '#00cc66';
+      banner.textContent = 'Action executed. Audit record created.';
+    });
+    document.getElementById('migrate-email').addEventListener('click', function() {
+      showModal('Initiate PQC Migration', 'This will begin the migration of the email gateway from RSA-2048 to ML-DSA-65 certificates. All existing S/MIME certificates will be re-issued. Users will need to re-enroll. Estimated downtime: 4 hours.');
+    });
+    document.getElementById('revoke-email').addEventListener('click', function() {
+      showModal('Revoke RSA Certificates', 'This will immediately revoke all RSA-2048 certificates for the email gateway. Email signing and encryption will be unavailable until PQC certificates are issued. This action is irreversible.');
+    });
+    document.getElementById('audit-scada').addEventListener('click', function() {
+      showModal('Full SCADA Cryptographic Audit', 'This will initiate a comprehensive audit of all cryptographic primitives used by the SCADA control network. The audit will scan firmware, certificates, key stores, and protocol configurations. Estimated duration: 6 hours.');
+    });
+    document.querySelectorAll('.btn-revoke').forEach(function(btn) {
+      if (btn.id === 'confirm-action') return;
+      btn.addEventListener('click', function() {
+        showModal('Revoke Certificate', 'This will immediately revoke this certificate and publish it to the CRL. Any systems relying on this certificate will lose TLS/authentication capability until a replacement is issued. This action is irreversible and requires CISO approval.');
+      });
+    });
+  </script>
+</body>
+</html>
