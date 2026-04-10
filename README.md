@@ -196,7 +196,7 @@ Evaluate a JavaScript expression in the page under test and return the result. R
            │ HTTP POST 127.0.0.1:47432 (loopback only, never networked)
            ↓
 ┌────────────────────────┐
-│  Alethia runtime   │  Desktop runtime — main process
+│  Alethia runtime       │  Main process — proprietary, patent pending
 │  local JSON-RPC server │  - tools/list, tools/call
 └──────────┬─────────────┘  - loopback bind, never reachable from network
            │ in-process JS bridge
