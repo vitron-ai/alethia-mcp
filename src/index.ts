@@ -68,7 +68,7 @@ const debug = (...args: unknown[]): void => {
 // Auto-install: download, verify, extract, and spawn the headless runtime
 // ---------------------------------------------------------------------------
 
-const RUNTIME_VERSION = '0.1.0-alpha.1';
+const RUNTIME_VERSION = '0.1.0-alpha.2';
 const RUNTIME_DIR = join(homedir(), '.alethia', 'runtime');
 const RUNTIME_MARKER = join(RUNTIME_DIR, '.installed');
 const GITHUB_RELEASE_BASE = `https://github.com/vitron-ai/alethia/releases/download/v${RUNTIME_VERSION}`;
@@ -179,11 +179,19 @@ const ensureRuntime = async (): Promise<void> => {
     );
   }
 
-  // Check if already installed
+  // Check if already installed and up-to-date
   if (existsSync(RUNTIME_MARKER)) {
-    debug('runtime already installed, spawning');
-    await spawnRuntime();
-    return;
+    try {
+      const marker = JSON.parse(readFileSync(RUNTIME_MARKER, 'utf8')) as { version?: string };
+      if (marker.version === RUNTIME_VERSION) {
+        debug('runtime already installed and up-to-date, spawning');
+        await spawnRuntime();
+        return;
+      }
+      process.stderr.write(`[alethia] Installed runtime v${marker.version ?? 'unknown'} is outdated. Upgrading to v${RUNTIME_VERSION}...\n`);
+    } catch {
+      debug('could not read runtime marker, re-installing');
+    }
   }
 
   process.stderr.write(`[alethia] Runtime not found. Auto-installing v${RUNTIME_VERSION}...\n`);
@@ -616,6 +624,31 @@ const TOOLS = [
       'Re-enables tell() calls. The reset itself is logged in the audit trail for compliance review.',
     inputSchema: { type: 'object', properties: {} },
   },
+  {
+    name: 'alethia_screenshot',
+    description:
+      'Capture a PNG screenshot of the current page and return it as a base64-encoded image. ' +
+      'Use this to visually verify what the browser is showing after running test steps with alethia_tell.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'alethia_eval',
+    description:
+      'Evaluate a JavaScript expression in the page under test and return the result. ' +
+      'Runs in the context of the navigated page, not the Alethia host UI. ' +
+      'Use this for queries the NLP compiler cannot express — counting elements, reading computed styles, ' +
+      'checking localStorage, or any DOM inspection that needs raw JS.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        expression: {
+          type: 'string',
+          description: 'JavaScript expression to evaluate in the page context. Example: "document.querySelectorAll(\'li\').length"',
+        },
+      },
+      required: ['expression'],
+    },
+  },
 ] as const;
 
 // Map external tool names to the internal Electron RPC tool names
@@ -625,6 +658,8 @@ const TOOL_NAME_MAP: Record<string, string> = {
   alethia_status: 'alethia_status',
   alethia_activate_kill_switch: 'alethia_activate_kill_switch',
   alethia_reset_kill_switch: 'alethia_reset_kill_switch',
+  alethia_screenshot: 'alethia_screenshot',
+  alethia_eval: 'alethia_eval',
 };
 
 // ---------------------------------------------------------------------------
@@ -649,8 +684,16 @@ const validateToolArgs = (toolName: string, args: Record<string, unknown>): stri
         return `tool "${toolName}" requires "reason" to be a string when provided`;
       }
       return null;
+    case 'alethia_eval': {
+      const expression = args.expression;
+      if (typeof expression !== 'string') return `tool "${toolName}" requires "expression" to be a string`;
+      if (expression.trim().length === 0) return `tool "${toolName}" requires "expression" to be non-empty`;
+      if (expression.length > 50_000) return `tool "${toolName}" "expression" exceeds 50KB limit`;
+      return null;
+    }
     case 'alethia_status':
     case 'alethia_reset_kill_switch':
+    case 'alethia_screenshot':
       return null;
     default:
       return `unknown tool: ${toolName}`;
@@ -661,7 +704,11 @@ const validateToolArgs = (toolName: string, args: Record<string, unknown>): stri
 // MCP request handlers
 // ---------------------------------------------------------------------------
 
-const wrapMcpResult = (data: unknown, isError = false): { content: Array<{ type: 'text'; text: string }>; isError: boolean } => ({
+type McpContentBlock =
+  | { type: 'text'; text: string }
+  | { type: 'image'; data: string; mimeType: string };
+
+const wrapMcpResult = (data: unknown, isError = false): { content: McpContentBlock[]; isError: boolean } => ({
   content: [
     {
       type: 'text',
@@ -669,6 +716,21 @@ const wrapMcpResult = (data: unknown, isError = false): { content: Array<{ type:
     },
   ],
   isError,
+});
+
+const wrapMcpScreenshot = (result: Record<string, unknown>): { content: McpContentBlock[]; isError: boolean } => ({
+  content: [
+    {
+      type: 'image',
+      data: String(result.data ?? ''),
+      mimeType: 'image/png',
+    },
+    {
+      type: 'text',
+      text: JSON.stringify({ width: result.width, height: result.height, format: result.format }, null, 2),
+    },
+  ],
+  isError: false,
 });
 
 const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
@@ -739,6 +801,15 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
             jsonrpc: '2.0',
             id,
             result: wrapMcpResult(`Alethia runtime error: ${httpResponse.error.message}`, true),
+          };
+        }
+
+        // Screenshot responses get special MCP image content blocks
+        if (toolName === 'alethia_screenshot' && httpResponse.result && typeof httpResponse.result === 'object') {
+          return {
+            jsonrpc: '2.0',
+            id,
+            result: wrapMcpScreenshot(httpResponse.result as Record<string, unknown>),
           };
         }
 
