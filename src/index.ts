@@ -753,8 +753,8 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
     }
 
     if (method === 'notifications/initialized' || method === 'initialized') {
-      // No response expected for notifications, but return a stub for safety
-      return { jsonrpc: '2.0', id, result: {} };
+      // Notifications must not receive a response per MCP spec
+      return null as unknown as JsonRpcResponse;
     }
 
     if (method === 'tools/list') {
@@ -836,6 +836,11 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
       }
     }
 
+    // Any notification (no id) gets no response
+    if (method.startsWith('notifications/') || id === undefined) {
+      return null as unknown as JsonRpcResponse;
+    }
+
     // Unknown method — return MCP-style error
     return {
       jsonrpc: '2.0',
@@ -855,7 +860,8 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
 // Stdio transport — newline-delimited JSON-RPC
 // ---------------------------------------------------------------------------
 
-const write = (response: JsonRpcResponse): void => {
+const write = (response: JsonRpcResponse | null): void => {
+  if (!response) return; // Notifications get no response
   process.stdout.write(`${JSON.stringify(response)}\n`);
 };
 
