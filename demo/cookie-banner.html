@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Blog Post</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 2rem; }
+    h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+    .meta { color: #64748b; margin-bottom: 1.5rem; font-size: 0.9rem; }
+    article { max-width: 640px; line-height: 1.7; }
+    article p { margin-bottom: 1rem; color: #cbd5e1; }
+    .cookie-banner { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; border-top: 1px solid #334155; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; z-index: 100; }
+    .cookie-banner p { color: #94a3b8; font-size: 0.9rem; margin: 0; }
+    .cookie-banner button { padding: 0.5rem 1.2rem; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; }
+    .accept-btn { background: #3b82f6; color: white; }
+    .decline-btn { background: #334155; color: #94a3b8; }
+    .hidden { display: none; }
+    .newsletter { border: 1px solid #334155; border-radius: 12px; padding: 1.2rem; background: #1e293b; margin-top: 2rem; }
+    .newsletter h3 { margin-bottom: 0.5rem; }
+    .newsletter input { padding: 0.5rem; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; margin-right: 0.5rem; }
+    .newsletter button { padding: 0.5rem 1rem; border-radius: 6px; border: none; background: #3b82f6; color: white; cursor: pointer; }
+    .subscribed { color: #34d399; font-weight: 600; display: none; }
+  </style>
+</head>
+<body>
+  <article>
+    <h1>Why Zero-IPC Matters for AI Agents</h1>
+    <p class="meta">April 10, 2026 · 5 min read</p>
+    <p>When an AI agent generates code and needs to verify it works, every millisecond of automation latency compounds. CDP-based tools add ~580ms of marshalling tax per assertion.</p>
+    <p>Zero-IPC eliminates the process boundary between the automation driver and the DOM. The driver touches the DOM the same way the page's own JavaScript does — synchronously, in-process, with no serialization overhead.</p>
+    <p>The result: ~13ms per step instead of ~580ms. That's not an optimization — it's a different architecture.</p>
+    <div class="newsletter">
+      <h3>Subscribe to updates</h3>
+      <div id="subscribe-form">
+        <input id="email" type="email" placeholder="you@example.com" aria-label="Email address" />
+        <button id="subscribe-btn" type="button">Subscribe</button>
+      </div>
+      <p id="subscribed" class="subscribed">Subscribed! Check your inbox.</p>
+    </div>
+  </article>
+
+  <div id="cookie-banner" class="cookie-banner">
+    <p>We use cookies to improve your experience. No tracking, no ads.</p>
+    <div>
+      <button class="decline-btn" id="decline-cookies" type="button">Decline</button>
+      <button class="accept-btn" id="accept-cookies" type="button">Accept</button>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('accept-cookies').addEventListener('click', function() {
+      document.getElementById('cookie-banner').classList.add('hidden');
+    });
+    document.getElementById('decline-cookies').addEventListener('click', function() {
+      document.getElementById('cookie-banner').classList.add('hidden');
+    });
+    document.getElementById('subscribe-btn').addEventListener('click', function() {
+      var email = document.getElementById('email').value;
+      if (email && email.includes('@')) {
+        document.getElementById('subscribe-form').style.display = 'none';
+        document.getElementById('subscribed').style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
