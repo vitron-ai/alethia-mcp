@@ -127,9 +127,9 @@ After saving the config, restart your MCP client.
 
 Once configured, your agent has the full Alethia tool suite available. The most common one:
 
-> *"Use alethia_tell to navigate to file:///path/to/app.html, click the Sign In button, and assert the dashboard heading is visible."*
+> *"Use alethia_tell to navigate to the incident response page, assert the critical alert is visible, click Acknowledge, and assert it changed to Acknowledged."*
 
-The agent calls `alethia_tell` with plain English. Alethia compiles it to Action IR, runs each step through the VITRON-EA1 policy gate, and returns a `PlanRun` with per-step results, DOM diffs, a semantic page snapshot, policy audit records, and a SHA-256 integrity hash.
+The agent calls `alethia_tell` with plain English. Alethia compiles it to Action IR, runs each step through the VITRON-EA1 policy gate, and returns per-step results, DOM diffs (what changed), a semantic page snapshot, policy audit records, and a SHA-256 integrity hash.
 
 ---
 
@@ -166,10 +166,10 @@ Full prompts for each demo: [`demo/README.md`](./demo/README.md)
 Execute natural-language test instructions. The headline tool.
 
 ```
-nlp: "navigate to file:///path/to/app.html
-      type test@example.com into the email field
-      click Sign In
-      assert the dashboard heading is visible"
+nlp: "navigate to file:///path/to/demo/incident-response.html
+      assert CRITICAL INCIDENT ACTIVE is visible
+      click Acknowledge
+      assert Acknowledged is visible"
 ```
 
 Returns a `PlanRun`:
