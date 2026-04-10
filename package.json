@@ -1,7 +1,7 @@
 {
   "name": "@vitronai/alethia",
-  "version": "0.3.0",
-  "description": "MIT-licensed MCP bridge to the Alethia desktop runtime — the patent-pending zero-IPC E2E test runtime built for AI agents. 45x faster than Playwright on the localhost loop. Local-first, zero telemetry by default, opt-in cloud. Runtime is closed-source, patent-pending (US App 19/571,437); request access at gatekeeper@vitron.ai.",
+  "version": "0.3.1",
+  "description": "MIT-licensed MCP bridge to the Alethia desktop runtime — the patent-pending zero-IPC E2E test runtime built for AI agents. 45x faster than Playwright on the localhost loop. Local-first, zero telemetry by default. Auto-installs the signed headless runtime on first use.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
