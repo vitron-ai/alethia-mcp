@@ -799,7 +799,8 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
             '- alethia_eval: Run JavaScript in the page under test.\n' +
             '- alethia_activate_kill_switch / alethia_reset_kill_switch: Emergency halt and resume.\n' +
             '- alethia_audit_wcag: WCAG 2.1 AA accessibility audit — 14 criteria.\n' +
-            '- alethia_audit_nist: NIST SP 800-53 security controls audit — 8 controls.\n\n' +
+            '- alethia_audit_nist: NIST SP 800-53 security controls audit — 8 controls.\n' +
+            '- alethia_export_session: Export signed evidence pack of everything the agent did this session.\n\n' +
             'Key capabilities:\n' +
             '- Smart assertions: on failure, returns near-matches, page context, and suggested fixes.\n' +
             '- Page readiness: auto-waits for loading indicators before assertions.\n' +
