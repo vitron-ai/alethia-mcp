@@ -682,6 +682,32 @@ const TOOLS = [
       'of everything the agent did. Designed for compliance review and chain-of-custody.',
     inputSchema: { type: 'object', properties: {} },
   },
+  {
+    name: 'alethia_tell_parallel',
+    description:
+      'Run multiple test flows concurrently — each against a different URL. ' +
+      'Takes an array of test specs, spawns a browser instance per spec, runs them in parallel, ' +
+      'and returns all results together. Use this to verify multiple pages simultaneously.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        specs: {
+          type: 'array',
+          description: 'Array of test specs. Each has "url" (file:// or http://localhost) and "nlp" (test steps).',
+          items: {
+            type: 'object',
+            properties: {
+              url: { type: 'string', description: 'URL to navigate to' },
+              nlp: { type: 'string', description: 'Plain English test steps' },
+              name: { type: 'string', description: 'Optional name for this spec' },
+            },
+            required: ['url', 'nlp'],
+          },
+        },
+      },
+      required: ['specs'],
+    },
+  },
 ] as const;
 
 // Map external tool names to the internal Electron RPC tool names
@@ -696,6 +722,7 @@ const TOOL_NAME_MAP: Record<string, string> = {
   alethia_audit_wcag: 'alethia_audit_wcag',
   alethia_audit_nist: 'alethia_audit_nist',
   alethia_export_session: 'alethia_export_session',
+  alethia_tell_parallel: 'alethia_tell_parallel',
 };
 
 // ---------------------------------------------------------------------------
@@ -733,6 +760,7 @@ const validateToolArgs = (toolName: string, args: Record<string, unknown>): stri
     case 'alethia_audit_wcag':
     case 'alethia_audit_nist':
     case 'alethia_export_session':
+    case 'alethia_tell_parallel':
       return null;
     default:
       return `unknown tool: ${toolName}`;
