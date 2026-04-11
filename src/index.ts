@@ -673,6 +673,15 @@ const TOOLS = [
       'Call after navigating with alethia_tell. Returns findings with control IDs and severity levels.',
     inputSchema: { type: 'object', properties: {} },
   },
+  {
+    name: 'alethia_export_session',
+    description:
+      'Export the full session recording as a signed evidence pack. Contains every tool call ' +
+      'made during this session with timestamps, inputs, outputs, policy decisions, and a ' +
+      'SHA-256 integrity hash. Use at the end of an agent loop to produce cryptographic proof ' +
+      'of everything the agent did. Designed for compliance review and chain-of-custody.',
+    inputSchema: { type: 'object', properties: {} },
+  },
 ] as const;
 
 // Map external tool names to the internal Electron RPC tool names
@@ -686,6 +695,7 @@ const TOOL_NAME_MAP: Record<string, string> = {
   alethia_eval: 'alethia_eval',
   alethia_audit_wcag: 'alethia_audit_wcag',
   alethia_audit_nist: 'alethia_audit_nist',
+  alethia_export_session: 'alethia_export_session',
 };
 
 // ---------------------------------------------------------------------------
@@ -722,6 +732,7 @@ const validateToolArgs = (toolName: string, args: Record<string, unknown>): stri
     case 'alethia_screenshot':
     case 'alethia_audit_wcag':
     case 'alethia_audit_nist':
+    case 'alethia_export_session':
       return null;
     default:
       return `unknown tool: ${toolName}`;

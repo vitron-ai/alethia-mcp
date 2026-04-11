@@ -31,6 +31,7 @@ const EXPECTED_TOOLS = [
   'alethia_eval',
   'alethia_audit_wcag',
   'alethia_audit_nist',
+  'alethia_export_session',
 ];
 
 // ---------------------------------------------------------------------------
@@ -153,7 +154,7 @@ test('initialize returns correct protocol version and server info', async () => 
   assert.ok(r.result.capabilities?.tools, 'should declare tools capability');
 });
 
-test('tools/list returns the expected 9 MCP tools', async () => {
+test('tools/list returns the expected 10 MCP tools', async () => {
   const responses = await sendRpc([
     { jsonrpc: '2.0', method: 'tools/list', id: 1 },
   ]);
