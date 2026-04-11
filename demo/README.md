@@ -65,6 +65,8 @@ Use alethia_tell to navigate to file:///PATH/demo/nist-compliance.html. Assert "
 
 ## Setup
 
+### Option 1: Local files (no server needed)
+
 Replace `PATH` with the actual path to this folder:
 
 ```bash
@@ -74,3 +76,22 @@ ls $(npm root -g)/@vitronai/alethia/demo/
 # Or clone
 git clone https://github.com/vitron-ai/alethia-mcp.git
 ```
+
+### Option 2: Localhost (real HTTP server)
+
+All demos work on localhost too — just serve the demo folder:
+
+```bash
+cd $(npm root -g)/@vitronai/alethia/demo
+python3 -m http.server 8765
+```
+
+Then use `http://localhost:8765/` instead of `file:///PATH/demo/` in any prompt:
+
+```
+Use alethia_tell to navigate to http://localhost:8765/incident-response.html,
+assert CRITICAL INCIDENT ACTIVE is visible, click Acknowledge, and assert
+Acknowledged is visible.
+```
+
+This proves Alethia drives real HTTP servers — not just static files.
