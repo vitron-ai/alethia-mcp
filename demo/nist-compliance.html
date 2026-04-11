@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Federal Asset Management System</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'SF Mono', monospace; background: #080c14; color: #c8d6e5; min-height: 100vh; padding: 1.5rem; font-size: 0.85rem; }
+    h1 { font-size: 1.2rem; color: #e2e8f0; margin-bottom: 0.3rem; }
+    .subtitle { color: #5a7a9e; font-size: 0.8rem; margin-bottom: 1.5rem; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .panel { background: #0d1525; border: 1px solid #1a2744; border-radius: 8px; padding: 1rem; }
+    .panel h2 { font-size: 0.85rem; color: #7eb8da; margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    .full-width { grid-column: 1 / -1; }
+    .finding { padding: 0.5rem 0; border-bottom: 1px solid #111d30; }
+    .finding:last-child { border-bottom: none; }
+    .finding-control { font-size: 0.7rem; color: #ff8c00; font-weight: 700; }
+    .finding-desc { color: #c8d6e5; margin-top: 0.15rem; }
+    .expect-flag { font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 3px; background: #1a0808; color: #ff4444; border: 1px solid #ff4444; display: inline-block; margin-top: 0.3rem; }
+    .expect-pass { font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 3px; background: #001a0a; color: #00cc66; border: 1px solid #00cc66; display: inline-block; margin-top: 0.3rem; }
+    input, select { padding: 0.35rem 0.5rem; border-radius: 4px; border: 1px solid #1a2744; background: #111d30; color: #e2e8f0; font: inherit; font-size: 0.8rem; width: 200px; margin: 0.2rem 0; display: block; }
+    button { padding: 0.35rem 0.7rem; border-radius: 4px; border: 1px solid #1a2744; background: #111d30; color: #7eb8da; cursor: pointer; font: inherit; font-size: 0.75rem; margin: 0.2rem 0; }
+    .error-leak { color: #ff4444; font-family: monospace; font-size: 0.75rem; background: #1a0808; padding: 0.5rem; border-radius: 4px; margin-top: 0.3rem; border: 1px solid #331111; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 0.5rem; }
+    th { text-align: left; padding: 0.4rem; color: #5a7a9e; border-bottom: 1px solid #1a2744; }
+    td { padding: 0.4rem; border-bottom: 1px solid #111d30; }
+    .score-bar { display: flex; gap: 1.5rem; padding: 0.8rem; background: #111d30; border-radius: 8px; border: 1px solid #1a2744; margin-bottom: 1rem; }
+    .score-label { color: #5a7a9e; font-size: 0.8rem; }
+    .score-value { font-size: 1.8rem; font-weight: 700; }
+    .score-bad { color: #ff4444; }
+  </style>
+</head>
+<body>
+  <h1>NIST 800-53 Compliance Audit — Negative Test</h1>
+  <p class="subtitle">This page deliberately violates NIST SP 800-53 Rev. 5 web application security controls. Alethia's compliance audit should flag all violations.</p>
+
+  <div class="score-bar">
+    <div><span class="score-label">Expected NIST findings:</span> <span class="score-value score-bad">6+</span></div>
+    <div><span class="score-label">Controls tested:</span> <span class="score-value" style="color:#7eb8da">7</span></div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>AC-7: No Login Attempt Limiting</h2>
+      <div class="finding">
+        <span class="finding-control">VIOLATION: AC-7</span>
+        <div class="finding-desc">Login form with no lockout after failed attempts</div>
+        <span class="expect-flag">SHOULD FLAG</span>
+      </div>
+      <form>
+        <input type="text" placeholder="Username" />
+        <input type="password" placeholder="Password" aria-label="Password" />
+        <button type="button">Sign In</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2>AC-8: No Security Banner</h2>
+      <div class="finding">
+        <span class="finding-control">VIOLATION: AC-8</span>
+        <div class="finding-desc">Federal system without system use notification or classification banner</div>
+        <span class="expect-flag">SHOULD FLAG</span>
+      </div>
+      <p style="color:#5a7a9e;font-size:0.75rem;margin-top:0.5rem">This page has no classification banner, no authorized use warning, and no consent notice — required for all federal information systems.</p>
+    </div>
+
+    <div class="panel">
+      <h2>AC-12: No Session Timeout</h2>
+      <div class="finding">
+        <span class="finding-control">VIOLATION: AC-12</span>
+        <div class="finding-desc">No session timeout or inactivity lock mechanism</div>
+        <span class="expect-flag">SHOULD FLAG</span>
+      </div>
+      <p style="color:#5a7a9e;font-size:0.75rem;margin-top:0.5rem">Sessions persist indefinitely. No meta refresh, no session timer, no inactivity warning. NIST requires automatic termination after a defined period.</p>
+    </div>
+
+    <div class="panel">
+      <h2>SI-10: Missing Input Validation</h2>
+      <div class="finding">
+        <span class="finding-control">VIOLATION: SI-10</span>
+        <div class="finding-desc">Form fields without validation constraints</div>
+        <span class="expect-flag">SHOULD FLAG</span>
+      </div>
+      <input type="email" placeholder="Email — no pattern, no required" />
+      <input type="tel" placeholder="Phone — no pattern, no maxlength" />
+      <input type="text" placeholder="SSN — no maxlength, no pattern" />
+      <input type="text" placeholder="Notes — unrestricted input" />
+    </div>
+
+    <div class="panel">
+      <h2>SI-11: Information Leakage in Errors</h2>
+      <div class="finding">
+        <span class="finding-control">VIOLATION: SI-11</span>
+        <div class="finding-desc">Error messages expose internal implementation details</div>
+        <span class="expect-flag">SHOULD FLAG</span>
+      </div>
+      <div class="error-leak" role="alert">
+        Error: Unhandled exception at line 247 in /app/controllers/UserController.js
+        SQL query failed: SELECT * FROM users WHERE id = '${input}'
+        Stack trace: at UserController.findById (UserController.js:247)
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>IA-6: Unmasked Password Fields</h2>
+      <div class="finding">
+        <span class="finding-control">VIOLATION: IA-6</span>
+        <div class="finding-desc">Credential fields not masked — passwords visible in plaintext</div>
+        <span class="expect-flag">SHOULD FLAG</span>
+      </div>
+      <input type="text" placeholder="API Secret Key" name="secret" aria-label="API Secret" />
+      <input type="text" placeholder="Database Password" name="password" aria-label="Database Password" />
+    </div>
+
+    <div class="panel full-width">
+      <h2>Compliant Controls (should NOT be flagged)</h2>
+      <table>
+        <thead><tr><th>Control</th><th>Implementation</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>SC-13</td><td>All forms use relative URLs (no insecure HTTP)</td><td style="color:#00cc66">PASS</td></tr>
+          <tr><td>AU-2</td><td>Audit log present on page</td><td style="color:#00cc66">PASS</td></tr>
+        </tbody>
+      </table>
+      <div class="audit-log" style="margin-top:0.5rem;font-size:0.7rem;color:#3a5570;padding:0.4rem;background:#0a0e14;border-radius:4px">
+        [2026-04-10T21:14:22Z] Page accessed by compliance-auditor | [2026-04-10T21:14:28Z] Audit scan initiated
+      </div>
+    </div>
+  </div>
+</body>
+</html>

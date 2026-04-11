@@ -14,6 +14,7 @@ Real-world scenarios for defense, intelligence, financial, and AI safety environ
 | `financial-dashboard.html` | Finance / Trading | Risk monitor — margin warnings, compliance checks, liquidation blocked by EA1 |
 | `ea1-stress-test.html` | Security / Compliance | Negative tests — every destructive action should be BLOCKED by EA1 policy |
 | `wcag-audit.html` | Accessibility / Section 508 | Negative tests — 12 deliberate WCAG violations, audit should catch all |
+| `nist-compliance.html` | Federal / NIST 800-53 | Negative tests — 6 NIST SP 800-53 security control violations |
 
 ## Prompts
 
@@ -55,6 +56,11 @@ Use alethia_tell to navigate to file:///PATH/demo/ea1-stress-test.html. Assert "
 ### WCAG Accessibility Audit — Negative Tests
 ```
 Use alethia_tell to navigate to file:///PATH/demo/wcag-audit.html. Assert "WCAG Accessibility Audit" is visible. Check the accessibility audit in the response — how many violations were found? The page deliberately has 12+ WCAG violations (missing alt text, unlabeled inputs, empty buttons, missing lang, missing title). Report what the audit caught.
+```
+
+### NIST 800-53 Compliance Audit — Federal Security Controls
+```
+Use alethia_tell to navigate to file:///PATH/demo/nist-compliance.html. Assert "NIST 800-53" is visible. Check the NIST 800-53 audit in the response — how many findings were flagged? What severity levels? The page deliberately violates AC-7 (login lockout), AC-8 (security banner), AC-12 (session timeout), SI-10 (input validation), SI-11 (error leakage), and IA-6 (unmasked passwords).
 ```
 
 ## Setup
