@@ -8,7 +8,7 @@ Alethia is a patent-pending, local-first E2E test runtime that runs the driver a
 npm install -g @vitronai/alethia
 ```
 
-The bridge auto-installs the signed headless runtime on first use. No signup, no email gate.
+The bridge auto-installs the signed headless runtime on first use. No signup, no email gate. Works with `file://` pages and `http://localhost` dev servers.
 
 ## MCP setup
 
