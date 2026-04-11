@@ -35,6 +35,8 @@ Add to your agent's MCP config (`.mcp.json`, Claude Code settings, Cursor MCP, e
 | `alethia_eval` | Evaluate a JS expression in the page under test. Escape hatch for raw DOM queries. |
 | `alethia_audit_wcag` | WCAG 2.1 AA accessibility audit — 14 criteria. Section 508 compliance. |
 | `alethia_audit_nist` | NIST SP 800-53 security controls audit — 8 controls (AC, IA, SI). |
+| `alethia_export_session` | Export signed evidence pack — SHA-256 hashed proof of agent behavior. |
+| `alethia_tell_parallel` | Run multiple test flows concurrently against different URLs. |
 
 ## How alethia_tell works
 

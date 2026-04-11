@@ -213,6 +213,12 @@ Run a WCAG 2.1 AA accessibility audit on the current page. Checks 14 criteria in
 ### `alethia_audit_nist`
 Run a NIST SP 800-53 Rev. 5 web application security controls audit on the current page. Checks 8 controls across 3 families: AC (login lockout, security banners, session timeout), IA (unmasked passwords, weak password constraints, MFA indicators), SI (input validation, error information leakage). Returns findings with control IDs, severity levels (CRITICAL/HIGH/MEDIUM/LOW), and metadata.
 
+### `alethia_export_session`
+Export the full session recording as a signed evidence pack. Contains every tool call made during this session with timestamps, inputs, outputs, policy decisions, runtime info, and a SHA-256 integrity hash over the entire record. Use at the end of an agent loop to produce cryptographic proof of everything the agent did. Designed for compliance review, audit trails, and chain-of-custody documentation.
+
+### `alethia_tell_parallel`
+Run multiple test flows concurrently — each against a different URL. Takes an array of test specs (url + nlp steps), spawns a browser instance per spec, runs them in parallel, and returns all results together. 3 pages in ~260ms vs ~700ms sequential. Scales linearly.
+
 ---
 
 ## Architecture
