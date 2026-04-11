@@ -33,6 +33,8 @@ Add to your agent's MCP config (`.mcp.json`, Claude Code settings, Cursor MCP, e
 | `alethia_reset_kill_switch` | Clear an active kill switch. Re-enables `tell()` calls. |
 | `alethia_screenshot` | Capture a PNG screenshot of the current page. Visual verification for agent loops. |
 | `alethia_eval` | Evaluate a JS expression in the page under test. Escape hatch for raw DOM queries. |
+| `alethia_audit_wcag` | WCAG 2.1 AA accessibility audit — 14 criteria. Section 508 compliance. |
+| `alethia_audit_nist` | NIST SP 800-53 security controls audit — 8 controls (AC, IA, SI). |
 
 ## How alethia_tell works
 

@@ -69,7 +69,7 @@ Expected:
 
 ```
 ✓ Connected. MCP tools available.
-  runtime version:  0.1.0-alpha.1
+  runtime version:  0.1.0-alpha.4
   default profile:  controlled-web
   kill switch:      inactive
 ```
@@ -206,6 +206,12 @@ Capture a PNG screenshot of the current page and return it as a base64-encoded i
 
 ### `alethia_eval`
 Evaluate a JavaScript expression in the page under test and return the result. Runs in the context of the navigated page, not the Alethia host UI. Use this for queries the NLP compiler cannot express — counting elements, reading computed styles, checking localStorage, or any DOM inspection that needs raw JS.
+
+### `alethia_audit_wcag`
+Run a WCAG 2.1 AA accessibility audit on the current page. Checks 14 criteria including alt text, form labels, keyboard access, page title, lang attribute, link purpose, heading structure, and duplicate IDs. Returns findings with WCAG criterion numbers, severity levels (A/AA), and issue counts. Designed for Section 508 compliance workflows.
+
+### `alethia_audit_nist`
+Run a NIST SP 800-53 Rev. 5 web application security controls audit on the current page. Checks 8 controls across 3 families: AC (login lockout, security banners, session timeout), IA (unmasked passwords, weak password constraints, MFA indicators), SI (input validation, error information leakage). Returns findings with control IDs, severity levels (CRITICAL/HIGH/MEDIUM/LOW), and metadata.
 
 ---
 
