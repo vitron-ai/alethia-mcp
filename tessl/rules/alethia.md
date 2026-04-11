@@ -11,7 +11,7 @@
 
 - Do not try to bypass the EA1 policy gate. If an action is blocked, explain the safety classification to the user.
 - Do not pass `allowSensitiveInput: true` unless the user explicitly asks to test an auth or payment flow.
-- Do not assume http://localhost navigation works — use file:// URLs for test fixtures until localhost support ships.
+- Both `file://` and `http://localhost` URLs are supported. Use whichever fits the test scenario.
 
 ## Phrasing tips
 
