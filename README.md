@@ -342,11 +342,11 @@ The bottom line: **what you install today does nothing on the network beyond you
 
 MIT — see [LICENSE](./LICENSE).
 
-The MIT license covers **this MCP bridge package only**. The underlying Alethia Core runtime is proprietary and closed-source.
+The MIT license covers **this MCP bridge package only**. The underlying The Alethia runtime runtime is proprietary and closed-source.
 
 ## Patent Notice
 
-Alethia Core practices a method that is the subject of:
+The Alethia runtime practices a method that is the subject of:
 
 - **U.S. Patent Application No. 19/571,437** (non-provisional)
 - Claiming priority to **U.S. Provisional Application No. 63/785,814** (filed April 9, 2025)
