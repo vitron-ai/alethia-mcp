@@ -654,6 +654,25 @@ const TOOLS = [
       required: ['expression'],
     },
   },
+  {
+    name: 'alethia_audit_wcag',
+    description:
+      'Run a WCAG 2.1 AA accessibility audit on the current page. Checks 14 criteria including ' +
+      'alt text, form labels, keyboard access, page title, lang attribute, link purpose, ' +
+      'heading structure, duplicate IDs, and more. Call after navigating with alethia_tell. ' +
+      'Returns findings with WCAG criterion numbers, severity levels, and issue counts.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'alethia_audit_nist',
+    description:
+      'Run a NIST SP 800-53 Rev. 5 web application security controls audit on the current page. ' +
+      'Checks 8 controls across 3 families: AC (login lockout, security banners, session timeout), ' +
+      'IA (unmasked passwords, weak password constraints, MFA indicators), ' +
+      'SI (input validation, error information leakage). ' +
+      'Call after navigating with alethia_tell. Returns findings with control IDs and severity levels.',
+    inputSchema: { type: 'object', properties: {} },
+  },
 ] as const;
 
 // Map external tool names to the internal Electron RPC tool names
@@ -665,6 +684,8 @@ const TOOL_NAME_MAP: Record<string, string> = {
   alethia_reset_kill_switch: 'alethia_reset_kill_switch',
   alethia_screenshot: 'alethia_screenshot',
   alethia_eval: 'alethia_eval',
+  alethia_audit_wcag: 'alethia_audit_wcag',
+  alethia_audit_nist: 'alethia_audit_nist',
 };
 
 // ---------------------------------------------------------------------------
@@ -699,6 +720,8 @@ const validateToolArgs = (toolName: string, args: Record<string, unknown>): stri
     case 'alethia_status':
     case 'alethia_reset_kill_switch':
     case 'alethia_screenshot':
+    case 'alethia_audit_wcag':
+    case 'alethia_audit_nist':
       return null;
     default:
       return `unknown tool: ${toolName}`;
@@ -763,7 +786,9 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
             '- alethia_status: Health check — version, policy profile, kill switch state.\n' +
             '- alethia_screenshot: Capture a PNG screenshot of the current page.\n' +
             '- alethia_eval: Run JavaScript in the page under test.\n' +
-            '- alethia_activate_kill_switch / alethia_reset_kill_switch: Emergency halt and resume.\n\n' +
+            '- alethia_activate_kill_switch / alethia_reset_kill_switch: Emergency halt and resume.\n' +
+            '- alethia_audit_wcag: WCAG 2.1 AA accessibility audit — 14 criteria.\n' +
+            '- alethia_audit_nist: NIST SP 800-53 security controls audit — 8 controls.\n\n' +
             'Key capabilities:\n' +
             '- Smart assertions: on failure, returns near-matches, page context, and suggested fixes.\n' +
             '- Page readiness: auto-waits for loading indicators before assertions.\n' +
