@@ -1,0 +1,8 @@
+{
+  "name": "alethia-mcp",
+  "dependencies": {
+    "vitron-ai/alethia": {
+      "version": "0.3.10"
+    }
+  }
+}
