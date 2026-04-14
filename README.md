@@ -123,17 +123,17 @@ Ready-to-use demo pages ship in the `demo/` folder. Start with the Claude Code d
 Paste this into Claude Code:
 
 ```
-Use alethia_serve_demo to start the demo server.
-Then use alethia_tell to navigate to the claude-code-app page.
-Assert "TaskFlow" is visible. Type dev@company.com into the
-"you@company.com" field. Type Engineering into the "Your team
-name" field. Click Sign in. Assert "Signed in as" is visible.
-Type "Deploy to production" into the "Add a new task" field.
-Click Add. Assert "Deploy to production" is visible.
-Click Delete and report what EA1 decides.
+Use alethia_serve_demo to start the demo server. Tell me the URL
+for claude-code-app.html so I can open it in the preview panel.
+Then use alethia_tell to navigate to that URL. Assert "TaskFlow"
+is visible. Type dev@company.com into the "you@company.com" field.
+Type Engineering into the "Your team name" field. Click Sign in.
+Assert "Signed in as" is visible. Type "Deploy to production" into
+the "Add a new task" field. Click Add. Assert "Deploy to production"
+is visible. Click Delete and report what EA1 decides.
 ```
 
-The agent serves the demo on localhost, drives it with plain English, and EA1 blocks the delete. Open the localhost URL in Claude Code's preview panel to watch it live.
+The agent starts a localhost server, gives you the URL to open in the preview panel, then drives the app. Watch clicks and form fills happen live as EA1 blocks the delete.
 
 ### More scenarios
 
