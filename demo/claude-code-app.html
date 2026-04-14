@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>TaskFlow — AI-Generated Task Manager</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e4e4e7; min-height: 100vh; }
+    .app { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .app-header { margin-bottom: 2rem; }
+    .app-header h1 { font-size: 1.5rem; font-weight: 700; color: #fafafa; }
+    .app-header p { color: #71717a; font-size: 0.85rem; margin-top: 0.3rem; }
+    .generated-badge { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.7rem; border-radius: 999px; border: 1px solid #27272a; background: #18181b; color: #a1a1aa; font-size: 0.72rem; margin-top: 0.6rem; }
+    .generated-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #22c55e; }
+
+    /* Auth */
+    .auth-card { background: #18181b; border: 1px solid #27272a; border-radius: 12px; padding: 2rem; max-width: 380px; margin: 4rem auto; }
+    .auth-card h2 { font-size: 1.1rem; color: #fafafa; margin-bottom: 1.2rem; }
+    .field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 1rem; }
+    .field label { font-size: 0.78rem; color: #a1a1aa; }
+    .field input { padding: 0.55rem 0.75rem; border-radius: 8px; border: 1px solid #27272a; background: #09090b; color: #fafafa; font: inherit; font-size: 0.88rem; outline: none; }
+    .field input:focus { border-color: #3b82f6; }
+    .btn { padding: 0.55rem 1rem; border-radius: 8px; border: none; font: inherit; font-size: 0.85rem; cursor: pointer; font-weight: 600; }
+    .btn-primary { background: #3b82f6; color: #fff; width: 100%; }
+    .btn-primary:hover { background: #2563eb; }
+    .error-msg { color: #ef4444; font-size: 0.78rem; margin-top: 0.5rem; display: none; }
+
+    /* Dashboard */
+    .dashboard { display: none; }
+    .dashboard.active { display: block; }
+    .auth-card.hidden { display: none; }
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+    .stat-card { background: #18181b; border: 1px solid #27272a; border-radius: 10px; padding: 1rem; }
+    .stat-value { font-size: 1.6rem; font-weight: 700; color: #fafafa; }
+    .stat-label { font-size: 0.72rem; color: #71717a; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.2rem; }
+    .stat-card--active .stat-value { color: #3b82f6; }
+    .stat-card--done .stat-value { color: #22c55e; }
+    .stat-card--overdue .stat-value { color: #ef4444; }
+
+    /* Task form */
+    .add-task { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+    .add-task input { flex: 1; padding: 0.55rem 0.75rem; border-radius: 8px; border: 1px solid #27272a; background: #18181b; color: #fafafa; font: inherit; font-size: 0.85rem; outline: none; }
+    .add-task input:focus { border-color: #3b82f6; }
+    .btn-add { background: #22c55e; color: #fff; }
+    .btn-add:hover { background: #16a34a; }
+
+    /* Task list */
+    .task-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+    .task-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; background: #18181b; border: 1px solid #27272a; border-radius: 10px; }
+    .task-check { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #3f3f46; background: transparent; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .task-check:hover { border-color: #22c55e; }
+    .task-check.done { background: #22c55e; border-color: #22c55e; }
+    .task-check.done::after { content: '\2713'; color: #fff; font-size: 0.65rem; font-weight: 700; }
+    .task-text { flex: 1; font-size: 0.88rem; }
+    .task-text.done { text-decoration: line-through; color: #52525b; }
+    .task-priority { font-size: 0.68rem; padding: 0.15rem 0.5rem; border-radius: 999px; font-weight: 600; }
+    .priority-high { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .priority-medium { background: rgba(234, 179, 8, 0.15); color: #eab308; border: 1px solid rgba(234, 179, 8, 0.3); }
+    .priority-low { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .btn-delete { background: none; border: 1px solid #27272a; color: #71717a; font-size: 0.75rem; padding: 0.3rem 0.5rem; border-radius: 6px; }
+    .btn-delete:hover { border-color: #ef4444; color: #ef4444; }
+    .empty-state { text-align: center; padding: 2rem; color: #52525b; font-size: 0.88rem; }
+    .user-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #27272a; }
+    .user-bar span { color: #a1a1aa; font-size: 0.82rem; }
+    .btn-logout { background: none; border: 1px solid #27272a; color: #a1a1aa; font-size: 0.78rem; padding: 0.35rem 0.7rem; border-radius: 6px; }
+    .btn-logout:hover { border-color: #ef4444; color: #ef4444; }
+    .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; padding: 0.65rem 1rem; border-radius: 8px; background: #22c55e; color: #fff; font-size: 0.82rem; font-weight: 600; display: none; z-index: 10; }
+    .toast.show { display: block; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="app-header">
+      <h1>TaskFlow</h1>
+      <p>A simple task manager for your team.</p>
+      <div class="generated-badge">Generated by Claude Code</div>
+    </div>
+
+    <!-- Login -->
+    <div class="auth-card" id="auth">
+      <h2>Sign in</h2>
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="you@company.com" />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Enter password" />
+      </div>
+      <button class="btn btn-primary" id="signin-btn" onclick="handleSignIn()">Sign in</button>
+      <p class="error-msg" id="error-msg">Invalid email or password.</p>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard" id="dashboard">
+      <div class="user-bar">
+        <span>Signed in as <strong id="user-email"></strong></span>
+        <button class="btn-logout" onclick="handleLogout()">Sign out</button>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card stat-card--active">
+          <div class="stat-value" id="stat-active">3</div>
+          <div class="stat-label">Active</div>
+        </div>
+        <div class="stat-card stat-card--done">
+          <div class="stat-value" id="stat-done">0</div>
+          <div class="stat-label">Completed</div>
+        </div>
+        <div class="stat-card stat-card--overdue">
+          <div class="stat-value" id="stat-overdue">1</div>
+          <div class="stat-label">Overdue</div>
+        </div>
+      </div>
+
+      <div class="add-task">
+        <input type="text" id="new-task" placeholder="Add a new task..." />
+        <button class="btn btn-add" onclick="addTask()">Add</button>
+      </div>
+
+      <ul class="task-list" id="task-list">
+        <li class="task-item">
+          <div class="task-check" onclick="toggleTask(this)"></div>
+          <span class="task-text">Set up CI/CD pipeline for staging</span>
+          <span class="task-priority priority-high">High</span>
+          <button class="btn-delete" onclick="deleteTask(this)">Delete</button>
+        </li>
+        <li class="task-item">
+          <div class="task-check" onclick="toggleTask(this)"></div>
+          <span class="task-text">Write API docs for /users endpoint</span>
+          <span class="task-priority priority-medium">Medium</span>
+          <button class="btn-delete" onclick="deleteTask(this)">Delete</button>
+        </li>
+        <li class="task-item">
+          <div class="task-check" onclick="toggleTask(this)"></div>
+          <span class="task-text">Review pull request #142</span>
+          <span class="task-priority priority-low">Low</span>
+          <button class="btn-delete" onclick="deleteTask(this)">Delete</button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <script>
+    function handleSignIn() {
+      var email = document.getElementById('email').value.trim();
+      var pw = document.getElementById('password').value;
+      var err = document.getElementById('error-msg');
+      if (!email || !pw) { err.style.display = 'block'; err.textContent = 'Please fill in all fields.'; return; }
+      if (!email.includes('@')) { err.style.display = 'block'; err.textContent = 'Invalid email address.'; return; }
+      err.style.display = 'none';
+      document.getElementById('auth').classList.add('hidden');
+      document.getElementById('dashboard').classList.add('active');
+      document.getElementById('user-email').textContent = email;
+      showToast('Welcome back!');
+    }
+
+    function handleLogout() {
+      document.getElementById('dashboard').classList.remove('active');
+      document.getElementById('auth').classList.remove('hidden');
+      document.getElementById('email').value = '';
+      document.getElementById('password').value = '';
+    }
+
+    function addTask() {
+      var input = document.getElementById('new-task');
+      var text = input.value.trim();
+      if (!text) return;
+      var list = document.getElementById('task-list');
+      var li = document.createElement('li');
+      li.className = 'task-item';
+      li.innerHTML = '<div class="task-check" onclick="toggleTask(this)"></div>' +
+        '<span class="task-text">' + text.replace(/</g, '&lt;') + '</span>' +
+        '<span class="task-priority priority-medium">Medium</span>' +
+        '<button class="btn-delete" onclick="deleteTask(this)">Delete</button>';
+      list.appendChild(li);
+      input.value = '';
+      updateStats();
+      showToast('Task added');
+    }
+
+    function toggleTask(el) {
+      el.classList.toggle('done');
+      var txt = el.nextElementSibling;
+      txt.classList.toggle('done');
+      updateStats();
+    }
+
+    function deleteTask(el) {
+      var item = el.closest('.task-item');
+      item.remove();
+      updateStats();
+      showToast('Task deleted');
+    }
+
+    function updateStats() {
+      var items = document.querySelectorAll('.task-item');
+      var done = document.querySelectorAll('.task-check.done').length;
+      var active = items.length - done;
+      document.getElementById('stat-active').textContent = active;
+      document.getElementById('stat-done').textContent = done;
+    }
+
+    function showToast(msg) {
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(function() { t.classList.remove('show'); }, 2000);
+    }
+  </script>
+</body>
+</html>
