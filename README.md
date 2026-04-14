@@ -48,16 +48,6 @@ alethia-mcp --health-check
 ```json
 {
   "mcpServers": {
-    "alethia": { "command": "alethia-mcp" }
-  }
-}
-```
-
-**Want to watch the agent drive your app?** Add visible mode and highlights:
-
-```json
-{
-  "mcpServers": {
     "alethia": {
       "command": "alethia-mcp",
       "env": {
@@ -69,7 +59,7 @@ alethia-mcp --health-check
 }
 ```
 
-The Alethia browser window opens alongside your agent. Elements flash green (click/assert), blue (type), and red (EA1 block) as each step executes.
+The Alethia browser window opens alongside your agent with live step highlights. Elements flash green (click/assert), blue (type), and red (EA1 block). Remove the `env` block for headless mode.
 
 ### Cursor
 
