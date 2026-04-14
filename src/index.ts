@@ -550,9 +550,9 @@ const TOOLS = [
       'Compiles to Action IR, runs through the VITRON-EA1 fail-closed policy gate, executes step-by-step ' +
       'with synchronous DOM access (no CDP marshalling), and returns a PlanRun with per-step results, ' +
       'policy audit records, and a SHA-256 integrity hash. ' +
-      'Default profile is "controlled-web" — destructive actions (delete, purchase, transfer) are blocked unless ' +
-      'the caller explicitly opts into "open-web". Sensitive input (passwords, credit cards, SSN) is blocked ' +
-      'in all profiles unless allowSensitiveInput is true. ' +
+      'Default profile is "controlled-web" — destructive actions (delete, purchase, transfer, isolate, liquidate, revoke, halt, etc.) are blocked. ' +
+      'The policy profile cannot be changed per-call — it is enforced by the runtime. Sensitive input (passwords, credit cards, SSN) is blocked ' +
+      'unless allowSensitiveInput is true. ' +
       '~13ms per step on average — 45x faster than Playwright on the localhost loop.',
     inputSchema: {
       type: 'object',
@@ -568,11 +568,6 @@ const TOOLS = [
         allowSensitiveInput: {
           type: 'boolean',
           description: 'Set to true to allow typing into password, token, credit card, and other sensitive fields. Only use for legitimate auth or payment flow tests.',
-        },
-        profile: {
-          type: 'string',
-          description: 'EA1 policy profile: "strict-local" (most restrictive), "controlled-web" (default — blocks destructive actions), or "open-web" (allows all actions).',
-          enum: ['strict-local', 'controlled-web', 'open-web'],
         },
       },
       required: ['nlp'],
@@ -874,11 +869,15 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
       }
 
       const doCall = async (): Promise<JsonRpcResponse> => {
+        // Strip profile from args — agents must not override the EA1 policy.
+        // The runtime enforces controlled-web by default; profile switching
+        // requires human configuration, not per-call agent override.
+        const { profile: _stripped, ...safeArgs } = args;
         const httpResponse = await callAlethia({
           jsonrpc: '2.0',
           id: 1,
           method: 'tools/call',
-          params: { name: internalName, arguments: args },
+          params: { name: internalName, arguments: safeArgs },
         });
 
         if (httpResponse.error) {
