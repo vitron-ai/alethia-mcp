@@ -176,6 +176,7 @@ alethia-mcp --debug          Run with debug logging on stderr
 | `ALETHIA_PORT` | `47432` | Port of the Alethia runtime |
 | `ALETHIA_TIMEOUT_MS` | `60000` | Per-request timeout in milliseconds |
 | `ALETHIA_DEBUG` | (unset) | Set to `1` for debug logging on stderr |
+| `ALETHIA_VISIBLE` | (unset) | Set to `1` to show the browser window. Watch the agent drive your app in real time. |
 
 ---
 

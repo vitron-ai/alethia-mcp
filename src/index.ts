@@ -260,9 +260,10 @@ const spawnRuntime = async (): Promise<void> => {
     try { chmodSync(exe, 0o755); } catch { /* best effort */ }
   }
 
-  process.stderr.write('[alethia] Spawning headless runtime...\n');
-  runtimeProcess = spawn(exe, ['--headless'], {
-    env: { ...process.env, ALETHIA_HEADLESS: '1' },
+  const visible = process.env.ALETHIA_VISIBLE === '1' || process.env.ALETHIA_VISIBLE === 'true';
+  process.stderr.write(`[alethia] Spawning runtime (${visible ? 'visible' : 'headless'})...\n`);
+  runtimeProcess = spawn(exe, visible ? [] : ['--headless'], {
+    env: { ...process.env, ...(visible ? {} : { ALETHIA_HEADLESS: '1' }) },
     stdio: 'ignore',
     detached: false,
   });
