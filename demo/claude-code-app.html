@@ -83,8 +83,8 @@
         <input type="email" id="email" placeholder="you@company.com" />
       </div>
       <div class="field">
-        <label for="password">Password</label>
-        <input type="password" id="password" placeholder="Enter password" />
+        <label for="team">Team</label>
+        <input type="text" id="team" placeholder="Your team name" />
       </div>
       <button class="btn btn-primary" id="signin-btn" onclick="handleSignIn()">Sign in</button>
       <p class="error-msg" id="error-msg">Invalid email or password.</p>
@@ -145,9 +145,9 @@
   <script>
     function handleSignIn() {
       var email = document.getElementById('email').value.trim();
-      var pw = document.getElementById('password').value;
+      var team = document.getElementById('team').value.trim();
       var err = document.getElementById('error-msg');
-      if (!email || !pw) { err.style.display = 'block'; err.textContent = 'Please fill in all fields.'; return; }
+      if (!email || !team) { err.style.display = 'block'; err.textContent = 'Please fill in all fields.'; return; }
       if (!email.includes('@')) { err.style.display = 'block'; err.textContent = 'Invalid email address.'; return; }
       err.style.display = 'none';
       document.getElementById('auth').classList.add('hidden');
@@ -160,7 +160,7 @@
       document.getElementById('dashboard').classList.remove('active');
       document.getElementById('auth').classList.remove('hidden');
       document.getElementById('email').value = '';
-      document.getElementById('password').value = '';
+      document.getElementById('team').value = '';
     }
 
     function addTask() {
