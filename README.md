@@ -53,6 +53,24 @@ alethia-mcp --health-check
 }
 ```
 
+**Want to watch the agent drive your app?** Add visible mode and highlights:
+
+```json
+{
+  "mcpServers": {
+    "alethia": {
+      "command": "alethia-mcp",
+      "env": {
+        "ALETHIA_VISIBLE": "1",
+        "ALETHIA_HIGHLIGHTS": "1"
+      }
+    }
+  }
+}
+```
+
+The Alethia browser window opens alongside your agent. Elements flash green (click/assert), blue (type), and red (EA1 block) as each step executes.
+
 ### Cursor
 
 Cursor → Settings → MCP → Add server:
