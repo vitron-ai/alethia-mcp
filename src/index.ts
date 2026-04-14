@@ -21,7 +21,7 @@
 
 import http from 'node:http';
 import https from 'node:https';
-import { readFileSync, existsSync, mkdirSync, writeFileSync, createWriteStream, chmodSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync, createWriteStream, chmodSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
 import { createHash, createPublicKey, verify as cryptoVerify } from 'node:crypto';
@@ -61,6 +61,76 @@ const DEBUG = process.env.ALETHIA_DEBUG === '1' || process.argv.includes('--debu
 const debug = (...args: unknown[]): void => {
   if (DEBUG) {
     process.stderr.write(`[alethia-mcp] ${args.map(String).join(' ')}\n`);
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Demo server — serves demo/ files on localhost for preview panels
+// ---------------------------------------------------------------------------
+
+let demoServer: http.Server | null = null;
+let demoServerPort: number | null = null;
+
+const DEMO_DIR = resolve(__dirname, '..', 'demo');
+
+const MIME_TYPES: Record<string, string> = {
+  '.html': 'text/html',
+  '.css': 'text/css',
+  '.js': 'application/javascript',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+};
+
+const startDemoServer = (): Promise<{ port: number; url: string; pages: string[] }> => {
+  if (demoServer && demoServerPort) {
+    const pages = getDemoPages();
+    return Promise.resolve({ port: demoServerPort, url: `http://127.0.0.1:${demoServerPort}`, pages });
+  }
+
+  return new Promise((resolveStart, rejectStart) => {
+    const server = http.createServer((req, res) => {
+      const urlPath = (req.url ?? '/').split('?')[0];
+      const safePath = urlPath.replace(/\.\./g, '').replace(/^\/+/, '');
+      const filePath = join(DEMO_DIR, safePath || 'index.html');
+
+      if (!filePath.startsWith(DEMO_DIR)) {
+        res.writeHead(403).end('Forbidden');
+        return;
+      }
+
+      try {
+        const data = readFileSync(filePath);
+        const ext = '.' + (filePath.split('.').pop() ?? 'html');
+        res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] ?? 'application/octet-stream' });
+        res.end(data);
+      } catch {
+        res.writeHead(404).end('Not found');
+      }
+    });
+
+    server.listen(0, '127.0.0.1', () => {
+      const addr = server.address();
+      if (!addr || typeof addr === 'string') {
+        rejectStart(new Error('Demo server failed to start'));
+        return;
+      }
+      demoServer = server;
+      demoServerPort = addr.port;
+      const pages = getDemoPages();
+      debug(`demo server listening on 127.0.0.1:${addr.port}`);
+      resolveStart({ port: addr.port, url: `http://127.0.0.1:${addr.port}`, pages });
+    });
+
+    server.on('error', rejectStart);
+  });
+};
+
+const getDemoPages = (): string[] => {
+  try {
+    return readdirSync(DEMO_DIR).filter(f => f.endsWith('.html')).sort();
+  } catch {
+    return [];
   }
 };
 
@@ -704,6 +774,15 @@ const TOOLS = [
       required: ['specs'],
     },
   },
+  {
+    name: 'alethia_serve_demo',
+    description:
+      'Start a local HTTP server for the built-in Alethia demo pages and return the base URL. ' +
+      'Use this to serve demo pages on localhost so they appear in preview panels (Claude Code, VS Code, etc.). ' +
+      'The server runs on a random available port on 127.0.0.1. Call this before alethia_tell to get a localhost URL ' +
+      'instead of a file:// path. Returns the base URL and a list of available demo pages.',
+    inputSchema: { type: 'object', properties: {} },
+  },
 ] as const;
 
 // Map external tool names to the internal Electron RPC tool names
@@ -824,7 +903,8 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
             '- alethia_activate_kill_switch / alethia_reset_kill_switch: Emergency halt and resume.\n' +
             '- alethia_audit_wcag: WCAG 2.1 AA accessibility audit — 14 criteria.\n' +
             '- alethia_audit_nist: NIST SP 800-53 security controls audit — 8 controls.\n' +
-            '- alethia_export_session: Export signed evidence pack of everything the agent did this session.\n\n' +
+            '- alethia_export_session: Export signed evidence pack of everything the agent did this session.\n' +
+            '- alethia_serve_demo: Start a localhost server for built-in demo pages. Opens in preview panels.\n\n' +
             'Key capabilities:\n' +
             '- Smart assertions: on failure, returns near-matches, page context, and suggested fixes.\n' +
             '- Page readiness: auto-waits for loading indicators before assertions.\n' +
@@ -851,12 +931,31 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
       const toolName = String(params.name ?? '');
       const args = (params.arguments ?? {}) as Record<string, unknown>;
 
+      // alethia_serve_demo is handled locally — not forwarded to the runtime.
+      if (toolName === 'alethia_serve_demo') {
+        try {
+          const { port, url, pages } = await startDemoServer();
+          const pageList = pages.map(p => `  ${url}/${p}`).join('\n');
+          return {
+            jsonrpc: '2.0',
+            id,
+            result: wrapMcpResult(
+              `Demo server running on ${url}\n\nAvailable pages:\n${pageList}\n\n` +
+              `Open any URL above in the preview panel, then use alethia_tell to drive it.\n` +
+              `Example: alethia_tell "navigate to ${url}/${pages.find(p => p.includes('claude-code')) ?? pages[0]}"`,
+            ),
+          };
+        } catch (err) {
+          return { jsonrpc: '2.0', id, result: wrapMcpResult(`Failed to start demo server: ${err}`, true) };
+        }
+      }
+
       const internalName = TOOL_NAME_MAP[toolName];
       if (!internalName) {
         return {
           jsonrpc: '2.0',
           id,
-          result: wrapMcpResult(`Unknown tool: ${toolName}. Valid tools: ${Object.keys(TOOL_NAME_MAP).join(', ')}`, true),
+          result: wrapMcpResult(`Unknown tool: ${toolName}. Valid tools: ${Object.keys(TOOL_NAME_MAP).join(', ')}, alethia_serve_demo`, true),
         };
       }
 
