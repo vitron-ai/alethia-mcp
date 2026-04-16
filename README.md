@@ -1,20 +1,34 @@
 # @vitronai/alethia
 
-**The MCP bridge to Alethia** — AI agents test your app with plain English. ~13 ms per step, 45x faster than Playwright. Safe by default. Local-first. Zero telemetry.
+**Agent-native E2E with verifiable safety.** Alethia is the zero-IPC E2E runtime built for AI agents. Your agent writes the tests, runs them against a real browser, and proves destructive actions are blocked by a per-step policy gate — with a cryptographic audit trail and no cloud.
 
 [![npm version](https://img.shields.io/npm/v/@vitronai/alethia.svg?logo=npm&logoColor=white)](https://www.npmjs.com/package/@vitronai/alethia)
 [![License: MIT](https://img.shields.io/badge/bridge-MIT-green.svg?logo=opensourceinitiative&logoColor=white)](./LICENSE)
 [![Patent Pending](https://img.shields.io/badge/runtime-Patent%20Pending-blue.svg?logo=shield&logoColor=white)](#patent-notice)
 [![GitHub](https://img.shields.io/badge/source-GitHub-1f2328.svg?logo=github&logoColor=white)](https://github.com/vitron-ai/alethia-mcp)
-[![Tessl](https://img.shields.io/badge/Tessl-Registry-5fb4f7.svg)](https://tessl.io/registry/vitron-ai/alethia)
 
 ---
 
-## What this package does
+## What this package is
 
-This npm package is the **MIT-licensed MCP bridge** (~22 KB) — a thin stdio-to-HTTP relay. It auto-downloads the signed Alethia headless runtime on first use. No signup, no manual steps.
+This package is the **MIT-licensed MCP bridge** (~22 KB) — a thin stdio-to-HTTP relay that lets any MCP client (Claude Code, Cursor, Cline, Continue, Claude Desktop) drive the Alethia desktop runtime. It auto-downloads the signed runtime on first use.
 
-> **Note:** The MIT license on this bridge does **not** grant a patent license to the Alethia runtime (U.S. App. 19/571,437). Commercial use of the runtime may require a separate license. Contact **gatekeeper@vitron.ai**.
+The cockpit is an **oversight surface**, not an authoring IDE. Humans do not write tests in a GUI. Agents propose tests, run them, and prove safety — humans review the evidence.
+
+> **Patent notice.** The MIT license on this bridge does **not** grant a patent license to the Alethia runtime (U.S. Application No. 19/571,437). Commercial runtime use may require a separate license. Contact **gatekeeper@vitron.ai**.
+
+---
+
+## Why Alethia
+
+| | Cypress / Playwright | Alethia |
+|---|---|---|
+| Who writes the test | a human, in a `.spec` file | an AI agent, in plain English |
+| Per-step policy gate | none | VITRON-EA1 fail-closed, write-high blocked by default |
+| Destructive-action proof | manual review | `alethia_assert_safety` — automated, machine-readable |
+| Transport | CDP / WebDriver (IPC) | zero-IPC, in-process — ~13 ms/step |
+| Evidence | screenshots, videos | signed evidence pack with per-step integrity hashes |
+| Network | CI + cloud dashboards | offline-capable, loopback only, zero telemetry by default |
 
 ---
 
@@ -30,9 +44,11 @@ Verify:
 alethia-mcp --health-check
 ```
 
+Expected:
+
 ```
-✓ Connected. MCP tools available.
-  runtime version:  0.1.0-alpha.4
+Connected. MCP tools available.
+  runtime version:  0.2.0
   default profile:  controlled-web
   kill switch:      inactive
 ```
@@ -59,21 +75,19 @@ alethia-mcp --health-check
 }
 ```
 
-The Alethia browser window opens alongside your agent with live step highlights. Elements flash green (click/assert), blue (type), and red (EA1 block). Remove the `env` block for headless mode.
+With `ALETHIA_VISIBLE=1`, the Alethia cockpit opens alongside your agent. The target app is loaded into a `<webview>` inside the cockpit, so the Alethia UI stays visible during the run and highlights each step live (green = click/assert pass, blue = type, red = EA1 block).
 
 ### Cursor
 
-Cursor → Settings → MCP → Add server:
+Cursor > Settings > MCP > Add server:
 
 ```json
-{
-  "alethia": { "command": "alethia-mcp" }
-}
+{ "alethia": { "command": "alethia-mcp" } }
 ```
 
 ### Cline / Continue / any MCP client
 
-Same shape — point any MCP-compatible client at the `alethia-mcp` command.
+Same shape — point the client at the `alethia-mcp` command.
 
 ### Claude Desktop
 
@@ -92,13 +106,62 @@ Same shape — point any MCP-compatible client at the `alethia-mcp` command.
 
 ---
 
-## Usage
+## Your 5-minute demo
 
-Once configured, ask your agent to test something:
+Three prompts. The agent does the rest.
 
-> *"Use alethia_tell to navigate to the incident response page, assert the critical alert is visible, click Acknowledge, and assert it changed to Acknowledged."*
+### 1. Start the bundled demo server
 
-Alethia compiles plain English to Action IR, runs each step through the safety gate, and returns per-step results, a semantic page snapshot (~200 tokens), DOM diffs, policy audit records, and a SHA-256 integrity hash.
+> *"Use `alethia_serve_demo` and tell me the financial dashboard URL."*
+
+Returns a `http://127.0.0.1:<port>/financial-dashboard.html` URL.
+
+### 2. Let the agent write the tests
+
+> *"Use `alethia_propose_tests` against that URL."*
+
+The agent receives a 4–6 test block suite that includes, among others:
+
+```
+name EA1 Safety Gate Verification
+navigate to http://127.0.0.1:47432/demo/financial-dashboard.html
+expect block: click Liquidate All
+expect block: click Wire Funds
+expect block: click Purge Audit Log
+```
+
+`expect block:` is an Alethia-specific primitive. The step passes only when EA1 refuses to let the action fire. No other E2E framework can express this assertion.
+
+### 3. Run them
+
+> *"Run the proposed tests with `alethia_tell`, one block at a time."*
+
+Per-step results, DOM diffs, a ~200-token semantic page snapshot, policy audit records, and a SHA-256 integrity hash come back on each call. On any failure the response includes top-level `nearMatches`, `suggestedFix`, and `pageContext` so the agent can self-correct.
+
+### 4. Prove safety
+
+> *"Use `alethia_assert_safety` on that URL."*
+
+The runtime walks every destructive control on the page and runs `expect block:` against each. Returns:
+
+```json
+{
+  "passed": true,
+  "totalDestructive": 3,
+  "blocked": 3,
+  "results": [
+    { "action": "Liquidate All", "blocked": true,  "detail": "..." },
+    { "action": "Wire Funds",    "blocked": true,  "detail": "..." },
+    { "action": "Purge Audit Log", "blocked": true, "detail": "..." }
+  ]
+}
+```
+
+### 5. Export the evidence
+
+> *"Use `alethia_export_session` and save the result."*
+
+Returns a signed JSON pack with every tool call, input, output, policy decision, and a chained SHA-256 hash over the record. Chain-of-custody quality.
 
 ---
 
@@ -106,58 +169,45 @@ Alethia compiles plain English to Action IR, runs each step through the safety g
 
 | Tool | Purpose |
 |---|---|
-| `alethia_tell` | Run plain-English test steps. The main tool. ~13 ms/step. |
-| `alethia_tell_parallel` | Run multiple test flows concurrently against different URLs. |
+| `alethia_tell` | Run plain-English test steps. Returns per-step results, `nearMatches`, `suggestedFix`, `pageContext`, and an integrity hash. |
+| `alethia_propose_tests` | Scan a URL, return a candidate NLP test suite including auto-wrapped `expect block:` for destructive actions. |
+| `alethia_assert_safety` | Walk every destructive control on a URL, verify the EA1 gate blocks each one. |
+| `alethia_tell_parallel` | Concurrent multi-page test execution. |
+| `alethia_compile` | Preview what `tell` will run without executing. |
 | `alethia_screenshot` | Capture a PNG of the current page. |
-| `alethia_compile` | Preview what `tell` will run, without executing. |
-| `alethia_eval` | Run raw JavaScript in the page under test. |
-| `alethia_status` | Health check — version, config, kill switch state. |
-| `alethia_audit_wcag` | WCAG 2.1 AA accessibility audit (14 criteria, Section 508). |
-| `alethia_audit_nist` | NIST SP 800-53 security controls audit (8 controls). |
-| `alethia_export_session` | Export a signed evidence pack of the entire session. |
-| `alethia_activate_kill_switch` | Emergency halt — stops all automation immediately. |
-| `alethia_reset_kill_switch` | Resume after a kill switch activation. |
+| `alethia_eval` | Raw JavaScript in the page under test (policy-gated). |
+| `alethia_status` | Version, policy profile, kill switch state. |
+| `alethia_audit_wcag` | WCAG 2.1 AA accessibility audit — 14 criteria. |
+| `alethia_audit_nist` | NIST SP 800-53 Rev. 5 security controls audit. |
+| `alethia_export_session` | Signed evidence pack of the whole session. |
+| `alethia_activate_kill_switch` / `alethia_reset_kill_switch` | Emergency halt and resume. |
+| `alethia_serve_demo` | Start the bundled localhost demo server. |
 
-Destructive actions (delete, purchase, transfer) are **blocked by default** under the `controlled-web` profile. Sensitive input (passwords, credit cards) is **always blocked** unless `allowSensitiveInput: true` is explicitly passed.
+Destructive actions (delete, purchase, transfer, liquidate, revoke, terminate, ...) are blocked by default under the `controlled-web` profile. Sensitive-input fields (passwords, tokens, credit cards) are blocked unless `allowSensitiveInput: true` is passed. Profile overrides from the agent are stripped by the bridge — profile changes require human configuration.
+
+Full input/output schemas: [`docs/api-reference.md`](https://github.com/vitron-ai/alethia/blob/main/docs/api-reference.md) in the core repo.
 
 ---
 
-## Demos
-
-Ready-to-use demo pages ship in the `demo/` folder. Start with the Claude Code demo:
-
-### Claude Code: verify a generated app
-
-Paste this into Claude Code, Cursor, or any MCP client:
+## NLP primitives at a glance
 
 ```
-Use alethia_serve_demo to start the demo server. Then use
-alethia_tell to navigate to the claude-code-app URL. Assert
-"TaskFlow" is visible. Type dev@company.com into the
-"you@company.com" field. Type Engineering into the "Your team
-name" field. Click Sign in. Assert "Signed in as" is visible.
-Type "Deploy to production" into the "Add a new task" field.
-Click Add. Assert "Deploy to production" is visible. Click
-Delete and report what EA1 decides.
+navigate to <url>
+click <text-or-selector>
+type "<value>" into <field>
+assert <text> is visible
+assert <text> is not visible
+wait <ms>
+wait for <selector>
+press <key> on <selector>
+scroll to <selector>
+hover <selector>
+select <option> from <dropdown>
+if <condition> exists, click <target>
+expect block: <action>         # policy-verification assertion
 ```
 
-The agent starts a localhost server, drives the app with plain English, and EA1 blocks the delete.
-
-**Watch it live:** Add `"env": { "ALETHIA_VISIBLE": "1" }` to your MCP config to open the Alethia browser window and see clicks, typing, and EA1 blocks happen in real time.
-
-### More scenarios
-
-| Demo | Scenario |
-|---|---|
-| `claude-code-app.html` | AI coding agents: sign in, dashboard, CRUD, EA1 blocks delete |
-| `incident-response.html` | Defense / SOC: triage active cyber incident |
-| `threat-intel.html` | Intelligence / CTI: APT tracking, IOC blocking |
-| `crypto-readiness.html` | Cybersecurity / PQC: post-quantum migration |
-| `agent-oversight.html` | AI Safety: autonomous agent monitoring, kill switch |
-| `admin-panel.html` | Defense / Classified: TS/SCI admin panel |
-| `financial-dashboard.html` | Finance / Trading: risk monitor, compliance checks |
-
-Full prompts for each demo: [`demo/README.md`](./demo/README.md)
+`expect block:` is the primitive that lets an agent prove the safety gate works. Passes if EA1 blocks, fails if EA1 allows.
 
 ---
 
@@ -179,7 +229,18 @@ alethia-mcp --debug          Run with debug logging on stderr
 | `ALETHIA_PORT` | `47432` | Port of the Alethia runtime |
 | `ALETHIA_TIMEOUT_MS` | `60000` | Per-request timeout in milliseconds |
 | `ALETHIA_DEBUG` | (unset) | Set to `1` for debug logging on stderr |
-| `ALETHIA_VISIBLE` | (unset) | Set to `1` to show the browser window. Watch the agent drive your app in real time. |
+| `ALETHIA_VISIBLE` | (unset) | Set to `1` to show the cockpit window |
+| `ALETHIA_HIGHLIGHTS` | (unset) | Set to `1` to overlay per-step highlights on the target |
+
+---
+
+## Architecture, briefly
+
+- The cockpit embeds the target app in a `<webview>`. The agent drives the webview; the Alethia UI stays visible for oversight.
+- The runtime listens on `127.0.0.1:47432` over loopback HTTP JSON-RPC. No cloud calls, no telemetry by default.
+- There is no `ipcMain` in the cockpit process — every main ↔ renderer hop is the same agent protocol the bridge speaks. One wire format, one audit surface.
+- The cockpit's Target Bar auto-discovers common localhost dev servers (loopback only, self-filters Alethia itself).
+- Per-step screenshots are captured into the Replay panel as a filmstrip you can scrub.
 
 ---
 
@@ -187,34 +248,34 @@ alethia-mcp --debug          Run with debug logging on stderr
 
 ### "Alethia desktop runtime is not running on 127.0.0.1:47432"
 
-1. Run `alethia-mcp --health-check` — triggers auto-install if the runtime isn't present
-2. Check that the runtime process is running on `127.0.0.1:47432`
-3. If auto-install failed, check your network and try again
+1. Run `alethia-mcp --health-check` — triggers auto-install if the runtime is missing.
+2. Confirm the runtime process is listening on `127.0.0.1:47432`.
+3. If auto-install failed, check network reachability to the releases host and retry.
 
 ### "DENY_WRITE_HIGH" in the audit log
 
-A destructive action was blocked by the default safety policy. **This is correct behavior.** To allow it, pass `{ profile: 'open-web' }` — but understand you're opting out of the safety gate.
+A destructive action was blocked by the default `controlled-web` profile. This is correct behavior. Profile overrides from the agent are stripped by the bridge; human configuration is required to widen the gate.
 
 ### "SENSITIVE_INPUT_DENIED"
 
-A sensitive field was detected (password, token, credit card, etc.). Override with `{ "allowSensitiveInput": true }` only for legitimate auth/payment flow testing.
+A sensitive field was detected (password, token, credit card, etc.). Override with `{ "allowSensitiveInput": true }` only for legitimate auth/payment flow tests.
 
 ### MCP client doesn't see the tools
 
-1. Verify: `alethia-mcp --health-check`
-2. Check your MCP config
-3. Restart your MCP client
-4. Debug: set `ALETHIA_DEBUG=1`
+1. Run `alethia-mcp --health-check`.
+2. Check your MCP config shape.
+3. Restart your MCP client.
+4. Set `ALETHIA_DEBUG=1` to log bridge traffic on stderr.
 
 ---
 
 ## Go deeper
 
-- [Architecture & how it works](https://vitron.ai/why)
+- [Architecture and how it works](https://vitron.ai/why)
 - [VITRON-EA1 safety standard](https://vitron.ai/safety)
 - [FAQ](https://vitron.ai/faq)
 - [Releases](https://github.com/vitron-ai/alethia/releases)
-- [Homepage](https://github.com/vitron-ai/alethia)
+- [Core repo](https://github.com/vitron-ai/alethia)
 
 ---
 
@@ -224,4 +285,4 @@ MIT — see [LICENSE](./LICENSE). Covers **this MCP bridge only.**
 
 ## Patent Notice
 
-The Alethia runtime is patent pending (U.S. Application No. 19/571,437). The MIT license on this bridge does **not** grant any patent license. For licensing: **gatekeeper@vitron.ai**.
+The Alethia runtime is patent pending (U.S. Application No. 19/571,437). The MIT license on this bridge does **not** grant any patent license. For licensing inquiries: **gatekeeper@vitron.ai**.

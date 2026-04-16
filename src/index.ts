@@ -783,6 +783,44 @@ const TOOLS = [
       'instead of a file:// path. Returns the base URL and a list of available demo pages.',
     inputSchema: { type: 'object', properties: {} },
   },
+  {
+    name: 'alethia_propose_tests',
+    description:
+      'Navigate to a URL, scan the page for interactive elements (headings, buttons, forms, links, ' +
+      'destructive actions), and generate a candidate NLP test suite ready to pass to alethia_tell. ' +
+      'Returns an array of plain-English test blocks, including an auto-generated "EA1 Safety Gate Verification" ' +
+      'block that uses "expect block: <action>" for every destructive control on the page. ' +
+      'Use this to bootstrap test coverage for a new page or to discover what the safety gate should be watching.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'The URL to navigate to and scan (file://, http://localhost, etc.).',
+        },
+      },
+      required: ['url'],
+    },
+  },
+  {
+    name: 'alethia_assert_safety',
+    description:
+      'Navigate to a URL, discover every destructive / write-high action on the page, and verify the ' +
+      'VITRON-EA1 policy gate blocks each one. Returns a per-action report with block/allow status. ' +
+      'This is the automated policy-verification primitive — proves the safety gate works on a real page ' +
+      'without the agent or human having to click each destructive button manually. Use it as a compliance ' +
+      'check before releasing an agent-driven workflow against a customer environment.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'The URL to navigate to and audit.',
+        },
+      },
+      required: ['url'],
+    },
+  },
 ] as const;
 
 // Map external tool names to the internal Electron RPC tool names
@@ -798,6 +836,8 @@ const TOOL_NAME_MAP: Record<string, string> = {
   alethia_audit_nist: 'alethia_audit_nist',
   alethia_export_session: 'alethia_export_session',
   alethia_tell_parallel: 'alethia_tell_parallel',
+  alethia_propose_tests: 'alethia_propose_tests',
+  alethia_assert_safety: 'alethia_assert_safety',
 };
 
 // ---------------------------------------------------------------------------
@@ -827,6 +867,13 @@ const validateToolArgs = (toolName: string, args: Record<string, unknown>): stri
       if (typeof expression !== 'string') return `tool "${toolName}" requires "expression" to be a string`;
       if (expression.trim().length === 0) return `tool "${toolName}" requires "expression" to be non-empty`;
       if (expression.length > 50_000) return `tool "${toolName}" "expression" exceeds 50KB limit`;
+      return null;
+    }
+    case 'alethia_propose_tests':
+    case 'alethia_assert_safety': {
+      const url = args.url;
+      if (typeof url !== 'string') return `tool "${toolName}" requires "url" to be a string`;
+      if (url.trim().length === 0) return `tool "${toolName}" requires "url" to be non-empty`;
       return null;
     }
     case 'alethia_status':
@@ -904,7 +951,9 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
             '- alethia_audit_wcag: WCAG 2.1 AA accessibility audit — 14 criteria.\n' +
             '- alethia_audit_nist: NIST SP 800-53 security controls audit — 8 controls.\n' +
             '- alethia_export_session: Export signed evidence pack of everything the agent did this session.\n' +
-            '- alethia_serve_demo: Start a localhost server for built-in demo pages. Opens in preview panels.\n\n' +
+            '- alethia_serve_demo: Start a localhost server for built-in demo pages. Opens in preview panels.\n' +
+            '- alethia_propose_tests: Scan a URL and return a candidate NLP test suite ready for alethia_tell, including an auto-generated "expect block:" block for every destructive action.\n' +
+            '- alethia_assert_safety: Walk every destructive action on a URL and verify the EA1 gate blocks each one. Returns a per-action block/allow report.\n\n' +
             'Key capabilities:\n' +
             '- Smart assertions: on failure, returns near-matches, page context, and suggested fixes.\n' +
             '- Page readiness: auto-waits for loading indicators before assertions.\n' +
