@@ -1,7 +1,7 @@
 {
   "name": "vitron-ai/alethia",
-  "version": "0.3.10",
-  "summary": "Patent-pending zero-IPC E2E test runtime for AI agents. 11 MCP tools: plain English browser automation, parallel testing, WCAG + NIST 800-53 compliance audits, signed session evidence packs. 45x faster than Playwright. Works with Claude Code, Cursor, Cline.",
+  "version": "0.4.0",
+  "summary": "Agent-native E2E runtime with verifiable safety. 13 MCP tools including alethia_propose_tests (agent generates tests from a URL), alethia_assert_safety (proves destructive actions are blocked), and the expect block: NLP primitive unique to Alethia. Zero-IPC, ~45x faster than Playwright, signed evidence packs. Works with Claude Code, Cursor, Cline.",
   "private": false,
   "docs": "docs/index.md",
   "skills": {
