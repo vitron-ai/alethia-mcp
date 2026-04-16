@@ -279,6 +279,14 @@ A sensitive field was detected (password, token, credit card, etc.). Override wi
 
 ---
 
+## Security posture — local-only by architecture
+
+The Alethia runtime (which this bridge connects to) is local-only **by architecture**, not by default setting. Its signed binary refuses to navigate to any origin outside `file://`, `localhost`, `127.0.0.1`, `.local`, and RFC1918 private ranges. The allowlist is a compile-time constant — **not a CLI flag, env var, MCP argument, profile, or UI toggle**. For partner-specific production-origin access we issue custom-signed builds; we do not ship configurability.
+
+Why this shape: Alethia's ~13 ms-per-step, zero-CDP-signature execution would make it the fastest credential-stuffing / account-takeover / abuse-automation runtime on the market if turned against the open web. It does not become that tool. Full posture at [vitron-ai/alethia/SECURITY.md](https://github.com/vitron-ai/alethia/blob/main/SECURITY.md). Abuse reports: **gatekeeper@vitron.ai**.
+
+---
+
 ## License
 
 MIT — see [LICENSE](./LICENSE). Covers **this MCP bridge only.**
