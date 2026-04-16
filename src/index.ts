@@ -187,9 +187,31 @@ const getExecutablePath = (): string => {
   if (p === 'win32') {
     return join(RUNTIME_DIR, 'win-unpacked', 'Alethia.exe');
   }
-  // Linux
-  const linuxDir = existsSync(join(RUNTIME_DIR, 'linux-unpacked')) ? 'linux-unpacked' : 'linux-arm64-unpacked';
-  return join(RUNTIME_DIR, linuxDir, 'alethia');
+  // Linux — electron-builder's tar.gz target wraps everything in a
+  // version-prefixed directory (alethia-0.2.4/ or alethia-0.2.4-arm64/),
+  // NOT a linux-unpacked/ directory. Probe the likely candidates in order
+  // and fall back to scanning RUNTIME_DIR for any subdirectory that
+  // contains an `alethia` executable at its root.
+  const linuxCandidates = [
+    `alethia-${RUNTIME_VERSION}`,
+    `alethia-${RUNTIME_VERSION}-arm64`,
+    'linux-unpacked',
+    'linux-arm64-unpacked',
+  ];
+  for (const dir of linuxCandidates) {
+    const exe = join(RUNTIME_DIR, dir, 'alethia');
+    if (existsSync(exe)) return exe;
+  }
+  // Last-resort scan: any immediate subdirectory with an `alethia` binary.
+  try {
+    for (const entry of readdirSync(RUNTIME_DIR)) {
+      const candidate = join(RUNTIME_DIR, entry, 'alethia');
+      if (existsSync(candidate)) return candidate;
+    }
+  } catch { /* ignore */ }
+  // Return the canonical expected path so the downstream error message
+  // tells the user where we LOOKED (rather than landing on an unrelated arm64 path).
+  return join(RUNTIME_DIR, `alethia-${RUNTIME_VERSION}`, 'alethia');
 };
 
 const httpsGet = (url: string): Promise<http.IncomingMessage> =>
