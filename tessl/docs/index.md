@@ -10,6 +10,10 @@ npm install -g @vitronai/alethia
 
 The bridge auto-installs the signed headless runtime on first use. No signup, no email gate. Works with `file://` pages and `http://localhost` dev servers.
 
+### Starter repo — try it in 30 seconds
+
+Fork [alethia-starter](https://github.com/vitron-ai/alethia-starter) and point your agent at `__alethia__/`. Ships a 250-line SPA called Atlas and 10 `.nlp` test files covering CRUD, search, priority, bulk actions, keyboard shortcuts, tab filters, toast stack, export — plus the `expect block:` safety test. Drop-in GitHub Actions workflow + runner included.
+
 ## MCP setup
 
 Add to your agent's MCP config (`.mcp.json`, Claude Code settings, Cursor MCP, etc.):
@@ -89,5 +93,6 @@ Everything runs on your machine. The runtime listens on `127.0.0.1:47432` (loopb
 - npm: [npmjs.com/package/@vitronai/alethia](https://www.npmjs.com/package/@vitronai/alethia)
 - Bridge source (MIT): [github.com/vitron-ai/alethia-mcp](https://github.com/vitron-ai/alethia-mcp)
 - Runtime releases: [github.com/vitron-ai/alethia](https://github.com/vitron-ai/alethia)
+- Starter template: [github.com/vitron-ai/alethia-starter](https://github.com/vitron-ai/alethia-starter)
 - Website: [vitron.ai](https://vitron.ai)
 - Licensing: gatekeeper@vitron.ai
