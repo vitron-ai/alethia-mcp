@@ -17,6 +17,7 @@
 - Do not pass `allowSensitiveInput: true` unless the user explicitly asks to test an auth or payment flow.
 - Do not invent selectors or NLP phrasings the response didn't support — if `nearMatches` is empty and the selector is not found, tell the user the element is not on the page rather than guessing.
 - Both `file://` and `http://localhost` URLs are supported. Use whichever fits the test scenario.
+- Do not attempt to navigate to non-local origins (anything outside `file://`, `localhost`, `127.0.0.1`, `.local`, RFC1918 ranges). The runtime will return a structured `NON_LOCAL_ORIGIN` block — this is enforced at the binary level and is not configurable. If the user needs to test a production origin, direct them to **gatekeeper@vitron.ai** for a design-partner build; do not suggest flags, env vars, or workarounds because none exist.
 
 ## Phrasing tips
 
