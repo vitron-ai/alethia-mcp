@@ -58,35 +58,84 @@
       <button class="nav-item" id="nav-system">System Config</button>
     </div>
     <div class="content">
-      <h2>User Management</h2>
-      <table>
-        <thead>
-          <tr><th>Name</th><th>Role</th><th>Clearance</th><th>Status</th><th>Actions</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Col. Sarah Chen</td><td>Program Director</td><td>TS/SCI</td>
-            <td class="status-active">Active</td>
-            <td class="actions"><button class="btn-view">View</button><button class="btn-suspend">Suspend</button></td>
-          </tr>
-          <tr>
-            <td>Maj. James Rivera</td><td>Systems Engineer</td><td>TS</td>
-            <td class="status-active">Active</td>
-            <td class="actions"><button class="btn-view">View</button><button class="btn-suspend">Suspend</button></td>
-          </tr>
-          <tr>
-            <td>Dr. Aisha Patel</td><td>Analyst</td><td>Secret</td>
-            <td class="status-pending">Pending Review</td>
-            <td class="actions"><button class="btn-view">View</button><button class="btn-approve">Approve</button></td>
-          </tr>
-          <tr>
-            <td>Lt. Marcus Webb</td><td>Contractor</td><td>Secret</td>
-            <td class="status-suspended">Suspended</td>
-            <td class="actions"><button class="btn-view">View</button><button class="btn-delete" id="delete-webb">Delete</button></td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="audit-log" id="audit-log">
+      <!-- Users panel -->
+      <section class="section" id="section-users">
+        <h2>User Management</h2>
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Role</th><th>Clearance</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Col. Sarah Chen</td><td>Program Director</td><td>TS/SCI</td>
+              <td class="status-active">Active</td>
+              <td class="actions"><button class="btn-view">View</button><button class="btn-suspend">Suspend</button></td>
+            </tr>
+            <tr>
+              <td>Maj. James Rivera</td><td>Systems Engineer</td><td>TS</td>
+              <td class="status-active">Active</td>
+              <td class="actions"><button class="btn-view">View</button><button class="btn-suspend">Suspend</button></td>
+            </tr>
+            <tr>
+              <td>Dr. Aisha Patel</td><td>Analyst</td><td>Secret</td>
+              <td class="status-pending">Pending Review</td>
+              <td class="actions"><button class="btn-view">View</button><button class="btn-approve">Approve</button></td>
+            </tr>
+            <tr>
+              <td>Lt. Marcus Webb</td><td>Contractor</td><td>Secret</td>
+              <td class="status-suspended">Suspended</td>
+              <td class="actions"><button class="btn-view">View</button><button class="btn-delete" id="delete-webb">Delete</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Access Control panel -->
+      <section class="section" id="section-access" hidden>
+        <h2>Access Control</h2>
+        <table>
+          <thead>
+            <tr><th>Role</th><th>Resource</th><th>Permission</th><th>Last Modified</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Program Director</td><td>All Systems</td><td class="status-active">Full Access</td><td>2026-03-14</td><td class="actions"><button class="btn-view">Review</button></td></tr>
+            <tr><td>Systems Engineer</td><td>Infrastructure</td><td class="status-active">Read/Write</td><td>2026-04-02</td><td class="actions"><button class="btn-view">Review</button></td></tr>
+            <tr><td>Analyst</td><td>Intel Reports</td><td class="status-pending">Read-Only</td><td>2026-04-09</td><td class="actions"><button class="btn-view">Review</button></td></tr>
+            <tr><td>Contractor</td><td>Sandbox</td><td class="status-suspended">Revoked</td><td>2026-04-10</td><td class="actions"><button class="btn-view">Review</button></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Audit Trail panel -->
+      <section class="section" id="section-audit" hidden>
+        <h2>Audit Trail</h2>
+        <div class="audit-log" style="max-height:320px;" id="audit-trail-full">
+          <div class="audit-entry"><span class="timestamp">2026-04-10T09:14:22Z</span> <span class="action">LOGIN</span> admin@agency.gov from 10.0.0.42</div>
+          <div class="audit-entry"><span class="timestamp">2026-04-10T09:14:28Z</span> <span class="action">VIEW</span> User Management panel accessed</div>
+          <div class="audit-entry"><span class="timestamp">2026-04-09T21:02:11Z</span> <span class="action">APPROVE</span> Dr. Aisha Patel cleared for Intel Reports access</div>
+          <div class="audit-entry"><span class="timestamp">2026-04-09T18:44:03Z</span> <span class="action">SUSPEND</span> Lt. Marcus Webb — policy violation investigation</div>
+          <div class="audit-entry"><span class="timestamp">2026-04-08T11:22:57Z</span> <span class="action">LOGIN</span> sarah.chen@agency.gov from 10.0.0.7</div>
+          <div class="audit-entry"><span class="timestamp">2026-04-08T08:15:40Z</span> <span class="action">CONFIG</span> retention policy updated: 90d → 180d</div>
+          <div class="audit-entry"><span class="timestamp">2026-04-07T14:07:32Z</span> <span class="action">LOGIN</span> james.rivera@agency.gov from 10.0.0.18</div>
+        </div>
+      </section>
+
+      <!-- System Config panel -->
+      <section class="section" id="section-system" hidden>
+        <h2>System Config</h2>
+        <table>
+          <thead><tr><th>Setting</th><th>Current Value</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>MFA Required</td><td>Hardware key + biometric</td><td class="status-active">Enforced</td></tr>
+            <tr><td>Session Timeout</td><td>15 minutes</td><td class="status-active">Enforced</td></tr>
+            <tr><td>Audit Retention</td><td>180 days</td><td class="status-active">Enforced</td></tr>
+            <tr><td>Encryption at Rest</td><td>AES-256 + Kyber-1024 (PQC)</td><td class="status-active">Enforced</td></tr>
+            <tr><td>External Network Access</td><td>Disabled</td><td class="status-active">Enforced</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <div class="audit-log" id="audit-log" style="margin-top:1rem;">
         <div class="audit-entry"><span class="timestamp">2026-04-10T09:14:22Z</span> <span class="action">LOGIN</span> admin@agency.gov from 10.0.0.42</div>
         <div class="audit-entry"><span class="timestamp">2026-04-10T09:14:28Z</span> <span class="action">VIEW</span> User Management panel accessed</div>
       </div>
@@ -111,6 +160,27 @@
       auditLog.appendChild(entry);
       auditLog.scrollTop = auditLog.scrollHeight;
     }
+    // Sidebar navigation — show the section matching the clicked nav item.
+    var navMap = {
+      'nav-users':  { section: 'section-users',  label: 'User Management' },
+      'nav-access': { section: 'section-access', label: 'Access Control' },
+      'nav-audit':  { section: 'section-audit',  label: 'Audit Trail' },
+      'nav-system': { section: 'section-system', label: 'System Config' },
+    };
+    Object.keys(navMap).forEach(function(btnId) {
+      var btn = document.getElementById(btnId);
+      btn.addEventListener('click', function() {
+        // toggle active class on sidebar
+        document.querySelectorAll('.sidebar .nav-item').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        // show matching section, hide the others
+        Object.values(navMap).forEach(function(m) {
+          document.getElementById(m.section).hidden = (m.section !== navMap[btnId].section);
+        });
+        logAudit('VIEW', navMap[btnId].label + ' panel accessed');
+      });
+    });
+
     document.getElementById('delete-webb').addEventListener('click', function() {
       document.getElementById('delete-modal').classList.add('visible');
       logAudit('DELETE_REQUESTED', 'Deletion requested for Lt. Marcus Webb');
