@@ -90,7 +90,7 @@ Everything runs on your machine. The runtime listens on `127.0.0.1:47432` (loopb
 
 ## Security posture — local-only by architecture
 
-Alethia refuses to navigate to any origin outside `file://`, `localhost`, `127.0.0.1`, `::1`, `.local`, and RFC1918 private ranges. The allowlist is a **compile-time constant** enforced at four choke points in every signed binary we ship — NAVIGATE, `alethia_propose_tests`, `alethia_assert_safety`, and the renderer-level `will-navigate` / `will-redirect` handlers. It is **not** exposed as a CLI flag, env var, MCP argument, policy profile, or UI toggle. Design-partner production-origin access is handled by issuing a custom-signed build with those origins baked in, never by shipping a general-purpose override. See [vitron-ai/alethia/SECURITY.md](https://github.com/vitron-ai/alethia/blob/main/SECURITY.md).
+Alethia refuses to navigate to any origin outside `file://`, `localhost`, `127.0.0.1`, `::1`, `.local`, and RFC1918 private ranges. The allowlist is a **compile-time constant** enforced at four choke points in every signed binary we ship — NAVIGATE, `alethia_propose_tests`, `alethia_assert_safety`, and the renderer-level `will-navigate` / `will-redirect` handlers. It is **not** exposed as a CLI flag, env var, MCP argument, policy profile, or UI toggle. Design-partner production-origin access is handled by issuing a custom-signed build with those origins baked in, never by shipping a general-purpose override. See [vitron.ai/safety](https://vitron.ai/safety).
 
 ## Links
 
