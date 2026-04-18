@@ -351,7 +351,10 @@ const spawnRuntime = async (): Promise<void> => {
 
   const visible = process.env.ALETHIA_VISIBLE === '1' || process.env.ALETHIA_VISIBLE === 'true';
   process.stderr.write(`[alethia] Spawning runtime (${visible ? 'visible' : 'headless'})...\n`);
-  runtimeProcess = spawn(exe, visible ? [] : ['--headless'], {
+  // Pass headless via env var only. The packaged Electron app rejects
+  // unknown CLI flags (exits with code 9). ALETHIA_HEADLESS=1 is read by
+  // the runtime's main.ts and is enough to disable the window.
+  runtimeProcess = spawn(exe, [], {
     env: { ...process.env, ...(visible ? {} : { ALETHIA_HEADLESS: '1' }) },
     stdio: 'ignore',
     detached: false,
