@@ -138,7 +138,7 @@ const getDemoPages = (): string[] => {
 // Auto-install: download, verify, extract, and spawn the headless runtime
 // ---------------------------------------------------------------------------
 
-const RUNTIME_VERSION = '0.3.0';
+const RUNTIME_VERSION = '0.3.1';
 const RUNTIME_DIR = join(homedir(), '.alethia', 'runtime');
 const RUNTIME_MARKER = join(RUNTIME_DIR, '.installed');
 const GITHUB_RELEASE_BASE = `https://github.com/vitron-ai/alethia/releases/download/v${RUNTIME_VERSION}`;
@@ -351,11 +351,15 @@ const spawnRuntime = async (): Promise<void> => {
 
   const visible = process.env.ALETHIA_VISIBLE === '1' || process.env.ALETHIA_VISIBLE === 'true';
   process.stderr.write(`[alethia] Spawning runtime (${visible ? 'visible' : 'headless'})...\n`);
-  // Pass headless via env var only. The packaged Electron app rejects
-  // unknown CLI flags (exits with code 9). ALETHIA_HEADLESS=1 is read by
-  // the runtime's main.ts and is enough to disable the window.
+  // Headless is passed via env var. ALETHIA_HEADLESS=1 is the runtime's
+  // own switch and does not depend on any passthrough CLI flag.
+  //
+  // Strip ELECTRON_RUN_AS_NODE from the inherited env so a leaked dev-env
+  // setting on the caller's shell doesn't silently re-route the runtime
+  // into a non-runtime interpreter mode.
+  const { ELECTRON_RUN_AS_NODE: _stripped, ...safeEnv } = process.env;
   runtimeProcess = spawn(exe, [], {
-    env: { ...process.env, ...(visible ? {} : { ALETHIA_HEADLESS: '1' }) },
+    env: { ...safeEnv, ...(visible ? {} : { ALETHIA_HEADLESS: '1' }) },
     stdio: 'ignore',
     detached: false,
   });
