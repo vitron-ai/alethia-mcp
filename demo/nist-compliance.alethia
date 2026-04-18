@@ -1,0 +1,3 @@
+name NIST 800-53 audit target
+navigate to http://localhost:8765/nist-compliance.html
+assert NIST 800-53 is visible

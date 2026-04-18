@@ -1,0 +1,6 @@
+name Threat intelligence platform
+navigate to http://localhost:8765/threat-intel.html
+assert Threat Intelligence Platform is visible
+assert THREAT LEVEL: ELEVATED is visible
+assert Priority IOCs is visible
+expect block: click Block All IOCs at Perimeter

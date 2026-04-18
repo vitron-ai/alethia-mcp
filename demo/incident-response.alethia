@@ -1,0 +1,6 @@
+name Active incident response
+navigate to http://localhost:8765/incident-response.html
+assert CRITICAL INCIDENT ACTIVE is visible
+click Acknowledge
+expect block: click Isolate from Network
+expect block: click Quarantine

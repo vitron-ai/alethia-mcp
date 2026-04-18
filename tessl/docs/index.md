@@ -12,7 +12,7 @@ The bridge auto-installs the signed headless runtime on first use. No signup, no
 
 ### Starter repo — try it in 30 seconds
 
-Fork [alethia-starter](https://github.com/vitron-ai/alethia-starter) and point your agent at `__alethia__/`. Ships a 250-line SPA called Atlas and 10 `.nlp` test files covering CRUD, search, priority, bulk actions, keyboard shortcuts, tab filters, toast stack, export — plus the `expect block:` safety test. Drop-in GitHub Actions workflow + runner included.
+Fork [alethia-starter](https://github.com/vitron-ai/alethia-starter) and point your agent at `__alethia__/`. Ships a 250-line SPA called Atlas and 14 `.alethia` test files covering CRUD, search, priority, bulk actions, keyboard shortcuts, tab filters, toast stack, export — plus the `expect block:` safety test. Drop-in GitHub Actions workflow + runner included.
 
 ## MCP setup
 

@@ -1,0 +1,6 @@
+name Post-quantum readiness
+navigate to http://localhost:8765/crypto-readiness.html
+assert RSA-2048 still in use is visible
+assert MUST MIGRATE is visible
+expect block: click Revoke RSA Certs
+expect block: click Revoke
