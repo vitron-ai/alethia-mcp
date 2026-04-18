@@ -187,11 +187,8 @@ const getExecutablePath = (): string => {
   if (p === 'win32') {
     return join(RUNTIME_DIR, 'win-unpacked', 'Alethia.exe');
   }
-  // Linux — electron-builder's tar.gz target wraps everything in a
-  // version-prefixed directory (alethia-0.2.4/ or alethia-0.2.4-arm64/),
-  // NOT a linux-unpacked/ directory. Probe the likely candidates in order
-  // and fall back to scanning RUNTIME_DIR for any subdirectory that
-  // contains an `alethia` executable at its root.
+  // Linux — the tarball extracts into a version-prefixed directory.
+  // Probe likely candidates and fall back to scanning RUNTIME_DIR.
   const linuxCandidates = [
     `alethia-${RUNTIME_VERSION}`,
     `alethia-${RUNTIME_VERSION}-arm64`,
@@ -402,8 +399,7 @@ WHAT THIS IS
   stdio→HTTP relay (~9 KB) that lets MCP-capable AI agents talk to the
   Alethia runtime running locally on 127.0.0.1:47432.
 
-  The runtime itself (in-process zero-IPC executor, VITRON-EA1 policy
-  gate, NLP compiler) is closed-source and patent-pending — U.S. Patent
+  The runtime is closed-source and patent-pending — U.S. Patent
   Application No. 19/571,437. The MIT license on this bridge does NOT
   grant any patent license under that application or any other vitron.ai
   patent rights.
@@ -614,8 +610,8 @@ const runHealthCheck = async (): Promise<never> => {
     process.stdout.write(
       `\n` +
       `This npm package is the MIT-licensed MCP bridge — a stdio→HTTP relay only.\n` +
-      `The Alethia runtime (patent-pending in-process zero-IPC executor) auto-installs\n` +
-      `on first use from GitHub Releases. Ed25519-signed, no signup required.\n` +
+      `The Alethia runtime (patent-pending) auto-installs on first use from\n` +
+      `GitHub Releases. Ed25519-signed, no signup required.\n` +
       `\n` +
       `  → https://github.com/vitron-ai/alethia/releases\n` +
       `  → Licensing: gatekeeper@vitron.ai\n`
@@ -640,13 +636,10 @@ const TOOLS = [
     name: 'alethia_tell',
     description:
       'Execute natural-language E2E test instructions against the page Alethia is currently driving. ' +
-      'Compiles to Action IR, runs through the VITRON-EA1 fail-closed policy gate, executes step-by-step ' +
-      'with synchronous DOM access (no CDP marshalling), and returns a PlanRun with per-step results, ' +
-      'policy audit records, and a SHA-256 integrity hash. ' +
-      'Default profile is "controlled-web" — destructive actions (delete, purchase, transfer, isolate, liquidate, revoke, halt, etc.) are blocked. ' +
-      'The policy profile cannot be changed per-call — it is enforced by the runtime. Sensitive input (passwords, credit cards, SSN) is blocked ' +
-      'unless allowSensitiveInput is true. ' +
-      '~13ms per step on average — 45x faster than Playwright on the localhost loop.',
+      'Returns per-step results, policy audit records, and a SHA-256 integrity hash. ' +
+      'Destructive actions (delete, purchase, transfer, etc.) are blocked unconditionally. ' +
+      'Sensitive input (passwords, credit cards, SSN) is blocked unless allowSensitiveInput is true. ' +
+      '~13 ms per step on average.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -713,7 +706,7 @@ const TOOLS = [
   {
     name: 'alethia_reset_kill_switch',
     description:
-      'Clear an active kill switch and reset the shared executor state. ' +
+      'Clear an active kill switch and resume normal operation. ' +
       'Re-enables tell() calls. The reset itself is logged in the audit trail for compliance review.',
     inputSchema: { type: 'object', properties: {} },
   },
@@ -845,7 +838,7 @@ const TOOLS = [
   },
 ] as const;
 
-// Map external tool names to the internal Electron RPC tool names
+// Map public MCP tool names to internal runtime tool names
 const TOOL_NAME_MAP: Record<string, string> = {
   alethia_tell: 'alethia_tell',
   alethia_compile: 'alethia_compile_nlp',

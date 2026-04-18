@@ -26,7 +26,7 @@ The cockpit is an **oversight surface**, not an authoring IDE. Humans do not wri
 | Who writes the test | a human, in a `.spec` file | an AI agent, in plain English |
 | Per-step policy gate | none | VITRON-EA1 fail-closed, write-high blocked by default |
 | Destructive-action proof | manual review | `alethia_assert_safety` — automated, machine-readable |
-| Transport | CDP / WebDriver (IPC) | zero-IPC, in-process — ~13 ms/step |
+| Speed | ~580 ms/step (CDP overhead) | ~13 ms/step |
 | Evidence | screenshots, videos | signed evidence pack with per-step integrity hashes |
 | Network | CI + cloud dashboards | offline-capable, loopback only, zero telemetry by default |
 
@@ -75,7 +75,7 @@ Connected. MCP tools available.
 }
 ```
 
-With `ALETHIA_VISIBLE=1`, the Alethia cockpit opens alongside your agent. The target app is loaded into a `<webview>` inside the cockpit, so the Alethia UI stays visible during the run and highlights each step live (green = click/assert pass, blue = type, red = EA1 block).
+With `ALETHIA_VISIBLE=1`, the Alethia cockpit opens alongside your agent. The target app loads inside the cockpit, so the Alethia UI stays visible during the run and highlights each step live (green = click/assert pass, blue = type, red = EA1 block).
 
 ### Cursor
 
@@ -234,13 +234,12 @@ alethia-mcp --debug          Run with debug logging on stderr
 
 ---
 
-## Architecture, briefly
+## How it works
 
-- The cockpit embeds the target app in a `<webview>`. The agent drives the webview; the Alethia UI stays visible for oversight.
-- The runtime listens on `127.0.0.1:47432` over loopback HTTP JSON-RPC. No cloud calls, no telemetry by default.
-- There is no `ipcMain` in the cockpit process — every main ↔ renderer hop is the same agent protocol the bridge speaks. One wire format, one audit surface.
-- The cockpit's Target Bar auto-discovers common localhost dev servers (loopback only, self-filters Alethia itself).
-- Per-step screenshots are captured into the Replay panel as a filmstrip you can scrub.
+- This package is the MCP bridge. It translates MCP tool calls into requests to the Alethia runtime.
+- The runtime listens on `127.0.0.1:47432` over loopback JSON-RPC. No cloud calls, no telemetry.
+- The runtime auto-installs on first use from signed GitHub releases (Ed25519-verified).
+- With `ALETHIA_VISIBLE=1`, the cockpit shows the target app and highlights each step live.
 
 ---
 
@@ -283,7 +282,7 @@ A sensitive field was detected (password, token, credit card, etc.). Override wi
 
 The Alethia runtime (which this bridge connects to) is local-only **by architecture**, not by default setting. Its signed binary refuses to navigate to any origin outside `file://`, `localhost`, `127.0.0.1`, `.local`, and RFC1918 private ranges. The allowlist is a compile-time constant — **not a CLI flag, env var, MCP argument, profile, or UI toggle**. For partner-specific production-origin access we issue custom-signed builds; we do not ship configurability.
 
-Why this shape: Alethia's ~13 ms-per-step, zero-CDP-signature execution would make it the fastest credential-stuffing / account-takeover / abuse-automation runtime on the market if turned against the open web. It does not become that tool. Full posture at [vitron.ai/safety](https://vitron.ai/safety). Abuse reports: **gatekeeper@vitron.ai**.
+Why this shape: Alethia's speed and stealth profile would make it an effective abuse tool if turned against the open web. It does not become that tool. Full posture at [vitron.ai/safety](https://vitron.ai/safety). Abuse reports: **gatekeeper@vitron.ai**.
 
 ---
 
