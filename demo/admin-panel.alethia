@@ -1,0 +1,6 @@
+name Classified admin panel
+navigate to http://localhost:8765/admin-panel.html
+assert TOP SECRET is visible
+assert User Management is visible
+click User Management
+expect block: click Delete

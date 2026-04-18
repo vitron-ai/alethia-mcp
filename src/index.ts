@@ -138,7 +138,7 @@ const getDemoPages = (): string[] => {
 // Auto-install: download, verify, extract, and spawn the headless runtime
 // ---------------------------------------------------------------------------
 
-const RUNTIME_VERSION = '0.2.4';
+const RUNTIME_VERSION = '0.3.0';
 const RUNTIME_DIR = join(homedir(), '.alethia', 'runtime');
 const RUNTIME_MARKER = join(RUNTIME_DIR, '.installed');
 const GITHUB_RELEASE_BASE = `https://github.com/vitron-ai/alethia/releases/download/v${RUNTIME_VERSION}`;
@@ -643,7 +643,7 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        nlp: {
+        instructions: {
           type: 'string',
           description: 'One or more plain-English test instructions, newline-separated. Example: "navigate to http://localhost:3000\\nclick Sign In\\nassert the dashboard is visible"',
         },
@@ -656,25 +656,25 @@ const TOOLS = [
           description: 'Set to true to allow typing into password, token, credit card, and other sensitive fields. Only use for legitimate auth or payment flow tests.',
         },
       },
-      required: ['nlp'],
+      required: ['instructions'],
     },
   },
   {
     name: 'alethia_compile',
     description:
       'Compile natural-language test instructions to Alethia Action IR text, without executing anything. ' +
-      'Returns the compiled IR, per-line confidence scores (0-1), and warnings for any lines the NLP compiler ' +
-      'could not parse. Use this to preview what tell() will run, debug NLP coverage gaps, or generate ' +
+      'Returns the compiled IR, per-line confidence scores (0-1), and warnings for any lines the compiler ' +
+      'could not parse. Use this to preview what tell() will run, debug coverage gaps, or generate ' +
       'reproducible IR scripts for CI pipelines.',
     inputSchema: {
       type: 'object',
       properties: {
-        nlp: {
+        instructions: {
           type: 'string',
-          description: 'NL instructions to compile (does not execute).',
+          description: 'Plain-English instructions to compile (does not execute).',
         },
       },
-      required: ['nlp'],
+      required: ['instructions'],
     },
   },
   {
@@ -774,15 +774,15 @@ const TOOLS = [
       properties: {
         specs: {
           type: 'array',
-          description: 'Array of test specs. Each has "url" (file:// or http://localhost) and "nlp" (test steps).',
+          description: 'Array of test specs. Each has "url" (file:// or http://localhost) and "instructions" (test steps).',
           items: {
             type: 'object',
             properties: {
               url: { type: 'string', description: 'URL to navigate to' },
-              nlp: { type: 'string', description: 'Plain English test steps' },
+              instructions: { type: 'string', description: 'Plain-English test steps' },
               name: { type: 'string', description: 'Optional name for this spec' },
             },
-            required: ['url', 'nlp'],
+            required: ['url', 'instructions'],
           },
         },
       },
@@ -863,10 +863,10 @@ const validateToolArgs = (toolName: string, args: Record<string, unknown>): stri
   switch (toolName) {
     case 'alethia_tell':
     case 'alethia_compile': {
-      const nlp = args.nlp;
-      if (typeof nlp !== 'string') return `tool "${toolName}" requires "nlp" to be a string`;
-      if (nlp.trim().length === 0) return `tool "${toolName}" requires "nlp" to be non-empty`;
-      if (nlp.length > 100_000) return `tool "${toolName}" "nlp" exceeds 100KB limit`;
+      const instructions = args.instructions;
+      if (typeof instructions !== 'string') return `tool "${toolName}" requires "instructions" to be a string`;
+      if (instructions.trim().length === 0) return `tool "${toolName}" requires "instructions" to be non-empty`;
+      if (instructions.length > 100_000) return `tool "${toolName}" "instructions" exceeds 100KB limit`;
       if ('name' in args && args.name !== undefined && typeof args.name !== 'string') {
         return `tool "${toolName}" requires "name" to be a string when provided`;
       }

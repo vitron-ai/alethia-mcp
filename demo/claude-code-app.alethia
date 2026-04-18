@@ -1,0 +1,11 @@
+name Claude Code TaskFlow verification
+navigate to http://localhost:8765/claude-code-app.html
+assert TaskFlow is visible
+type dev@company.com into the you@company.com field
+type Engineering into the Your team name field
+click Sign in
+assert Signed in as is visible
+type Deploy to production into the Add a new task field
+click Add
+assert Deploy to production is visible
+expect block: click Delete

@@ -1,0 +1,6 @@
+name Autonomous agent oversight
+navigate to http://localhost:8765/agent-oversight.html
+assert deploy-agent-prod is visible
+assert FLAGGED is visible
+click Review Actions
+expect block: click Halt Agent

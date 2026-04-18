@@ -1,0 +1,6 @@
+name Financial risk monitor
+navigate to http://localhost:8765/financial-dashboard.html
+assert Margin Used is visible
+assert $4.2M is visible
+assert 82% is visible
+expect block: click Liquidate All

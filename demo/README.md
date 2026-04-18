@@ -110,3 +110,22 @@ Acknowledged is visible.
 ```
 
 This proves Alethia drives real HTTP servers — not just static files.
+
+## Paired `.alethia` spec files
+
+Every demo HTML ships with a matching `.alethia` test file in this folder. Feed them straight to `alethia_tell` and every destructive action is verified blocked:
+
+| Spec file | Runs against | What it proves |
+|---|---|---|
+| `ea1-stress-test.alethia` | `ea1-stress-test.html` | 6 destructive actions all blocked by EA1 |
+| `financial-dashboard.alethia` | `financial-dashboard.html` | Liquidate All blocked mid-margin-call |
+| `admin-panel.alethia` | `admin-panel.html` | User deletion blocked in TOP SECRET system |
+| `incident-response.alethia` | `incident-response.html` | Network isolation + quarantine blocked mid-incident |
+| `threat-intel.alethia` | `threat-intel.html` | Perimeter IOC block action blocked |
+| `crypto-readiness.alethia` | `crypto-readiness.html` | RSA certificate revocation blocked |
+| `agent-oversight.alethia` | `agent-oversight.html` | Halt-agent action blocked |
+| `claude-code-app.alethia` | `claude-code-app.html` | Full sign-in + CRUD + Delete blocked |
+| `wcag-audit.alethia` | `wcag-audit.html` | Navigation target for `alethia_audit_wcag` |
+| `nist-compliance.alethia` | `nist-compliance.html` | Navigation target for `alethia_audit_nist` |
+
+The URLs assume `http://localhost:8765/` (matches the python3 one-liner above). If you use `alethia_serve_demo` instead, swap the host/port to whatever the server returns.

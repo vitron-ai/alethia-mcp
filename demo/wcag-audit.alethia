@@ -1,0 +1,3 @@
+name WCAG audit target
+navigate to http://localhost:8765/wcag-audit.html
+assert WCAG Accessibility Audit is visible

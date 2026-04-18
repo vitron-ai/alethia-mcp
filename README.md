@@ -91,7 +91,11 @@ Same shape — point the client at the `alethia-mcp` command.
 
 ### Claude Desktop
 
-`~/Library/Application Support/Claude/claude_desktop_config.json`:
+Edit `claude_desktop_config.json`:
+
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux:** `~/.config/Claude/claude_desktop_config.json`
 
 ```json
 {
@@ -170,8 +174,8 @@ Returns a signed JSON pack with every tool call, input, output, policy decision,
 | Tool | Purpose |
 |---|---|
 | `alethia_tell` | Run plain-English test steps. Returns per-step results, `nearMatches`, `suggestedFix`, `pageContext`, and an integrity hash. |
-| `alethia_propose_tests` | Scan a URL, return a candidate NLP test suite including auto-wrapped `expect block:` for destructive actions. |
-| `alethia_assert_safety` | Walk every destructive control on a URL, verify the EA1 gate blocks each one. |
+| `alethia_propose_tests` | Scan a local URL (localhost, 127.0.0.1, file://, or RFC1918), return a candidate test suite including auto-wrapped `expect block:` for destructive actions. |
+| `alethia_assert_safety` | Walk every destructive control on a local URL, verify the EA1 gate blocks each one. |
 | `alethia_tell_parallel` | Concurrent multi-page test execution. |
 | `alethia_compile` | Preview what `tell` will run without executing. |
 | `alethia_screenshot` | Capture a PNG of the current page. |
@@ -185,11 +189,11 @@ Returns a signed JSON pack with every tool call, input, output, policy decision,
 
 Destructive actions (delete, purchase, transfer, liquidate, revoke, terminate, ...) are blocked by default under the `controlled-web` profile. Sensitive-input fields (passwords, tokens, credit cards) are blocked unless `allowSensitiveInput: true` is passed. Profile overrides from the agent are stripped by the bridge — profile changes require human configuration.
 
-Full input/output schemas: [`docs/api-reference.md`](https://github.com/vitron-ai/alethia/blob/main/docs/api-reference.md) in the core repo.
+Full input/output schemas are available at runtime via the MCP `tools/list` method — every MCP-capable client surfaces the schemas automatically.
 
 ---
 
-## NLP primitives at a glance
+## Instruction primitives at a glance
 
 ```
 navigate to <url>
@@ -274,7 +278,6 @@ A sensitive field was detected (password, token, credit card, etc.). Override wi
 - [VITRON-EA1 safety standard](https://vitron.ai/safety)
 - [FAQ](https://vitron.ai/faq)
 - [Releases](https://github.com/vitron-ai/alethia/releases)
-- [Core repo](https://github.com/vitron-ai/alethia)
 
 ---
 

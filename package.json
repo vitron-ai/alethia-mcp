@@ -1,6 +1,6 @@
 {
   "name": "@vitronai/alethia",
-  "version": "0.3.29",
+  "version": "0.4.0",
   "description": "MIT-licensed MCP bridge to the Alethia runtime — the patent-pending zero-IPC E2E test runtime built for AI agents. 45x faster than Playwright. Local-first, zero telemetry. WCAG + NIST 800-53 compliance audits built in. Auto-installs on first use.",
   "type": "module",
   "main": "dist/index.js",
@@ -16,7 +16,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "node --test test/smoke.test.mjs",
+    "test": "node --test bridge-tests/bridge-smoke.test.mjs",
     "prepublishOnly": "npm run build && npm test"
   },
   "keywords": [

@@ -1,0 +1,11 @@
+name EA1 policy stress test
+navigate to http://localhost:8765/ea1-stress-test.html
+assert EA1 Policy Gate is visible
+click View Dashboard
+assert Viewed is visible
+expect block: click Delete Account
+expect block: click Submit Payment
+expect block: click Transfer $50,000
+expect block: click Approve to Production
+expect block: click Cancel Subscription
+expect block: click Destroy Environment
