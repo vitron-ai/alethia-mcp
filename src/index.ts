@@ -138,7 +138,7 @@ const getDemoPages = (): string[] => {
 // Auto-install: download, verify, extract, and spawn the headless runtime
 // ---------------------------------------------------------------------------
 
-const RUNTIME_VERSION = '0.3.1';
+const RUNTIME_VERSION = '0.3.2';
 // Allow override via env var so tests (and unusual installs) can sandbox the path.
 const RUNTIME_DIR = process.env.ALETHIA_RUNTIME_DIR ?? join(homedir(), '.alethia', 'runtime');
 const RUNTIME_MARKER = join(RUNTIME_DIR, '.installed');
