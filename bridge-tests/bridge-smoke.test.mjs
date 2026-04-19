@@ -15,6 +15,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { readFileSync } from 'node:fs';
+import http from 'node:http';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -63,13 +64,14 @@ const runCli = (args, { input, timeoutMs = 5000 } = {}) =>
     }
   });
 
-const sendRpc = async (requests, { timeoutMs = 5000 } = {}) => {
+const sendRpc = async (requests, { timeoutMs = 5000, port = '1', extraEnv = {} } = {}) => {
   const input = requests.map((r) => JSON.stringify(r)).join('\n') + '\n';
   // Force ALETHIA_HOST to a guaranteed-unreachable address for tests that
-  // would otherwise try to talk to a real Alethia instance.
+  // would otherwise try to talk to a real Alethia instance. Tests that need
+  // to point at a fake server can pass `port` and `extraEnv`.
   const proc = spawn('node', [BIN], {
     stdio: ['pipe', 'pipe', 'pipe'],
-    env: { ...process.env, ALETHIA_HOST: '127.0.0.1', ALETHIA_PORT: '1', ALETHIA_TIMEOUT_MS: '500' },
+    env: { ...process.env, ALETHIA_HOST: '127.0.0.1', ALETHIA_PORT: String(port), ALETHIA_TIMEOUT_MS: '500', ...extraEnv },
   });
   let stdout = '';
   proc.stdout.on('data', (d) => { stdout += d.toString(); });
@@ -226,6 +228,73 @@ test('unknown method returns standard JSON-RPC method-not-found error', async ()
   const r = responses[0];
   assert.ok(r.error, 'should return error for unknown method');
   assert.equal(r.error.code, -32601);
+});
+
+// ---------------------------------------------------------------------------
+// Stale-runtime guard — regression test for the silent-staleness bug where a
+// stale runtime orphaned on the port would silently serve every tool call,
+// bypassing auto-update entirely. The bridge must refuse to operate against a
+// runtime whose reported version doesn't match what this bridge ships against.
+// ---------------------------------------------------------------------------
+
+const startFakeRuntime = (reportedVersion) =>
+  new Promise((resolveStart, rejectStart) => {
+    const server = http.createServer((req, res) => {
+      let body = '';
+      req.on('data', (chunk) => { body += chunk; });
+      req.on('end', () => {
+        let rpc;
+        try { rpc = JSON.parse(body); } catch { res.writeHead(400).end(); return; }
+        // Fake an alethia_status response with the requested version.
+        if (rpc.method === 'tools/call' && rpc.params?.name === 'alethia_status') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            jsonrpc: '2.0',
+            id: rpc.id,
+            result: { ok: true, version: reportedVersion, defaultPolicyProfile: 'controlled-web' },
+          }));
+          return;
+        }
+        // Anything else: respond with a generic OK so a missing version-guard
+        // would let the call through silently — that's the bug we're catching.
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ jsonrpc: '2.0', id: rpc.id, result: { ok: true, fake: true } }));
+      });
+    });
+    server.listen(0, '127.0.0.1', () => {
+      const addr = server.address();
+      if (!addr || typeof addr === 'string') { rejectStart(new Error('fake runtime failed to bind')); return; }
+      resolveStart({ port: addr.port, close: () => new Promise((r) => server.close(r)) });
+    });
+    server.on('error', rejectStart);
+  });
+
+test('refuses to operate against a stale runtime squatting on the port', async () => {
+  // This guards against the regression where an orphan v0.1.0-alpha.6 runtime
+  // (left over from a previous bridge process) would silently serve every
+  // tool call from a freshly-installed v0.4.x bridge. The bridge must detect
+  // version mismatch on first call and surface a clear, actionable error.
+  const fake = await startFakeRuntime('0.0.0-orphaned-stale');
+  try {
+    const responses = await sendRpc(
+      [{
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        id: 1,
+        params: { name: 'alethia_tell', arguments: { instructions: 'wait 50 milliseconds' } },
+      }],
+      { timeoutMs: 8000, port: fake.port, extraEnv: { ALETHIA_RUNTIME_DIR: '/tmp/alethia-test-noop' } },
+    );
+    assert.equal(responses.length, 1);
+    const r = responses[0];
+    assert.ok(r.result?.content, 'should return MCP envelope, not crash');
+    assert.equal(r.result.isError, true, 'must refuse stale runtime, not silently use it');
+    const msg = r.result.content[0].text;
+    assert.match(msg, /[Ss]tale Alethia runtime/, 'error must name the staleness condition');
+    assert.match(msg, /0\.0\.0-orphaned-stale/, 'error must report the offending version');
+  } finally {
+    await fake.close();
+  }
 });
 
 test('malformed JSON on stdin returns parse error', async () => {

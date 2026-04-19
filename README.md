@@ -28,7 +28,7 @@ The cockpit is an **oversight surface**, not an authoring IDE. Humans do not wri
 | Destructive-action proof | manual review | `alethia_assert_safety` — automated, machine-readable |
 | Speed | ~580 ms/step (CDP overhead) | ~13 ms/step |
 | Evidence | screenshots, videos | signed evidence pack with per-step integrity hashes |
-| Network | CI + cloud dashboards | offline-capable, loopback only, zero telemetry by default |
+| Network | Telemetry on by default; optional cloud dashboards | **Air-gap deployable** — no cloud product, no telemetry path, bound to 127.0.0.1 |
 
 ---
 

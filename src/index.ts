@@ -21,7 +21,7 @@
 
 import http from 'node:http';
 import https from 'node:https';
-import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync, createWriteStream, chmodSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync, createWriteStream, chmodSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
 import { createHash, createPublicKey, verify as cryptoVerify } from 'node:crypto';
@@ -139,7 +139,8 @@ const getDemoPages = (): string[] => {
 // ---------------------------------------------------------------------------
 
 const RUNTIME_VERSION = '0.3.1';
-const RUNTIME_DIR = join(homedir(), '.alethia', 'runtime');
+// Allow override via env var so tests (and unusual installs) can sandbox the path.
+const RUNTIME_DIR = process.env.ALETHIA_RUNTIME_DIR ?? join(homedir(), '.alethia', 'runtime');
 const RUNTIME_MARKER = join(RUNTIME_DIR, '.installed');
 const GITHUB_RELEASE_BASE = `https://github.com/vitron-ai/alethia/releases/download/v${RUNTIME_VERSION}`;
 
@@ -255,6 +256,80 @@ const sha256File = (filePath: string): string => {
 let runtimeProcess: ChildProcess | null = null;
 let autoInstallAttempted = false;
 
+// Detect what version is on disk. The marker file is the fast path; if it's
+// missing (legacy install, partial extract, manual drop) we fall back to the
+// platform's bundled version metadata so a stale binary cannot pose as fresh.
+// Returns:
+//   - the version string if knowable
+//   - 'unknown' if the executable exists but we can't identify its version
+//   - null if no runtime is installed at all
+export const getLocalInstalledRuntimeVersion = (runtimeDir = RUNTIME_DIR): string | null => {
+  const markerPath = join(runtimeDir, '.installed');
+  if (existsSync(markerPath)) {
+    try {
+      const marker = JSON.parse(readFileSync(markerPath, 'utf8')) as { version?: string };
+      if (typeof marker.version === 'string' && marker.version.length > 0) return marker.version;
+    } catch { /* fall through */ }
+  }
+  if (platform() === 'darwin') {
+    const macDir = existsSync(join(runtimeDir, 'mac')) ? 'mac' : 'mac-arm64';
+    const plistPath = join(runtimeDir, macDir, 'Alethia.app', 'Contents', 'Info.plist');
+    if (existsSync(plistPath)) {
+      try {
+        const plist = readFileSync(plistPath, 'utf8');
+        const match = plist.match(/<key>CFBundleShortVersionString<\/key>\s*<string>([^<]+)<\/string>/);
+        if (match) return match[1];
+      } catch { /* fall through */ }
+    }
+  }
+  // Binary present but no version metadata — treat as outdated so upgrade kicks in.
+  if (existsSync(getExecutablePath())) return 'unknown';
+  return null;
+};
+
+// Probe a runtime that is already responding on ALETHIA_PORT. Returns the
+// reported version, or null if we can't reach one (or the runtime is too old
+// to expose alethia_status). This is the source of truth for "what's actually
+// running", which the on-disk marker can lie about (orphan processes, stale
+// installs, manual launches).
+const probeRunningRuntimeVersion = async (): Promise<string | null> => {
+  try {
+    const resp = await callAlethia(
+      { jsonrpc: '2.0', id: 0, method: 'tools/call', params: { name: 'alethia_status', arguments: {} } },
+      3_000,
+    );
+    if (resp.error) return null;
+    const result = resp.result as { version?: string } | undefined;
+    return typeof result?.version === 'string' ? result.version : null;
+  } catch {
+    return null;
+  }
+};
+
+let runtimeVersionVerified = false;
+
+// One-shot guard, called before each tool dispatch. If a runtime is already on
+// the port with a version that doesn't match what this bridge ships against,
+// refuse to operate — the user is silently driving against a stale runtime
+// (likely an orphan from a prior bridge that wasn't cleaned up). Returns
+// silently if no runtime answers (the normal install path will then take over).
+const ensureCorrectRuntimeVersion = async (): Promise<void> => {
+  if (runtimeVersionVerified) return;
+  const runningVersion = await probeRunningRuntimeVersion();
+  if (runningVersion === null) {
+    // Nothing answering or too-old runtime — let the install/spawn path drive.
+    return;
+  }
+  if (runningVersion !== RUNTIME_VERSION) {
+    throw new Error(
+      `Stale Alethia runtime v${runningVersion} is responding on port ${ALETHIA_PORT}; this bridge expects v${RUNTIME_VERSION}. ` +
+      `An older runtime (likely orphaned from a previous bridge process) is occupying the port, so the bridge cannot spawn the correct version. ` +
+      `Quit the running runtime — on macOS: \`pkill -f Alethia.app\` — then restart your MCP host.`,
+    );
+  }
+  runtimeVersionVerified = true;
+};
+
 const ensureRuntime = async (): Promise<void> => {
   if (autoInstallAttempted) return;
   autoInstallAttempted = true;
@@ -268,22 +343,22 @@ const ensureRuntime = async (): Promise<void> => {
     );
   }
 
-  // Check if already installed and up-to-date
-  if (existsSync(RUNTIME_MARKER)) {
-    try {
-      const marker = JSON.parse(readFileSync(RUNTIME_MARKER, 'utf8')) as { version?: string };
-      if (marker.version === RUNTIME_VERSION) {
-        debug('runtime already installed and up-to-date, spawning');
-        await spawnRuntime();
-        return;
-      }
-      process.stderr.write(`[alethia] Installed runtime v${marker.version ?? 'unknown'} is outdated. Upgrading to v${RUNTIME_VERSION}...\n`);
-    } catch {
-      debug('could not read runtime marker, re-installing');
-    }
+  // Check what's installed on disk. Marker is fast path; Info.plist fallback
+  // catches legacy installs / partial extracts that never wrote a marker.
+  const installedVersion = getLocalInstalledRuntimeVersion();
+  if (installedVersion === RUNTIME_VERSION) {
+    debug('runtime already installed and up-to-date, spawning');
+    await spawnRuntime();
+    return;
   }
-
-  process.stderr.write(`[alethia] Runtime not found. Auto-installing v${RUNTIME_VERSION}...\n`);
+  if (installedVersion) {
+    process.stderr.write(`[alethia] Installed runtime v${installedVersion} is outdated. Upgrading to v${RUNTIME_VERSION}...\n`);
+    // Wipe the stale install before re-extracting so orphan files from the
+    // previous version (different bundle layout, removed assets) don't linger.
+    try { rmSync(RUNTIME_DIR, { recursive: true, force: true }); } catch { /* best effort */ }
+  } else {
+    process.stderr.write(`[alethia] Runtime not found. Auto-installing v${RUNTIME_VERSION}...\n`);
+  }
 
   mkdirSync(RUNTIME_DIR, { recursive: true });
   const artifactPath = join(RUNTIME_DIR, artifactName);
@@ -1074,6 +1149,20 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
           result: wrapMcpResult(httpResponse.result ?? null),
         };
       };
+
+      // Refuse to operate against a stale runtime that's squatting on the port
+      // (orphan from a previous bridge process, manual launch, etc.). Without
+      // this guard the bridge would silently use whatever's running, and the
+      // user would never know they're months behind on policy/runtime patches.
+      try {
+        await ensureCorrectRuntimeVersion();
+      } catch (versionErr) {
+        return {
+          jsonrpc: '2.0',
+          id,
+          result: wrapMcpResult((versionErr as Error).message, true),
+        };
+      }
 
       try {
         return await doCall();
