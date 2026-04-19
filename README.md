@@ -67,7 +67,6 @@ Connected. MCP tools available.
     "alethia": {
       "command": "alethia-mcp",
       "env": {
-        "ALETHIA_VISIBLE": "1",
         "ALETHIA_HIGHLIGHTS": "1"
       }
     }
@@ -75,7 +74,7 @@ Connected. MCP tools available.
 }
 ```
 
-With `ALETHIA_VISIBLE=1`, the Alethia cockpit opens alongside your agent. The target app loads inside the cockpit, so the Alethia UI stays visible during the run and highlights each step live (green = click/assert pass, blue = type, red = EA1 block).
+The Alethia cockpit opens by default alongside your agent. The target app loads inside the cockpit, so the Alethia UI stays visible during the run and highlights each step live (green = click/assert pass, blue = type, red = EA1 block). Set `ALETHIA_HEADLESS=1` to hide it, or call `alethia_hide_cockpit` mid-session. CI environments (`CI=1`, `GITHUB_ACTIONS`, etc.) auto-headless.
 
 ### Cursor
 
@@ -233,7 +232,8 @@ alethia-mcp --debug          Run with debug logging on stderr
 | `ALETHIA_PORT` | `47432` | Port of the Alethia runtime |
 | `ALETHIA_TIMEOUT_MS` | `60000` | Per-request timeout in milliseconds |
 | `ALETHIA_DEBUG` | (unset) | Set to `1` for debug logging on stderr |
-| `ALETHIA_VISIBLE` | (unset) | Set to `1` to show the cockpit window |
+| `ALETHIA_HEADLESS` | (unset) | Set to `1` to hide the cockpit window. Default is visible. CI environments (`CI=1`, `GITHUB_ACTIONS`, etc.) auto-hide. |
+| `ALETHIA_VISIBLE` | (unset) | **Deprecated** — set to `0` as a legacy alias for `ALETHIA_HEADLESS=1`. Removed in a future release. |
 | `ALETHIA_HIGHLIGHTS` | (unset) | Set to `1` to overlay per-step highlights on the target |
 
 ---
@@ -243,7 +243,7 @@ alethia-mcp --debug          Run with debug logging on stderr
 - This package is the MCP bridge. It translates MCP tool calls into requests to the Alethia runtime.
 - The runtime listens on `127.0.0.1:47432` over loopback JSON-RPC. No cloud calls, no telemetry.
 - The runtime auto-installs on first use from signed GitHub releases (Ed25519-verified).
-- With `ALETHIA_VISIBLE=1`, the cockpit shows the target app and highlights each step live.
+- The cockpit is visible by default — it's the oversight surface where each step is highlighted live. Set `ALETHIA_HEADLESS=1` to hide, or toggle mid-session with `alethia_show_cockpit` / `alethia_hide_cockpit`.
 
 ---
 

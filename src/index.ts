@@ -138,7 +138,7 @@ const getDemoPages = (): string[] => {
 // Auto-install: download, verify, extract, and spawn the headless runtime
 // ---------------------------------------------------------------------------
 
-const RUNTIME_VERSION = '0.3.2';
+const RUNTIME_VERSION = '0.4.0';
 // Allow override via env var so tests (and unusual installs) can sandbox the path.
 const RUNTIME_DIR = process.env.ALETHIA_RUNTIME_DIR ?? join(homedir(), '.alethia', 'runtime');
 const RUNTIME_MARKER = join(RUNTIME_DIR, '.installed');
@@ -424,7 +424,26 @@ const spawnRuntime = async (): Promise<void> => {
     try { chmodSync(exe, 0o755); } catch { /* best effort */ }
   }
 
-  const visible = process.env.ALETHIA_VISIBLE === '1' || process.env.ALETHIA_VISIBLE === 'true';
+  // Cockpit visibility is on by default — it's the oversight surface that
+  // makes agent runs legible to humans. Explicit opt-outs:
+  //   ALETHIA_HEADLESS=1        → hide (primary switch)
+  //   ALETHIA_VISIBLE=0|false   → hide (deprecated alias, kept one release)
+  //   CI env detected           → hide (no DISPLAY on Linux runners, noisy locally)
+  // The runtime can still be popped into view mid-session via the
+  // alethia_show_cockpit MCP tool when it was launched hidden.
+  const isCi =
+    process.env.CI === 'true' ||
+    process.env.CI === '1' ||
+    process.env.GITHUB_ACTIONS === 'true' ||
+    process.env.GITLAB_CI === 'true' ||
+    process.env.CIRCLECI === 'true' ||
+    process.env.BUILDKITE === 'true';
+  const explicitHide =
+    process.env.ALETHIA_HEADLESS === '1' ||
+    process.env.ALETHIA_HEADLESS === 'true' ||
+    process.env.ALETHIA_VISIBLE === '0' ||
+    process.env.ALETHIA_VISIBLE === 'false';
+  const visible = !explicitHide && !isCi;
   process.stderr.write(`[alethia] Spawning runtime (${visible ? 'visible' : 'headless'})...\n`);
   // Headless is passed via env var. ALETHIA_HEADLESS=1 is the runtime's
   // own switch and does not depend on any passthrough CLI flag.
@@ -918,6 +937,21 @@ const TOOLS = [
       required: ['url'],
     },
   },
+  {
+    name: 'alethia_show_cockpit',
+    description:
+      'Show the Alethia cockpit window — the oversight surface where the target app is driven and each ' +
+      'step is highlighted live (green = pass, blue = type, red = EA1 block). Use this to pop the UI ' +
+      'into view during a headless-launched session for demos, review, or partner walkthroughs.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'alethia_hide_cockpit',
+    description:
+      'Hide the Alethia cockpit window. The runtime keeps running and continues to accept tool calls; ' +
+      'only the visible window is dismissed.',
+    inputSchema: { type: 'object', properties: {} },
+  },
 ] as const;
 
 // Map public MCP tool names to internal runtime tool names
@@ -935,6 +969,8 @@ const TOOL_NAME_MAP: Record<string, string> = {
   alethia_tell_parallel: 'alethia_tell_parallel',
   alethia_propose_tests: 'alethia_propose_tests',
   alethia_assert_safety: 'alethia_assert_safety',
+  alethia_show_cockpit: 'alethia_show_cockpit',
+  alethia_hide_cockpit: 'alethia_hide_cockpit',
 };
 
 // ---------------------------------------------------------------------------
@@ -980,6 +1016,8 @@ const validateToolArgs = (toolName: string, args: Record<string, unknown>): stri
     case 'alethia_audit_nist':
     case 'alethia_export_session':
     case 'alethia_tell_parallel':
+    case 'alethia_show_cockpit':
+    case 'alethia_hide_cockpit':
       return null;
     default:
       return `unknown tool: ${toolName}`;
@@ -1050,7 +1088,8 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
             '- alethia_export_session: Export signed evidence pack of everything the agent did this session.\n' +
             '- alethia_serve_demo: Start a localhost server for built-in demo pages. Opens in preview panels.\n' +
             '- alethia_propose_tests: Scan a URL and return a candidate NLP test suite ready for alethia_tell, including an auto-generated "expect block:" block for every destructive action.\n' +
-            '- alethia_assert_safety: Walk every destructive action on a URL and verify the EA1 gate blocks each one. Returns a per-action block/allow report.\n\n' +
+            '- alethia_assert_safety: Walk every destructive action on a URL and verify the EA1 gate blocks each one. Returns a per-action block/allow report.\n' +
+            '- alethia_show_cockpit / alethia_hide_cockpit: Toggle the live oversight window during a session.\n\n' +
             'Key capabilities:\n' +
             '- Smart assertions: on failure, returns near-matches, page context, and suggested fixes.\n' +
             '- Page readiness: auto-waits for loading indicators before assertions.\n' +
