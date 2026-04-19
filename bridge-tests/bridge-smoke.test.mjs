@@ -4,7 +4,7 @@
 //   - The CLI binary launches and responds to --version, --help
 //   - The stdio protocol parses cleanly and returns correct shapes for
 //     initialize, tools/list, and unknown methods
-//   - tools/list returns the expected 7 tools
+//   - tools/list returns the expected set of tools
 //   - Validation rejects malformed tools/call args
 //
 // Run with `npm test` (uses node:test, no external dependencies).
@@ -37,6 +37,8 @@ const EXPECTED_TOOLS = [
   'alethia_serve_demo',
   'alethia_propose_tests',
   'alethia_assert_safety',
+  'alethia_show_cockpit',
+  'alethia_hide_cockpit',
 ];
 
 // ---------------------------------------------------------------------------
