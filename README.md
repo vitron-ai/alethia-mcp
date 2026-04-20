@@ -166,6 +166,8 @@ The runtime walks every destructive control on the page and runs `expect block:`
 
 Returns a signed JSON pack with every tool call, input, output, policy decision, and a chained SHA-256 hash over the record. Chain-of-custody quality.
 
+> **More paste-ready demos:** see the [agent cookbook](https://github.com/vitron-ai/alethia/blob/main/docs/agent-cookbook.md) — paste-ready prompts — compliance audits, parallel multi-page checks, live partner walkthroughs, and more. Every scenario is a literal prompt you drop into Claude / Cursor / Cline.
+
 ---
 
 ## Tools
@@ -186,7 +188,7 @@ Returns a signed JSON pack with every tool call, input, output, policy decision,
 | `alethia_activate_kill_switch` / `alethia_reset_kill_switch` | Emergency halt and resume. |
 | `alethia_serve_demo` | Start the bundled localhost demo server. |
 
-Destructive actions (delete, purchase, transfer, liquidate, revoke, terminate, ...) are blocked by default under the `controlled-web` profile. Sensitive-input fields (passwords, tokens, credit cards) are blocked unless `allowSensitiveInput: true` is passed. Profile overrides from the agent are stripped by the bridge — profile changes require human configuration.
+Destructive actions (delete, purchase, transfer, liquidate, revoke, terminate, ...) are blocked by default under the hardened local-only profile. Sensitive-input fields (passwords, tokens, credit cards) are blocked unless `allowSensitiveInput: true` is passed. Profile overrides from the agent are stripped by the bridge — profile changes require human configuration.
 
 Full input/output schemas are available at runtime via the MCP `tools/list` method — every MCP-capable client surfaces the schemas automatically.
 

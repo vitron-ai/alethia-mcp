@@ -1090,6 +1090,13 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
             '- alethia_propose_tests: Scan a URL and return a candidate NLP test suite ready for alethia_tell, including an auto-generated "expect block:" block for every destructive action.\n' +
             '- alethia_assert_safety: Walk every destructive action on a URL and verify the EA1 gate blocks each one. Returns a per-action block/allow report.\n' +
             '- alethia_show_cockpit / alethia_hide_cockpit: Toggle the live oversight window during a session.\n\n' +
+            'Common workflows (chain these tools, do not ask the user for raw tool names):\n' +
+            '- Smoke test a page: alethia_tell with "navigate to <url>" + plain-English asserts.\n' +
+            '- Bootstrap tests on an unknown page: alethia_propose_tests (returns ready NLP blocks) → alethia_tell to run them.\n' +
+            '- Full compliance pass: alethia_tell (navigate) → alethia_audit_wcag → alethia_audit_nist → alethia_export_session for the signed pack.\n' +
+            '- Prove the EA1 safety gate works: alethia_assert_safety (auto-discovers destructive actions and verifies each is blocked).\n' +
+            '- Demo / visual verification: alethia_serve_demo (localhost URL) → alethia_tell → alethia_screenshot.\n' +
+            '- End of every compliance session: alethia_export_session returns a SHA-256-hashed, Ed25519-signable evidence pack.\n\n' +
             'Key capabilities:\n' +
             '- Smart assertions: on failure, returns near-matches, page context, and suggested fixes.\n' +
             '- Page readiness: auto-waits for loading indicators before assertions.\n' +
