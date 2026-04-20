@@ -16,7 +16,9 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "node --test bridge-tests/*.test.mjs",
+    "test": "node --test bridge-tests/bridge-smoke.test.mjs",
+    "test:auto-install": "node --test bridge-tests/auto-install.test.mjs",
+    "test:all": "node --test bridge-tests/*.test.mjs",
     "prepublishOnly": "npm run build && npm test"
   },
   "keywords": [
