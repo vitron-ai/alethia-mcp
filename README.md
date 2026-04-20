@@ -239,6 +239,8 @@ alethia-mcp --debug          Run with debug logging on stderr
 | `ALETHIA_HEADLESS` | (unset) | Set to `1` to hide the cockpit window. Default is visible. CI environments (`CI=1`, `GITHUB_ACTIONS`, etc.) auto-hide. |
 | `ALETHIA_VISIBLE` | (unset) | **Deprecated** — set to `0` as a legacy alias for `ALETHIA_HEADLESS=1`. Removed in a future release. |
 | `ALETHIA_HIGHLIGHTS` | (unset) | Set to `1` to overlay per-step highlights on the target |
+| `ALETHIA_RUNTIME_VERSION` | (unset) | Pin the bridge to a specific runtime version (e.g. `0.4.0`). By default the bridge queries GitHub Releases for the current latest runtime and downloads that. Use this for reproducible CI, bisection, or deliberately staying on an older runtime. |
+| `ALETHIA_RUNTIME_DIR` | `~/.alethia/runtime` | Where the auto-installed runtime lives. Override for sandboxing or to stash multiple installs. |
 
 ---
 
@@ -247,6 +249,7 @@ alethia-mcp --debug          Run with debug logging on stderr
 - This package is the MCP bridge. It translates MCP tool calls into requests to the Alethia runtime.
 - The runtime listens on `127.0.0.1:47432` over loopback JSON-RPC. No cloud calls, no telemetry.
 - The runtime auto-installs on first use from signed GitHub releases (Ed25519-verified).
+- **The bridge asks GitHub Releases what the current runtime version is on first start** (cached 1h). No RUNTIME_VERSION pin lives in the bridge source, so a globally-installed bridge keeps pulling the current runtime as new ones ship. Pin to a specific version with `ALETHIA_RUNTIME_VERSION=x.y.z` for reproducible CI or bisection.
 - The cockpit is visible by default — it's the oversight surface where each step is highlighted live. Set `ALETHIA_HEADLESS=1` to hide, or toggle mid-session with `alethia_show_cockpit` / `alethia_hide_cockpit`.
 
 ---
