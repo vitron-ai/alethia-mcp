@@ -57,111 +57,12 @@ const ALETHIA_HOST = process.env.ALETHIA_HOST ?? '127.0.0.1';
 const ALETHIA_PORT = Number(process.env.ALETHIA_PORT ?? 47432);
 const ALETHIA_TIMEOUT_MS = Number(process.env.ALETHIA_TIMEOUT_MS ?? 60_000);
 const DEBUG = process.env.ALETHIA_DEBUG === '1' || process.argv.includes('--debug');
-const SKIP_UPDATE_CHECK = process.env.ALETHIA_SKIP_UPDATE_CHECK === '1';
 
 const debug = (...args: unknown[]): void => {
   if (DEBUG) {
     process.stderr.write(`[alethia-mcp] ${args.map(String).join(' ')}\n`);
   }
 };
-
-// ---------------------------------------------------------------------------
-// Update check — globally-installed bridges don't auto-update. npm doesn't
-// tell users a newer version exists. Without this, a user on last month's
-// bridge silently misses every new runtime + tool we ship until they manually
-// re-install. Check npm registry at most once per 24h, warn on stderr, and
-// surface the notice in the MCP initialize response so the agent can relay
-// it to the user. All failures are silent (offline, rate-limit, parse error).
-// Opt out with ALETHIA_SKIP_UPDATE_CHECK=1.
-// ---------------------------------------------------------------------------
-
-const UPDATE_CHECK_CACHE = join(homedir(), '.alethia', '.update-check');
-const UPDATE_CHECK_TTL_MS = 24 * 60 * 60 * 1000;
-
-// Accepts x.y.z and x.y.z-pre.N. Returns 1/-1/0. Silent on parse failure
-// (returns 0 so we never warn on garbage).
-const compareSemver = (a: string, b: string): number => {
-  const parse = (v: string): number[] => {
-    const core = v.split('-')[0] ?? v;
-    return core.split('.').map((n) => {
-      const x = parseInt(n, 10);
-      return Number.isFinite(x) ? x : 0;
-    });
-  };
-  const pa = parse(a);
-  const pb = parse(b);
-  const len = Math.max(pa.length, pb.length);
-  for (let i = 0; i < len; i++) {
-    const av = pa[i] ?? 0;
-    const bv = pb[i] ?? 0;
-    if (av !== bv) return av > bv ? 1 : -1;
-  }
-  return 0;
-};
-
-let latestBridgeVersion: string | null = null;
-
-const fetchLatestBridgeVersion = (): Promise<string | null> =>
-  new Promise((resolveFetch) => {
-    const req = https.get(
-      `https://registry.npmjs.org/${PKG_NAME}/latest`,
-      { timeout: 2000, headers: { accept: 'application/json' } },
-      (res) => {
-        if (res.statusCode !== 200) { res.resume(); return resolveFetch(null); }
-        let body = '';
-        res.setEncoding('utf8');
-        res.on('data', (c: string) => { body += c; if (body.length > 64 * 1024) res.destroy(); });
-        res.on('end', () => {
-          try {
-            const v = JSON.parse(body).version;
-            resolveFetch(typeof v === 'string' ? v : null);
-          } catch { resolveFetch(null); }
-        });
-      },
-    );
-    req.on('error', () => resolveFetch(null));
-    req.on('timeout', () => { req.destroy(); resolveFetch(null); });
-  });
-
-const readUpdateCache = (): { lastChecked: number; latestVersion: string } | null => {
-  try {
-    const raw = JSON.parse(readFileSync(UPDATE_CHECK_CACHE, 'utf8'));
-    if (typeof raw.lastChecked === 'number' && typeof raw.latestVersion === 'string') return raw;
-  } catch { /* no cache / corrupt cache */ }
-  return null;
-};
-
-const writeUpdateCache = (latestVersion: string): void => {
-  try {
-    mkdirSync(dirname(UPDATE_CHECK_CACHE), { recursive: true });
-    writeFileSync(UPDATE_CHECK_CACHE, JSON.stringify({ lastChecked: Date.now(), latestVersion }));
-  } catch { /* best-effort */ }
-};
-
-// Returns the newer version string if the user's bridge is behind, else null.
-// Consults cache first; only hits the network if cache is stale.
-const checkForBridgeUpdate = async (): Promise<string | null> => {
-  if (SKIP_UPDATE_CHECK) return null;
-  const cached = readUpdateCache();
-  const fresh = cached && Date.now() - cached.lastChecked < UPDATE_CHECK_TTL_MS;
-  const latest = fresh ? cached.latestVersion : await fetchLatestBridgeVersion();
-  if (!latest) return null;
-  if (!fresh) writeUpdateCache(latest);
-  return compareSemver(latest, PKG_VERSION) > 0 ? latest : null;
-};
-
-// Kicked off at module load; the result lands in latestBridgeVersion and is
-// inspected by the initialize response + the pre-handler stderr notice. The
-// bridge's cold start path (auto-install, download, spawn) is IO-bound for
-// several seconds — this network call piggy-backs on that idle window.
-void checkForBridgeUpdate().then((newer) => {
-  if (!newer) return;
-  latestBridgeVersion = newer;
-  process.stderr.write(
-    `[alethia-mcp] A newer bridge is available: ${newer} (you have ${PKG_VERSION}). ` +
-    `Update with: npm install -g @vitronai/alethia@latest\n`,
-  );
-});
 
 // ---------------------------------------------------------------------------
 // Demo server — serves demo/ files on localhost for preview panels
@@ -235,13 +136,28 @@ const getDemoPages = (): string[] => {
 
 // ---------------------------------------------------------------------------
 // Auto-install: download, verify, extract, and spawn the headless runtime
+//
+// Philosophy change vs. 0.5.x — the bridge no longer pins a specific runtime
+// version in source. Instead, it asks GitHub Releases what's current and
+// downloads that. Rationale:
+//   - One fewer thing to hand-edit at release time (RUNTIME_VERSION bump was
+//     a step that went wrong twice in session 2026-04-19).
+//   - Globally-installed bridges no longer silently get frozen on last
+//     month's runtime. They pull the current signed pair on demand.
+//   - Explicit opt-out: set ALETHIA_RUNTIME_VERSION=x.y.z to pin — useful
+//     for reproducible CI, bisection, or deliberately staying behind.
+//
+// All downloads still go through the same Ed25519 + SHA-256 verification
+// path. The Ed25519 public key ships embedded in the bridge and is the
+// chain-of-custody anchor — we trust what GitHub serves only to the extent
+// that its signature matches this key.
 // ---------------------------------------------------------------------------
 
-const RUNTIME_VERSION = '0.4.0';
-// Allow override via env var so tests (and unusual installs) can sandbox the path.
 const RUNTIME_DIR = process.env.ALETHIA_RUNTIME_DIR ?? join(homedir(), '.alethia', 'runtime');
 const RUNTIME_MARKER = join(RUNTIME_DIR, '.installed');
-const GITHUB_RELEASE_BASE = `https://github.com/vitron-ai/alethia/releases/download/v${RUNTIME_VERSION}`;
+const LATEST_RELEASE_CACHE = join(homedir(), '.alethia', '.latest-release');
+const LATEST_RELEASE_TTL_MS = 60 * 60 * 1000; // 1h — fresh enough to pick up new releases same-day.
+const GITHUB_API_LATEST = 'https://api.github.com/repos/vitron-ai/alethia/releases/latest';
 
 // Ed25519 public key for release verification — embedded so it ships with npm
 const RELEASE_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
@@ -257,27 +173,151 @@ type ReleaseManifest = {
   signature: string;
 };
 
-const PLATFORM_MAP: Record<string, Record<string, string>> = {
-  darwin: {
-    x64: `Alethia-${RUNTIME_VERSION}-mac.tar.gz`,
-    arm64: `Alethia-${RUNTIME_VERSION}-mac-arm64.tar.gz`,
-  },
-  linux: {
-    x64: `alethia-${RUNTIME_VERSION}.tar.gz`,
-    arm64: `alethia-${RUNTIME_VERSION}-arm64.tar.gz`,
-  },
-  win32: {
-    x64: `Alethia-${RUNTIME_VERSION}-win.zip`,
-  },
+type LatestReleaseCache = { fetchedAt: number; version: string };
+
+// Pin override (advanced users / CI / bisection). Accepts "0.4.0" or "v0.4.0"
+// for convenience; normalized to the bare semver form used throughout.
+const getPinnedRuntimeVersion = (): string | null => {
+  const raw = process.env.ALETHIA_RUNTIME_VERSION;
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  return trimmed.startsWith('v') ? trimmed.slice(1) : trimmed;
 };
 
-const getArtifactName = (): string | null => {
+// Query GitHub Releases for the current latest version. Cached 1h in
+// ~/.alethia/.latest-release. Honors ALETHIA_RUNTIME_VERSION pin override
+// (skips network entirely if pinned).
+//
+// Fetch failures are non-fatal if we have *any* cached value (even stale),
+// any installed runtime (use its marker version), or the user has pinned.
+// Only the cold path (first run + offline + no pin) produces an error,
+// because there is no signed chain-of-custody anchor we can use without
+// reaching the release metadata at least once.
+// Test hook — allows tests to swap the network fetcher for a deterministic
+// mock. Production callers never set this; the default is the real
+// fetchLatestRuntimeVersion. Keeps the test surface in-process with no mocks
+// of global https.get required.
+let _fetcherForTests: (() => Promise<string | null>) | null = null;
+export const __setLatestVersionFetcherForTests = (fn: (() => Promise<string | null>) | null): void => {
+  _fetcherForTests = fn;
+};
+
+export const resolveRuntimeVersion = async (): Promise<string> => {
+  const pinned = getPinnedRuntimeVersion();
+  if (pinned) {
+    debug(`runtime version pinned via ALETHIA_RUNTIME_VERSION=${pinned}`);
+    return pinned;
+  }
+
+  const cached = readLatestReleaseCache();
+  if (cached && Date.now() - cached.fetchedAt < LATEST_RELEASE_TTL_MS) {
+    debug(`using cached latest-release version ${cached.version} (age ${Date.now() - cached.fetchedAt}ms)`);
+    return cached.version;
+  }
+
+  const fetched = await (_fetcherForTests ?? fetchLatestRuntimeVersion)();
+  if (fetched) {
+    writeLatestReleaseCache(fetched);
+    return fetched;
+  }
+
+  // Network failed. Fall back to stale cache, then installed marker.
+  if (cached) {
+    debug(`latest-release fetch failed; using stale cache ${cached.version}`);
+    return cached.version;
+  }
+  const installed = getLocalInstalledRuntimeVersion();
+  if (installed && installed !== 'unknown') {
+    debug(`latest-release fetch failed and no cache; using installed marker ${installed}`);
+    return installed;
+  }
+
+  throw new Error(
+    'Could not determine runtime version. ' +
+    'The bridge needs to reach https://api.github.com/repos/vitron-ai/alethia/releases/latest at least once to discover the current signed runtime. ' +
+    'Pin a specific version to skip this: ALETHIA_RUNTIME_VERSION=x.y.z',
+  );
+};
+
+const readLatestReleaseCache = (): LatestReleaseCache | null => {
+  try {
+    const raw = JSON.parse(readFileSync(LATEST_RELEASE_CACHE, 'utf8'));
+    if (typeof raw.fetchedAt === 'number' && typeof raw.version === 'string') return raw;
+  } catch { /* no cache / corrupt */ }
+  return null;
+};
+
+const writeLatestReleaseCache = (version: string): void => {
+  try {
+    mkdirSync(dirname(LATEST_RELEASE_CACHE), { recursive: true });
+    writeFileSync(LATEST_RELEASE_CACHE, JSON.stringify({ fetchedAt: Date.now(), version }));
+  } catch { /* best effort */ }
+};
+
+const fetchLatestRuntimeVersion = (): Promise<string | null> =>
+  new Promise((resolveFetch) => {
+    const req = https.get(
+      GITHUB_API_LATEST,
+      {
+        timeout: 3000,
+        headers: {
+          accept: 'application/vnd.github+json',
+          'user-agent': `${PKG_NAME}/${PKG_VERSION}`,
+        },
+      },
+      (res) => {
+        if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          res.resume();
+          // GitHub API doesn't redirect for this endpoint, but be safe.
+          resolveFetch(null);
+          return;
+        }
+        if (res.statusCode !== 200) { res.resume(); return resolveFetch(null); }
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', (c: string) => { body += c; if (body.length > 256 * 1024) res.destroy(); });
+        res.on('end', () => {
+          try {
+            const tag = JSON.parse(body).tag_name as unknown;
+            if (typeof tag !== 'string') return resolveFetch(null);
+            // Accept "v0.4.0" or "0.4.0"
+            resolveFetch(tag.startsWith('v') ? tag.slice(1) : tag);
+          } catch { resolveFetch(null); }
+        });
+      },
+    );
+    req.on('error', () => resolveFetch(null));
+    req.on('timeout', () => { req.destroy(); resolveFetch(null); });
+  });
+
+// Platform → artifact filename template. The version is substituted at
+// install time now that it's no longer a module-level constant.
+export const getArtifactName = (runtimeVersion: string): string | null => {
   const p = platform();
   const a = arch();
-  return PLATFORM_MAP[p]?.[a] ?? null;
+  const templates: Record<string, Record<string, string>> = {
+    darwin: {
+      x64: `Alethia-${runtimeVersion}-mac.tar.gz`,
+      arm64: `Alethia-${runtimeVersion}-mac-arm64.tar.gz`,
+    },
+    linux: {
+      x64: `alethia-${runtimeVersion}.tar.gz`,
+      arm64: `alethia-${runtimeVersion}-arm64.tar.gz`,
+    },
+    win32: {
+      x64: `Alethia-${runtimeVersion}-win.zip`,
+    },
+  };
+  return templates[p]?.[a] ?? null;
 };
 
-const getExecutablePath = (): string => {
+export const getGithubReleaseBase = (runtimeVersion: string): string =>
+  `https://github.com/vitron-ai/alethia/releases/download/v${runtimeVersion}`;
+
+// Finds the runtime binary in the install dir. Runtime version is only needed
+// for Linux (version-prefixed extract dir); Mac and Windows have stable layouts.
+const getExecutablePath = (runtimeVersion?: string): string => {
   const p = platform();
   if (p === 'darwin') {
     // Look for the .app inside the extracted directory
@@ -287,14 +327,11 @@ const getExecutablePath = (): string => {
   if (p === 'win32') {
     return join(RUNTIME_DIR, 'win-unpacked', 'Alethia.exe');
   }
-  // Linux — the tarball extracts into a version-prefixed directory.
-  // Probe likely candidates and fall back to scanning RUNTIME_DIR.
-  const linuxCandidates = [
-    `alethia-${RUNTIME_VERSION}`,
-    `alethia-${RUNTIME_VERSION}-arm64`,
-    'linux-unpacked',
-    'linux-arm64-unpacked',
-  ];
+  // Linux — the tarball extracts into a version-prefixed directory. Try the
+  // expected-for-this-version paths first, then scan.
+  const linuxCandidates = runtimeVersion
+    ? [`alethia-${runtimeVersion}`, `alethia-${runtimeVersion}-arm64`, 'linux-unpacked', 'linux-arm64-unpacked']
+    : ['linux-unpacked', 'linux-arm64-unpacked'];
   for (const dir of linuxCandidates) {
     const exe = join(RUNTIME_DIR, dir, 'alethia');
     if (existsSync(exe)) return exe;
@@ -306,9 +343,9 @@ const getExecutablePath = (): string => {
       if (existsSync(candidate)) return candidate;
     }
   } catch { /* ignore */ }
-  // Return the canonical expected path so the downstream error message
-  // tells the user where we LOOKED (rather than landing on an unrelated arm64 path).
-  return join(RUNTIME_DIR, `alethia-${RUNTIME_VERSION}`, 'alethia');
+  // Return a canonical expected path so downstream errors tell the user
+  // where we LOOKED (rather than landing on an unrelated arm64 path).
+  return join(RUNTIME_DIR, runtimeVersion ? `alethia-${runtimeVersion}` : 'linux-unpacked', 'alethia');
 };
 
 const httpsGet = (url: string): Promise<http.IncomingMessage> =>
@@ -406,9 +443,10 @@ const probeRunningRuntimeVersion = async (): Promise<string | null> => {
 };
 
 let runtimeVersionVerified = false;
+let resolvedTargetVersion: string | null = null;
 
 // One-shot guard, called before each tool dispatch. If a runtime is already on
-// the port with a version that doesn't match what this bridge ships against,
+// the port with a version that doesn't match what this bridge is targeting,
 // refuse to operate — the user is silently driving against a stale runtime
 // (likely an orphan from a prior bridge that wasn't cleaned up). Returns
 // silently if no runtime answers (the normal install path will then take over).
@@ -419,10 +457,11 @@ const ensureCorrectRuntimeVersion = async (): Promise<void> => {
     // Nothing answering or too-old runtime — let the install/spawn path drive.
     return;
   }
-  if (runningVersion !== RUNTIME_VERSION) {
+  const targetVersion = resolvedTargetVersion ?? (resolvedTargetVersion = await resolveRuntimeVersion());
+  if (runningVersion !== targetVersion) {
     throw new Error(
-      `Stale Alethia runtime v${runningVersion} is responding on port ${ALETHIA_PORT}; this bridge expects v${RUNTIME_VERSION}. ` +
-      `An older runtime (likely orphaned from a previous bridge process) is occupying the port, so the bridge cannot spawn the correct version. ` +
+      `Stale Alethia runtime v${runningVersion} is responding on port ${ALETHIA_PORT}; this bridge is targeting v${targetVersion}. ` +
+      `An older runtime (likely orphaned from a previous bridge process) is occupying the port, so the bridge cannot spawn the current version. ` +
       `Quit the running runtime — on macOS: \`pkill -f Alethia.app\` — then restart your MCP host.`,
     );
   }
@@ -433,7 +472,8 @@ const ensureRuntime = async (): Promise<void> => {
   if (autoInstallAttempted) return;
   autoInstallAttempted = true;
 
-  const artifactName = getArtifactName();
+  const targetVersion = resolvedTargetVersion ?? (resolvedTargetVersion = await resolveRuntimeVersion());
+  const artifactName = getArtifactName(targetVersion);
   if (!artifactName) {
     throw new Error(
       `No Alethia runtime available for ${platform()}-${arch()}. ` +
@@ -445,26 +485,27 @@ const ensureRuntime = async (): Promise<void> => {
   // Check what's installed on disk. Marker is fast path; Info.plist fallback
   // catches legacy installs / partial extracts that never wrote a marker.
   const installedVersion = getLocalInstalledRuntimeVersion();
-  if (installedVersion === RUNTIME_VERSION) {
+  if (installedVersion === targetVersion) {
     debug('runtime already installed and up-to-date, spawning');
-    await spawnRuntime();
+    await spawnRuntime(targetVersion);
     return;
   }
   if (installedVersion) {
-    process.stderr.write(`[alethia] Installed runtime v${installedVersion} is outdated. Upgrading to v${RUNTIME_VERSION}...\n`);
+    process.stderr.write(`[alethia] Installed runtime v${installedVersion} differs from target v${targetVersion}. Replacing...\n`);
     // Wipe the stale install before re-extracting so orphan files from the
     // previous version (different bundle layout, removed assets) don't linger.
     try { rmSync(RUNTIME_DIR, { recursive: true, force: true }); } catch { /* best effort */ }
   } else {
-    process.stderr.write(`[alethia] Runtime not found. Auto-installing v${RUNTIME_VERSION}...\n`);
+    process.stderr.write(`[alethia] Runtime not found. Auto-installing v${targetVersion}...\n`);
   }
 
   mkdirSync(RUNTIME_DIR, { recursive: true });
   const artifactPath = join(RUNTIME_DIR, artifactName);
   const manifestPath = join(RUNTIME_DIR, 'manifest.json');
+  const releaseBase = getGithubReleaseBase(targetVersion);
 
   // Download manifest + artifact
-  await downloadFile(`${GITHUB_RELEASE_BASE}/manifest.json`, manifestPath);
+  await downloadFile(`${releaseBase}/manifest.json`, manifestPath);
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as ReleaseManifest;
 
   // Verify Ed25519 signature on manifest
@@ -479,7 +520,7 @@ const ensureRuntime = async (): Promise<void> => {
   debug('manifest signature verified');
 
   // Download the binary
-  await downloadFile(`${GITHUB_RELEASE_BASE}/${artifactName}`, artifactPath);
+  await downloadFile(`${releaseBase}/${artifactName}`, artifactPath);
 
   // Verify SHA-256 of downloaded artifact against manifest
   const expectedHash = manifest.artifacts.find(a => a.file === artifactName)?.sha256;
@@ -506,14 +547,14 @@ const ensureRuntime = async (): Promise<void> => {
   }
 
   // Mark as installed
-  writeFileSync(RUNTIME_MARKER, JSON.stringify({ version: RUNTIME_VERSION, installedAt: new Date().toISOString() }), 'utf8');
-  process.stderr.write(`[alethia] Runtime v${RUNTIME_VERSION} installed to ${RUNTIME_DIR}\n`);
+  writeFileSync(RUNTIME_MARKER, JSON.stringify({ version: targetVersion, installedAt: new Date().toISOString() }), 'utf8');
+  process.stderr.write(`[alethia] Runtime v${targetVersion} installed to ${RUNTIME_DIR}\n`);
 
-  await spawnRuntime();
+  await spawnRuntime(targetVersion);
 };
 
-const spawnRuntime = async (): Promise<void> => {
-  const exe = getExecutablePath();
+const spawnRuntime = async (runtimeVersion?: string): Promise<void> => {
+  const exe = getExecutablePath(runtimeVersion);
   if (!existsSync(exe)) {
     throw new Error(`Runtime executable not found at ${exe}. Try deleting ${RUNTIME_DIR} and restarting.`);
   }
@@ -1172,9 +1213,6 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
             tools: { listChanged: false },
           },
           instructions:
-            (latestBridgeVersion
-              ? `NOTICE TO USER: A newer @vitronai/alethia bridge is available (${latestBridgeVersion}; current: ${PKG_VERSION}). Tell the user to run: npm install -g @vitronai/alethia@latest. Their current bridge is pinned to an older runtime and will miss recently-shipped tools and fixes.\n\n`
-              : '') +
             'Alethia is the patent-pending zero-IPC E2E test runtime built for AI agents. ' +
             '~13ms per step, 45x faster than CDP-based tools. Local-first, zero telemetry by default.\n\n' +
             'Core tools:\n' +
@@ -1361,12 +1399,19 @@ const write = (response: JsonRpcResponse | null): void => {
   process.stdout.write(`${JSON.stringify(response)}\n`);
 };
 
-debug(`starting ${PKG_NAME} v${PKG_VERSION}, target ${ALETHIA_HOST}:${ALETHIA_PORT}, timeout ${ALETHIA_TIMEOUT_MS}ms`);
+// Only attach stdio handlers when this module is the entry point. Keeps
+// test imports from hanging on process.stdin, and keeps the server from
+// accidentally starting twice if the file is ever imported from another
+// CLI wrapper.
+const isMainModule = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
 
-process.stdin.setEncoding('utf8');
-let buffer = '';
+if (isMainModule) {
+  debug(`starting ${PKG_NAME} v${PKG_VERSION}, target ${ALETHIA_HOST}:${ALETHIA_PORT}, timeout ${ALETHIA_TIMEOUT_MS}ms`);
 
-process.stdin.on('data', (chunk: string) => {
+  process.stdin.setEncoding('utf8');
+  let buffer = '';
+
+  process.stdin.on('data', (chunk: string) => {
   buffer += chunk;
   while (true) {
     const nl = buffer.indexOf('\n');
@@ -1404,5 +1449,6 @@ const shutdown = (signal: string) => () => {
   process.exit(0);
 };
 
-process.on('SIGINT', shutdown('SIGINT'));
-process.on('SIGTERM', shutdown('SIGTERM'));
+  process.on('SIGINT', shutdown('SIGINT'));
+  process.on('SIGTERM', shutdown('SIGTERM'));
+}
