@@ -57,12 +57,111 @@ const ALETHIA_HOST = process.env.ALETHIA_HOST ?? '127.0.0.1';
 const ALETHIA_PORT = Number(process.env.ALETHIA_PORT ?? 47432);
 const ALETHIA_TIMEOUT_MS = Number(process.env.ALETHIA_TIMEOUT_MS ?? 60_000);
 const DEBUG = process.env.ALETHIA_DEBUG === '1' || process.argv.includes('--debug');
+const SKIP_UPDATE_CHECK = process.env.ALETHIA_SKIP_UPDATE_CHECK === '1';
 
 const debug = (...args: unknown[]): void => {
   if (DEBUG) {
     process.stderr.write(`[alethia-mcp] ${args.map(String).join(' ')}\n`);
   }
 };
+
+// ---------------------------------------------------------------------------
+// Update check — globally-installed bridges don't auto-update. npm doesn't
+// tell users a newer version exists. Without this, a user on last month's
+// bridge silently misses every new runtime + tool we ship until they manually
+// re-install. Check npm registry at most once per 24h, warn on stderr, and
+// surface the notice in the MCP initialize response so the agent can relay
+// it to the user. All failures are silent (offline, rate-limit, parse error).
+// Opt out with ALETHIA_SKIP_UPDATE_CHECK=1.
+// ---------------------------------------------------------------------------
+
+const UPDATE_CHECK_CACHE = join(homedir(), '.alethia', '.update-check');
+const UPDATE_CHECK_TTL_MS = 24 * 60 * 60 * 1000;
+
+// Accepts x.y.z and x.y.z-pre.N. Returns 1/-1/0. Silent on parse failure
+// (returns 0 so we never warn on garbage).
+const compareSemver = (a: string, b: string): number => {
+  const parse = (v: string): number[] => {
+    const core = v.split('-')[0] ?? v;
+    return core.split('.').map((n) => {
+      const x = parseInt(n, 10);
+      return Number.isFinite(x) ? x : 0;
+    });
+  };
+  const pa = parse(a);
+  const pb = parse(b);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const av = pa[i] ?? 0;
+    const bv = pb[i] ?? 0;
+    if (av !== bv) return av > bv ? 1 : -1;
+  }
+  return 0;
+};
+
+let latestBridgeVersion: string | null = null;
+
+const fetchLatestBridgeVersion = (): Promise<string | null> =>
+  new Promise((resolveFetch) => {
+    const req = https.get(
+      `https://registry.npmjs.org/${PKG_NAME}/latest`,
+      { timeout: 2000, headers: { accept: 'application/json' } },
+      (res) => {
+        if (res.statusCode !== 200) { res.resume(); return resolveFetch(null); }
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', (c: string) => { body += c; if (body.length > 64 * 1024) res.destroy(); });
+        res.on('end', () => {
+          try {
+            const v = JSON.parse(body).version;
+            resolveFetch(typeof v === 'string' ? v : null);
+          } catch { resolveFetch(null); }
+        });
+      },
+    );
+    req.on('error', () => resolveFetch(null));
+    req.on('timeout', () => { req.destroy(); resolveFetch(null); });
+  });
+
+const readUpdateCache = (): { lastChecked: number; latestVersion: string } | null => {
+  try {
+    const raw = JSON.parse(readFileSync(UPDATE_CHECK_CACHE, 'utf8'));
+    if (typeof raw.lastChecked === 'number' && typeof raw.latestVersion === 'string') return raw;
+  } catch { /* no cache / corrupt cache */ }
+  return null;
+};
+
+const writeUpdateCache = (latestVersion: string): void => {
+  try {
+    mkdirSync(dirname(UPDATE_CHECK_CACHE), { recursive: true });
+    writeFileSync(UPDATE_CHECK_CACHE, JSON.stringify({ lastChecked: Date.now(), latestVersion }));
+  } catch { /* best-effort */ }
+};
+
+// Returns the newer version string if the user's bridge is behind, else null.
+// Consults cache first; only hits the network if cache is stale.
+const checkForBridgeUpdate = async (): Promise<string | null> => {
+  if (SKIP_UPDATE_CHECK) return null;
+  const cached = readUpdateCache();
+  const fresh = cached && Date.now() - cached.lastChecked < UPDATE_CHECK_TTL_MS;
+  const latest = fresh ? cached.latestVersion : await fetchLatestBridgeVersion();
+  if (!latest) return null;
+  if (!fresh) writeUpdateCache(latest);
+  return compareSemver(latest, PKG_VERSION) > 0 ? latest : null;
+};
+
+// Kicked off at module load; the result lands in latestBridgeVersion and is
+// inspected by the initialize response + the pre-handler stderr notice. The
+// bridge's cold start path (auto-install, download, spawn) is IO-bound for
+// several seconds — this network call piggy-backs on that idle window.
+void checkForBridgeUpdate().then((newer) => {
+  if (!newer) return;
+  latestBridgeVersion = newer;
+  process.stderr.write(
+    `[alethia-mcp] A newer bridge is available: ${newer} (you have ${PKG_VERSION}). ` +
+    `Update with: npm install -g @vitronai/alethia@latest\n`,
+  );
+});
 
 // ---------------------------------------------------------------------------
 // Demo server — serves demo/ files on localhost for preview panels
@@ -1073,6 +1172,9 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
             tools: { listChanged: false },
           },
           instructions:
+            (latestBridgeVersion
+              ? `NOTICE TO USER: A newer @vitronai/alethia bridge is available (${latestBridgeVersion}; current: ${PKG_VERSION}). Tell the user to run: npm install -g @vitronai/alethia@latest. Their current bridge is pinned to an older runtime and will miss recently-shipped tools and fixes.\n\n`
+              : '') +
             'Alethia is the patent-pending zero-IPC E2E test runtime built for AI agents. ' +
             '~13ms per step, 45x faster than CDP-based tools. Local-first, zero telemetry by default.\n\n' +
             'Core tools:\n' +

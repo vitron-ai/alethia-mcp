@@ -166,7 +166,9 @@ The runtime walks every destructive control on the page and runs `expect block:`
 
 Returns a signed JSON pack with every tool call, input, output, policy decision, and a chained SHA-256 hash over the record. Chain-of-custody quality.
 
-> **More paste-ready demos:** see the [agent cookbook](https://github.com/vitron-ai/alethia/blob/main/docs/agent-cookbook.md) — paste-ready prompts — compliance audits, parallel multi-page checks, live partner walkthroughs, and more. Every scenario is a literal prompt you drop into Claude / Cursor / Cline.
+> **More paste-ready demos:** see the [agent cookbook](./docs/agent-cookbook.md) — paste-ready prompts.
+>
+> **Designing a UI to be driven by agents?** See [UI for agents](./docs/ui-for-agents.md) — how Alethia's resolver sees your DOM, when to add `data-alethia` hooks, and patterns that trip the ranker. — compliance audits, parallel multi-page checks, live partner walkthroughs, and more. Every scenario is a literal prompt you drop into Claude / Cursor / Cline.
 
 ---
 
