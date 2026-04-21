@@ -32,69 +32,9 @@ The cockpit is an **oversight surface**, not an authoring IDE. Humans do not wri
 
 ---
 
-## Install
-
-```bash
-npm install -g @vitronai/alethia
-```
-
-Verify:
-
-```bash
-alethia-mcp --health-check
-```
-
-Expected:
-
-```
-Connected. MCP tools available.
-  runtime version:  0.2.0
-  default profile:  controlled-web
-  kill switch:      inactive
-```
-
----
-
 ## Configure your agent
 
-### Claude Code
-
-`~/.claude/mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "alethia": {
-      "command": "alethia-mcp",
-      "env": {
-        "ALETHIA_HIGHLIGHTS": "1"
-      }
-    }
-  }
-}
-```
-
-The Alethia cockpit opens by default alongside your agent. The target app loads inside the cockpit, so the Alethia UI stays visible during the run and highlights each step live (green = click/assert pass, blue = type, red = EA1 block). Set `ALETHIA_HEADLESS=1` to hide it, or call `alethia_hide_cockpit` mid-session. CI environments (`CI=1`, `GITHUB_ACTIONS`, etc.) auto-headless.
-
-### Cursor
-
-Cursor > Settings > MCP > Add server:
-
-```json
-{ "alethia": { "command": "alethia-mcp" } }
-```
-
-### Cline / Continue / any MCP client
-
-Same shape — point the client at the `alethia-mcp` command.
-
-### Claude Desktop
-
-Edit `claude_desktop_config.json`:
-
-- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-- **Linux:** `~/.config/Claude/claude_desktop_config.json`
+Add this to your MCP client config. `npx -y` pulls the latest bridge on every spawn; the bridge pulls the latest signed runtime on first start. Both sides stay current without you doing anything.
 
 ```json
 {
@@ -106,6 +46,38 @@ Edit `claude_desktop_config.json`:
   }
 }
 ```
+
+**Where that file lives:**
+
+- **Claude Code:** `~/.claude/mcp.json`
+- **Claude Desktop (macOS):** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Claude Desktop (Windows):** `%APPDATA%\Claude\claude_desktop_config.json`
+- **Claude Desktop (Linux):** `~/.config/Claude/claude_desktop_config.json`
+- **Cursor:** Settings → MCP → Add server (paste the `"alethia": { ... }` object)
+- **Cline / Continue / anything MCP-compliant:** same shape
+
+That's it. The cockpit opens by default so you can watch the agent drive your app live (green = pass, blue = type, red = EA1 block). Set `ALETHIA_HEADLESS=1` to hide it. CI environments auto-hide.
+
+<details>
+<summary>Advanced: global install or pinned version</summary>
+
+If you prefer a global install (skips the `npx` cache-warm on first spawn):
+
+```bash
+npm install -g @vitronai/alethia
+```
+
+Then use `"command": "alethia-mcp"` instead of the `npx` form. You'll need to re-run `npm install -g @vitronai/alethia@latest` periodically to get new bridge versions.
+
+To pin a specific runtime version (reproducible CI, bisection, deliberate stay-behind):
+
+```json
+"env": { "ALETHIA_RUNTIME_VERSION": "0.4.0" }
+```
+
+See the env-var table below for the full knob list.
+
+</details>
 
 ---
 
