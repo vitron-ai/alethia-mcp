@@ -137,13 +137,15 @@ If you'd rather never manually upgrade, replace the command with:
   "mcpServers": {
     "alethia": {
       "command": "npx",
-      "args": ["-y", "@vitronai/alethia"]
+      "args": ["-y", "@vitronai/alethia@latest"]
     }
   }
 }
 ```
 
-`npx -y` pulls the latest bridge on every spawn. Trade-offs:
+**The `@latest` suffix matters.** Without it, `npx -y` uses whatever it cached on the first run — could be weeks out of date. With `@latest`, npx checks the registry each spawn and pulls a newer version if one exists.
+
+Other trade-offs vs. a global install:
 
 - **First-spawn latency:** adds 10–30s on a cold npm cache miss.
 - **Supply-chain posture:** every spawn immediately pulls whatever the npm registry is serving. A global install shields you until you explicitly upgrade. For signed-evidence-sensitive use (regulated surfaces, compliance work), the global install is the safer default.
@@ -290,6 +292,9 @@ alethia-mcp --debug          Run with debug logging on stderr
 | `ALETHIA_HIGHLIGHTS` | (unset) | Set to `1` to overlay per-step highlights on the target |
 | `ALETHIA_RUNTIME_VERSION` | (unset) | Pin the bridge to a specific runtime version (e.g. `0.4.0`). By default the bridge queries GitHub Releases for the current latest runtime and downloads that. Use this for reproducible CI, bisection, or deliberately staying on an older runtime. |
 | `ALETHIA_RUNTIME_DIR` | `~/.alethia/runtime` | Where the auto-installed runtime lives. Override for sandboxing or to stash multiple installs. |
+| `ALETHIA_BRIDGE_VERSION` | (unset) | Pin the bridge itself to a specific version (e.g. `0.8.0`). Skips the npm auto-update check. For reproducible CI or deliberate stay-behind. |
+| `ALETHIA_BRIDGE_SRI` | (unset) | Require any auto-downloaded bridge tarball to match this `sha512-<base64>` integrity string. Rejects everything else. For high-assurance deployments. |
+| `ALETHIA_SKIP_AUTO_UPDATE` | (unset) | Set to `1` to disable the bridge's npm registry check entirely. The bridge runs as-installed, no background fetches. |
 
 ---
 
@@ -299,7 +304,15 @@ alethia-mcp --debug          Run with debug logging on stderr
 - The runtime listens on `127.0.0.1:47432` over loopback JSON-RPC. No cloud calls, no telemetry.
 - The runtime auto-installs on first use from signed GitHub releases (Ed25519-verified).
 - **The bridge asks GitHub Releases what the current runtime version is on first start** (cached 1h). No RUNTIME_VERSION pin lives in the bridge source, so a globally-installed bridge keeps pulling the current runtime as new ones ship. Pin to a specific version with `ALETHIA_RUNTIME_VERSION=x.y.z` for reproducible CI or bisection.
+- **The bridge also auto-updates itself** (since 0.8.0). On startup it checks npm for a newer published version, verifies the tarball against the SHA-512 integrity hash npm serves, and installs it to `~/.alethia/bridge/<version>/`. Next spawn bootstraps into the new version. Auto-update respects:
+    - **Major-version gate:** never crosses `1.x → 2.x` without explicit user action
+    - **Rollback:** a new version only becomes "trusted" after it successfully completes an MCP handshake; versions that crash before that get quarantined after 3 attempts
+    - **Pin:** `ALETHIA_BRIDGE_VERSION=x.y.z` skips auto-update
+    - **Integrity pin:** `ALETHIA_BRIDGE_SRI=sha512-...` rejects anything else
+    - **Opt-out:** `ALETHIA_SKIP_AUTO_UPDATE=1` disables entirely
+- **The Claude Code skill auto-refreshes too** (since 0.8.0). The bundled `SKILL.md` travels with every bridge release; each spawn compares it to `~/.claude/skills/alethia/SKILL.md` and overwrites if stale. New playbooks reach every user on their next spawn without any manual step.
 - The cockpit is visible by default — it's the oversight surface where each step is highlighted live. Set `ALETHIA_HEADLESS=1` to hide, or toggle mid-session with `alethia_show_cockpit` / `alethia_hide_cockpit`.
+- Evidence packs returned by `alethia_export_session` are wrapped with bridge name+version and skill content hashes (installed + bundled) for chain-of-custody reconstruction.
 
 ---
 
@@ -325,6 +338,30 @@ A sensitive field was detected (password, token, credit card, etc.). Override wi
 2. Check your MCP config shape.
 3. Restart your MCP client.
 4. Set `ALETHIA_DEBUG=1` to log bridge traffic on stderr.
+
+### "Server transport closed unexpectedly" / bridge exits silently on spawn
+
+Your client is spawning a stale bridge. Two likely causes:
+
+**If you're using `npx -y @vitronai/alethia`** (without `@latest`), npx is serving a cached version that may predate the fix for this class of bug. Either add the `@latest` suffix to your config args or clear the npx cache:
+
+```bash
+rm -rf ~/.npm/_npx
+```
+
+Then fully restart your MCP client.
+
+**If you're using a global install**, your globally installed bridge is old. Check and upgrade:
+
+```bash
+alethia-mcp --version
+# If not the latest published version:
+npm install -g @vitronai/alethia@latest
+```
+
+Then fully restart your MCP client (Cmd-Q on macOS, not just close the window).
+
+Every 0.6.1+ bridge is symlink-spawn-safe — if you're on a current version and still see this, open an issue at https://github.com/vitron-ai/alethia-mcp/issues.
 
 ---
 
