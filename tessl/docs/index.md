@@ -21,7 +21,7 @@ Add to your agent's MCP config (`.mcp.json`, Claude Code settings, Cursor MCP, e
 ```json
 {
   "mcpServers": {
-    "alethia": { "command": "npx", "args": ["-y", "@vitronai/alethia"] }
+    "alethia": { "command": "alethia-mcp" }
   }
 }
 ```

@@ -32,16 +32,19 @@ The cockpit is an **oversight surface**, not an authoring IDE. Humans do not wri
 
 ---
 
-## Configure your agent
+## Install
 
-Add this to your MCP client config. `npx -y` pulls the latest bridge on every spawn; the bridge pulls the latest signed runtime on first start. Both sides stay current without you doing anything.
+```bash
+npm install -g @vitronai/alethia
+```
+
+Then in your MCP client config:
 
 ```json
 {
   "mcpServers": {
     "alethia": {
-      "command": "npx",
-      "args": ["-y", "@vitronai/alethia"]
+      "command": "alethia-mcp"
     }
   }
 }
@@ -56,26 +59,36 @@ Add this to your MCP client config. `npx -y` pulls the latest bridge on every sp
 - **Cursor:** Settings → MCP → Add server (paste the `"alethia": { ... }` object)
 - **Cline / Continue / anything MCP-compliant:** same shape
 
-That's it. The cockpit opens by default so you can watch the agent drive your app live (green = pass, blue = type, red = EA1 block). Set `ALETHIA_HEADLESS=1` to hide it. CI environments auto-hide.
+That's it. The bridge auto-installs the signed runtime on first use. The cockpit opens by default so you can watch the agent drive your app live (green = pass, blue = type, red = EA1 block). Set `ALETHIA_HEADLESS=1` to hide it. CI environments auto-hide.
+
+**Upgrading:** periodically run `npm install -g @vitronai/alethia@latest` to pick up new bridge versions. Since 0.6.0, a new bridge is no longer required for new runtime versions — the bridge queries GitHub Releases for the current runtime on every start.
 
 <details>
-<summary>Advanced: global install or pinned version</summary>
+<summary>Advanced: always-latest spawn pattern</summary>
 
-If you prefer a global install (skips the `npx` cache-warm on first spawn):
+If you'd rather never manually upgrade, replace the command with:
 
-```bash
-npm install -g @vitronai/alethia
+```json
+{
+  "mcpServers": {
+    "alethia": {
+      "command": "npx",
+      "args": ["-y", "@vitronai/alethia"]
+    }
+  }
+}
 ```
 
-Then use `"command": "alethia-mcp"` instead of the `npx` form. You'll need to re-run `npm install -g @vitronai/alethia@latest` periodically to get new bridge versions.
+`npx -y` pulls the latest bridge on every spawn. Trade-offs:
+
+- **First-spawn latency:** adds 10–30s on a cold npm cache miss.
+- **Supply-chain posture:** every spawn immediately pulls whatever the npm registry is serving. A global install shields you until you explicitly upgrade. For signed-evidence-sensitive use (regulated surfaces, compliance work), the global install is the safer default.
 
 To pin a specific runtime version (reproducible CI, bisection, deliberate stay-behind):
 
 ```json
 "env": { "ALETHIA_RUNTIME_VERSION": "0.4.0" }
 ```
-
-See the env-var table below for the full knob list.
 
 </details>
 
