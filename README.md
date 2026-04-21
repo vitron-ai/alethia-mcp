@@ -34,6 +34,18 @@ The cockpit is an **oversight surface**, not an authoring IDE. Humans do not wri
 
 ## Install
 
+**Fastest path (Claude Code users):**
+
+```bash
+mkdir -p ~/.claude/skills/alethia && \
+  curl -fsSL https://raw.githubusercontent.com/vitron-ai/alethia-mcp/main/skills/alethia/SKILL.md \
+    -o ~/.claude/skills/alethia/SKILL.md
+```
+
+Restart Claude Code. Next time you ask to test a page or run a compliance audit, Claude notices the Alethia tools aren't wired up yet and walks you through installing the bridge with verbatim commands. No README hunt, no mcp.json editing from memory — the skill bootstraps itself.
+
+**Traditional path (Claude Desktop / Cursor / Cline / Continue, or if you prefer doing it yourself):**
+
 ```bash
 npm install -g @vitronai/alethia
 ```
