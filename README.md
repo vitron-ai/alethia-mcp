@@ -38,7 +38,13 @@ The cockpit is an **oversight surface**, not an authoring IDE. Humans do not wri
 npm install -g @vitronai/alethia
 ```
 
-The config snippet below goes in your MCP client. Find the path for your client in the next section.
+Then configure your MCP client. Pick the section that matches what you're running — these are separate products with separate config files.
+
+The bridge auto-installs the signed runtime on first use. The cockpit opens by default so you can watch the agent drive your app live (green = pass, blue = type, red = EA1 block). Set `ALETHIA_HEADLESS=1` to hide it. CI environments auto-hide.
+
+### Claude Code (VS Code extension or CLI)
+
+Edit `~/.claude/mcp.json`. Create it if it doesn't exist.
 
 ```json
 {
@@ -50,32 +56,45 @@ The config snippet below goes in your MCP client. Find the path for your client 
 }
 ```
 
-The bridge auto-installs the signed runtime on first use. The cockpit opens by default so you can watch the agent drive your app live (green = pass, blue = type, red = EA1 block). Set `ALETHIA_HEADLESS=1` to hide it. CI environments auto-hide.
+If the file already has a `mcpServers` block, merge the `"alethia"` entry into it.
 
-### Claude Code
+### Claude Desktop (standalone app from claude.ai/download)
 
-Edit `~/.claude/mcp.json` and add the snippet above (merge with any existing `mcpServers`). Create the file if it doesn't exist.
-
-### Cursor
-
-Settings → MCP → Add server → paste the `"alethia": { ... }` object.
-
-### Cline / Continue / any MCP-compliant client
-
-Same snippet shape, wherever that client stores its MCP config.
-
-<details>
-<summary>Claude Desktop (standalone app from claude.ai/download)</summary>
-
-Claude Desktop is a separate product from Claude Code. The config file lives at a different path, and **it doesn't exist until you configure an MCP server** — either through the app's Settings UI, or by creating it manually.
+A different product from Claude Code with its own config file. You can edit it through the app (Settings → Developer → Edit Config) or directly on disk:
 
 - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 - **Linux:** `~/.config/Claude/claude_desktop_config.json`
 
-If the file isn't there and you're only using Claude Code, ignore this — you don't need it.
+The file **doesn't exist until you create it** (either through the Settings UI or manually). Contents:
 
-</details>
+```json
+{
+  "mcpServers": {
+    "alethia": {
+      "command": "alethia-mcp"
+    }
+  }
+}
+```
+
+Restart Claude Desktop after editing for the server to be picked up.
+
+### Cursor
+
+Settings → MCP → Add server → paste:
+
+```json
+{
+  "alethia": {
+    "command": "alethia-mcp"
+  }
+}
+```
+
+### Cline / Continue / any MCP-compliant client
+
+Same `mcpServers.alethia` entry as above, placed wherever that client stores its MCP config (usually a JSON file in the extension's settings directory; check the client's own docs for the path).
 
 **Upgrading:** periodically run `npm install -g @vitronai/alethia@latest` to pick up new bridge versions. Since 0.6.0, a new bridge is no longer required for new runtime versions — the bridge queries GitHub Releases for the current runtime on every start.
 
