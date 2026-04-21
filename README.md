@@ -6,6 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/bridge-MIT-green.svg?logo=opensourceinitiative&logoColor=white)](./LICENSE)
 [![Patent Pending](https://img.shields.io/badge/runtime-Patent%20Pending-blue.svg?logo=shield&logoColor=white)](#patent-notice)
 [![GitHub](https://img.shields.io/badge/source-GitHub-1f2328.svg?logo=github&logoColor=white)](https://github.com/vitron-ai/alethia-mcp)
+[![SafeSkill 67/100](https://img.shields.io/badge/SafeSkill-67%2F100_Use%20with%20Caution-orange)](https://safeskill.dev/scan/vitron-ai-alethia-mcp)
 
 ---
 
