@@ -57,6 +57,13 @@ const ALETHIA_HOST = process.env.ALETHIA_HOST ?? '127.0.0.1';
 const ALETHIA_PORT = Number(process.env.ALETHIA_PORT ?? 47432);
 const ALETHIA_TIMEOUT_MS = Number(process.env.ALETHIA_TIMEOUT_MS ?? 60_000);
 const DEBUG = process.env.ALETHIA_DEBUG === '1' || process.argv.includes('--debug');
+// Read update-related env vars via accessors so tests (and long-running
+// sessions where env changes mid-flight) pick up the current value. The
+// module-const pattern would capture these once at load and desync.
+const skipAutoUpdate = (): boolean => process.env.ALETHIA_SKIP_AUTO_UPDATE === '1';
+const isBootstrappedChild = (): boolean => process.env.ALETHIA_BOOTSTRAPPED === '1';
+const bridgeSriPin = (): string | null => process.env.ALETHIA_BRIDGE_SRI ?? null;
+const bridgeVersionPin = (): string | null => process.env.ALETHIA_BRIDGE_VERSION ?? null;
 
 const debug = (...args: unknown[]): void => {
   if (DEBUG) {
@@ -72,6 +79,335 @@ const isSkillInstalled = (): boolean => {
     return existsSync(join(homedir(), '.claude', 'skills', 'alethia', 'SKILL.md'));
   } catch {
     return false;
+  }
+};
+
+// Paths used by skill auto-refresh. The bundled skill ships with each
+// published @vitronai/alethia tarball; the installed skill lives in the
+// user's ~/.claude/skills. When the two diverge, the installed copy is
+// stale — we overwrite it with the bundled version on bridge startup.
+const BUNDLED_SKILL_PATH = resolve(__dirname, '..', 'skills', 'alethia', 'SKILL.md');
+const INSTALLED_SKILL_PATH = join(homedir(), '.claude', 'skills', 'alethia', 'SKILL.md');
+
+// Hash a skill file for content-address comparison. SHA-256 is overkill for
+// this (no adversary to defend against at this layer — both files come from
+// trusted channels), but it's the same primitive we use elsewhere and the
+// cost is nanoseconds for a ~10KB markdown file. Returns null if the file
+// doesn't exist or can't be read.
+const hashSkillFile = (path: string): string | null => {
+  try {
+    const content = readFileSync(path);
+    return createHash('sha256').update(content).digest('hex');
+  } catch {
+    return null;
+  }
+};
+
+// Called on every bridge startup. If the installed skill is missing or
+// differs from the bundled one, copy the bundled version over. Silently
+// best-effort — a failed refresh should never block the MCP server from
+// starting. Writes a single stderr line when a refresh happens so users
+// running `--debug` can see the update; silent on the no-op path.
+// ---------------------------------------------------------------------------
+// Bridge self-update from the npm registry.
+//
+// Philosophy: the bridge auto-updates from the same signed distribution
+// channel a user would install from manually. Trust root = npm registry.
+// No new trust decision vs. `npm install -g`.
+//
+// Mitigations layered on top:
+//   - Integrity (SRI) verification against the hash npm serves in the
+//     packument. If the tarball doesn't match, refuse.
+//   - Major-version gate: 0.x→0.y is fine; 1.x→2.x requires explicit user
+//     action. Prevents "hijacker publishes v99.0.0" taking over.
+//   - Version pin: ALETHIA_BRIDGE_VERSION=x.y.z skips auto-update entirely.
+//   - SRI pin: ALETHIA_BRIDGE_SRI=sha512-... requires a specific hash.
+//   - Opt-out: ALETHIA_skipAutoUpdate()=1 disables the whole thing.
+//   - Rollback: a new version only becomes "trusted" after a successful
+//     MCP initialize handshake. Versions that crash before that get
+//     quarantined after 3 failed attempts.
+// ---------------------------------------------------------------------------
+
+const BRIDGE_INSTALL_ROOT = join(homedir(), '.alethia', 'bridge');
+const BRIDGE_REGISTRY_CACHE = join(homedir(), '.alethia', '.bridge-registry-cache');
+const BRIDGE_REGISTRY_TTL_MS = 60 * 60 * 1000; // 1h
+const MAX_BOOTSTRAP_ATTEMPTS = 3;
+
+type PackumentInfo = {
+  version: string;
+  tarballUrl: string;
+  integrity: string; // sha512-... SRI string from the registry
+};
+
+type RegistryCache = { fetchedAt: number; info: PackumentInfo };
+
+// Parse "x.y.z" or "x.y.z-pre.N". Returns [major, minor, patch] ints.
+export const semverParts = (v: string): [number, number, number] => {
+  const core = v.split('-')[0] ?? v;
+  const parts = core.split('.').map((n) => {
+    const x = parseInt(n, 10);
+    return Number.isFinite(x) ? x : 0;
+  });
+  return [parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0];
+};
+
+export const compareSemver = (a: string, b: string): number => {
+  const [aM, aN, aP] = semverParts(a);
+  const [bM, bN, bP] = semverParts(b);
+  if (aM !== bM) return aM - bM;
+  if (aN !== bN) return aN - bN;
+  return aP - bP;
+};
+
+export const isMajorBoundaryCrossed = (from: string, to: string): boolean =>
+  semverParts(from)[0] !== semverParts(to)[0];
+
+const readRegistryCache = (): RegistryCache | null => {
+  try {
+    const raw = JSON.parse(readFileSync(BRIDGE_REGISTRY_CACHE, 'utf8'));
+    if (typeof raw.fetchedAt === 'number' && raw.info && typeof raw.info.version === 'string') return raw;
+  } catch { /* no cache */ }
+  return null;
+};
+
+const writeRegistryCache = (info: PackumentInfo): void => {
+  try {
+    mkdirSync(dirname(BRIDGE_REGISTRY_CACHE), { recursive: true });
+    writeFileSync(BRIDGE_REGISTRY_CACHE, JSON.stringify({ fetchedAt: Date.now(), info }));
+  } catch { /* best-effort */ }
+};
+
+const fetchPackumentLatest = (): Promise<PackumentInfo | null> =>
+  new Promise((resolveFetch) => {
+    const req = https.get(
+      `https://registry.npmjs.org/${PKG_NAME}/latest`,
+      { timeout: 3000, headers: { accept: 'application/json', 'user-agent': `${PKG_NAME}/${PKG_VERSION}` } },
+      (res) => {
+        if (res.statusCode !== 200) { res.resume(); return resolveFetch(null); }
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', (c: string) => { body += c; if (body.length > 256 * 1024) res.destroy(); });
+        res.on('end', () => {
+          try {
+            const pkg = JSON.parse(body) as { version?: string; dist?: { tarball?: string; integrity?: string } };
+            if (typeof pkg.version !== 'string' || typeof pkg.dist?.tarball !== 'string' || typeof pkg.dist?.integrity !== 'string') {
+              return resolveFetch(null);
+            }
+            resolveFetch({ version: pkg.version, tarballUrl: pkg.dist.tarball, integrity: pkg.dist.integrity });
+          } catch { resolveFetch(null); }
+        });
+      },
+    );
+    req.on('error', () => resolveFetch(null));
+    req.on('timeout', () => { req.destroy(); resolveFetch(null); });
+  });
+
+// Download a tarball to a temp path. Returns the path on success, null on error.
+const downloadTarball = (url: string, destPath: string): Promise<boolean> =>
+  new Promise((resolveDownload) => {
+    const doGet = (u: string, redirects = 0): void => {
+      if (redirects > 5) return resolveDownload(false);
+      https.get(u, (res) => {
+        if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          res.resume();
+          return doGet(res.headers.location, redirects + 1);
+        }
+        if (res.statusCode !== 200) { res.resume(); return resolveDownload(false); }
+        const ws = createWriteStream(destPath);
+        res.pipe(ws);
+        ws.on('finish', () => resolveDownload(true));
+        ws.on('error', () => resolveDownload(false));
+        res.on('error', () => resolveDownload(false));
+      }).on('error', () => resolveDownload(false));
+    };
+    doGet(url);
+  });
+
+// Verify an SRI integrity string against a file. SRI format: "sha512-<base64>".
+// npm serves sha512 for all modern packages. Reject other algorithms — an
+// attacker shouldn't be able to downgrade us to sha1.
+const verifySri = (filePath: string, sri: string): boolean => {
+  const match = sri.match(/^sha512-([A-Za-z0-9+/=]+)$/);
+  if (!match) return false;
+  const expectedB64 = match[1];
+  try {
+    const actualB64 = createHash('sha512').update(readFileSync(filePath)).digest('base64');
+    return actualB64 === expectedB64;
+  } catch {
+    return false;
+  }
+};
+
+const readVersionDirState = (versionDir: string): { verified: boolean; attempts: number } => {
+  return {
+    verified: existsSync(join(versionDir, '.verified')),
+    attempts: (() => {
+      try {
+        const raw = readFileSync(join(versionDir, '.bootstrap-attempts'), 'utf8');
+        const n = parseInt(raw, 10);
+        return Number.isFinite(n) ? n : 0;
+      } catch { return 0; }
+    })(),
+  };
+};
+
+const incrementBootstrapAttempts = (versionDir: string): number => {
+  const current = readVersionDirState(versionDir).attempts;
+  const next = current + 1;
+  try { writeFileSync(join(versionDir, '.bootstrap-attempts'), String(next)); } catch { /* best effort */ }
+  return next;
+};
+
+// Mark the CURRENT running version as verified-working. Called after we
+// produce a valid MCP initialize response. Idempotent.
+const markCurrentVersionVerified = (): void => {
+  // __dirname is .../dist; parent is the install dir for this version.
+  const currentInstallDir = resolve(__dirname, '..');
+  // If we're running from the globally-installed npm path (not from
+  // ~/.alethia/bridge/<version>/), there's nothing to mark — the global
+  // install is implicitly trusted.
+  if (!currentInstallDir.startsWith(BRIDGE_INSTALL_ROOT)) return;
+  try { writeFileSync(join(currentInstallDir, '.verified'), new Date().toISOString()); } catch { /* best effort */ }
+};
+
+// Determine which bridge version THIS spawn should actually run. May return:
+//   - null: run ourselves (we're the newest trusted option)
+//   - a path: exec into this dist/index.js instead
+// Honors env pins + rollback + major-version gate.
+export const selectBootstrapTarget = (): { version: string; jsPath: string; installDir: string } | null => {
+  if (isBootstrappedChild()) return null; // already a bootstrap child; don't recurse
+  if (skipAutoUpdate()) return null;
+
+  let candidates: string[] = [];
+  try {
+    candidates = readdirSync(BRIDGE_INSTALL_ROOT, { withFileTypes: true })
+      .filter(d => d.isDirectory())
+      .map(d => d.name)
+      .filter(name => /^\d+\.\d+\.\d+/.test(name));
+  } catch {
+    return null; // no install root yet
+  }
+
+  // If user pinned a specific version, honor it.
+  const pin = bridgeVersionPin();
+  if (pin) {
+    if (candidates.includes(pin)) {
+      const dir = join(BRIDGE_INSTALL_ROOT, pin);
+      const js = join(dir, 'dist', 'index.js');
+      if (existsSync(js) && pin !== PKG_VERSION) {
+        return { version: pin, jsPath: js, installDir: dir };
+      }
+    }
+    return null; // pin is us or pin doesn't exist → run ourselves
+  }
+
+  // Sort descending by semver, pick the newest that's (a) trusted OR
+  // (b) untrusted but under the retry threshold, AND (c) doesn't cross
+  // a major boundary from our own version.
+  candidates.sort((a, b) => compareSemver(b, a));
+  for (const version of candidates) {
+    if (compareSemver(version, PKG_VERSION) <= 0) continue; // not newer
+    if (isMajorBoundaryCrossed(PKG_VERSION, version)) continue; // gate
+    const dir = join(BRIDGE_INSTALL_ROOT, version);
+    const js = join(dir, 'dist', 'index.js');
+    if (!existsSync(js)) continue;
+    const state = readVersionDirState(dir);
+    if (state.verified) return { version, jsPath: js, installDir: dir };
+    if (state.attempts >= MAX_BOOTSTRAP_ATTEMPTS) continue; // quarantined
+    // Untrusted but under threshold — try it, and increment attempts
+    // BEFORE exec so a crash-during-init is properly counted.
+    incrementBootstrapAttempts(dir);
+    return { version, jsPath: js, installDir: dir };
+  }
+  return null;
+};
+
+// Fire-and-forget: check npm for a newer version, download+verify+install if
+// one exists. Runs after the bridge is up and serving; doesn't block MCP
+// client traffic. The new version takes effect on next spawn.
+const backgroundCheckForNewBridge = async (): Promise<void> => {
+  if (skipAutoUpdate() || isBootstrappedChild() || bridgeVersionPin()) return;
+
+  const cached = readRegistryCache();
+  const fresh = cached && Date.now() - cached.fetchedAt < BRIDGE_REGISTRY_TTL_MS;
+  const info = fresh ? cached.info : await fetchPackumentLatest();
+  if (!info) return;
+  if (!fresh) writeRegistryCache(info);
+
+  if (compareSemver(info.version, PKG_VERSION) <= 0) return; // not newer
+  if (isMajorBoundaryCrossed(PKG_VERSION, info.version)) {
+    process.stderr.write(
+      `[alethia] newer bridge ${info.version} available but crosses a major version boundary from ${PKG_VERSION}. ` +
+      `Not auto-updating. Run \`npm install -g ${PKG_NAME}@${info.version}\` to accept the upgrade manually.\n`,
+    );
+    return;
+  }
+
+  // If the user pinned an integrity hash, refuse anything else.
+  const sriPin = bridgeSriPin();
+  if (sriPin && sriPin !== info.integrity) {
+    process.stderr.write(
+      `[alethia] refusing to auto-update to ${info.version}: integrity mismatch with ALETHIA_BRIDGE_SRI pin.\n`,
+    );
+    return;
+  }
+
+  const targetDir = join(BRIDGE_INSTALL_ROOT, info.version);
+  if (existsSync(join(targetDir, 'dist', 'index.js'))) return; // already installed
+
+  mkdirSync(BRIDGE_INSTALL_ROOT, { recursive: true });
+  const tarballPath = join(BRIDGE_INSTALL_ROOT, `${info.version}.tgz`);
+  const downloaded = await downloadTarball(info.tarballUrl, tarballPath);
+  if (!downloaded) {
+    try { rmSync(tarballPath, { force: true }); } catch { /* ignore */ }
+    return;
+  }
+
+  if (!verifySri(tarballPath, info.integrity)) {
+    process.stderr.write(
+      `[alethia] downloaded ${info.version} tarball FAILED integrity check — refusing to install.\n`,
+    );
+    try { rmSync(tarballPath, { force: true }); } catch { /* ignore */ }
+    return;
+  }
+
+  // Extract the tarball. npm tarballs contain a `package/` prefix; strip it so
+  // we end up with dist/, skills/, package.json directly under <version>/.
+  mkdirSync(targetDir, { recursive: true });
+  try {
+    execSync(`tar -xzf "${tarballPath}" -C "${targetDir}" --strip-components=1`, { stdio: 'pipe' });
+  } catch {
+    process.stderr.write(`[alethia] failed to extract ${info.version} tarball.\n`);
+    try { rmSync(targetDir, { recursive: true, force: true }); } catch { /* ignore */ }
+    try { rmSync(tarballPath, { force: true }); } catch { /* ignore */ }
+    return;
+  }
+
+  try { rmSync(tarballPath, { force: true }); } catch { /* ignore */ }
+
+  process.stderr.write(
+    `[alethia] installed bridge ${info.version} to ${targetDir}. ` +
+    `Takes effect on next MCP client spawn.\n`,
+  );
+};
+
+const refreshSkillIfStale = (): 'refreshed' | 'already-current' | 'not-installed' | 'no-bundle' => {
+  const bundledHash = hashSkillFile(BUNDLED_SKILL_PATH);
+  if (!bundledHash) return 'no-bundle';
+  const installedHash = hashSkillFile(INSTALLED_SKILL_PATH);
+  if (installedHash === null) return 'not-installed';
+  if (installedHash === bundledHash) return 'already-current';
+  // Installed is stale. Overwrite with bundled.
+  try {
+    mkdirSync(dirname(INSTALLED_SKILL_PATH), { recursive: true });
+    writeFileSync(INSTALLED_SKILL_PATH, readFileSync(BUNDLED_SKILL_PATH));
+    process.stderr.write(
+      `[alethia] refreshed Claude Code skill at ${INSTALLED_SKILL_PATH} ` +
+      `(hash ${installedHash.slice(0, 8)} → ${bundledHash.slice(0, 8)})\n`,
+    );
+    return 'refreshed';
+  } catch {
+    return 'not-installed';
   }
 };
 
@@ -213,6 +549,10 @@ let _fetcherForTests: (() => Promise<string | null>) | null = null;
 export const __setLatestVersionFetcherForTests = (fn: (() => Promise<string | null>) | null): void => {
   _fetcherForTests = fn;
 };
+
+// Test hooks for bridge self-update. Tests can swap the packument fetcher
+// and inspect the install root without hitting the network.
+export const __BRIDGE_INSTALL_ROOT_FOR_TESTS = (): string => BRIDGE_INSTALL_ROOT;
 
 export const resolveRuntimeVersion = async (): Promise<string> => {
   const pinned = getPinnedRuntimeVersion();
@@ -1300,7 +1640,11 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
     }
 
     if (method === 'notifications/initialized' || method === 'initialized') {
-      // Notifications must not receive a response per MCP spec
+      // Client confirmed successful handshake. Mark this bridge version as
+      // trusted so future spawns skip the retry-budget dance. No-op if we
+      // were spawned from the globally-installed npm path (the global install
+      // is implicitly trusted — only ~/.alethia/bridge/<version>/ needs this).
+      markCurrentVersionVerified();
       return null as unknown as JsonRpcResponse;
     }
 
@@ -1376,6 +1720,29 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
             jsonrpc: '2.0',
             id,
             result: wrapMcpScreenshot(httpResponse.result as Record<string, unknown>),
+          };
+        }
+
+        // Evidence-pack responses get a bridge-side metadata wrapper with
+        // the bridge version + installed skill content hash. Partners doing
+        // chain-of-custody review can reconstruct the exact
+        // runtime+bridge+skill triple that produced the evidence.
+        if (toolName === 'alethia_export_session' && httpResponse.result && typeof httpResponse.result === 'object') {
+          const wrappedEvidence = {
+            bridge: {
+              name: PKG_NAME,
+              version: PKG_VERSION,
+            },
+            skill: {
+              installedHash: hashSkillFile(INSTALLED_SKILL_PATH),
+              bundledHash: hashSkillFile(BUNDLED_SKILL_PATH),
+            },
+            evidencePack: httpResponse.result,
+          };
+          return {
+            jsonrpc: '2.0',
+            id,
+            result: wrapMcpResult(wrappedEvidence),
           };
         }
 
@@ -1474,7 +1841,43 @@ const isMainModule = (() => {
 })();
 
 if (isMainModule) {
-  debug(`starting ${PKG_NAME} v${PKG_VERSION}, target ${ALETHIA_HOST}:${ALETHIA_PORT}, timeout ${ALETHIA_TIMEOUT_MS}ms`);
+  // BOOTSTRAP HANDOFF: if a newer, signature-verified bridge is installed
+  // at ~/.alethia/bridge/<version>/, exec to it instead of running ourselves.
+  // This is how the self-update mechanism hands off control without requiring
+  // the user to re-run `npm install -g`. Runs BEFORE we attach stdio
+  // handlers — the child process inherits our stdio directly.
+  const bootstrapTarget = selectBootstrapTarget();
+  if (bootstrapTarget) {
+    debug(`bootstrapping to bridge ${bootstrapTarget.version} at ${bootstrapTarget.jsPath}`);
+    const child = spawn(process.execPath, [bootstrapTarget.jsPath], {
+      stdio: 'inherit',
+      env: { ...process.env, ALETHIA_BOOTSTRAPPED: '1' },
+    });
+    child.on('exit', (code, signal) => {
+      if (signal) process.kill(process.pid, signal);
+      else process.exit(code ?? 0);
+    });
+    child.on('error', (err) => {
+      process.stderr.write(`[alethia] bootstrap child failed to spawn: ${err.message}; falling back to bundled bridge\n`);
+      // Fall through — let the current process keep running normally below.
+    });
+  } else {
+    // We're the version that's going to serve this session. Continue with
+    // normal startup: skill refresh, stdio handlers, background update check.
+    debug(`starting ${PKG_NAME} v${PKG_VERSION}, target ${ALETHIA_HOST}:${ALETHIA_PORT}, timeout ${ALETHIA_TIMEOUT_MS}ms`);
+
+    // Auto-refresh the Claude Code skill if the installed copy differs from
+    // the one bundled with this bridge version. No-op if the user never
+    // installed the skill, or if the two match. This is the "users don't
+    // have to manually re-run --install-skill every time we ship a new
+    // playbook" guarantee.
+    refreshSkillIfStale();
+
+    // Kick off the background check for a newer bridge release. If one
+    // exists and passes integrity verification, it's downloaded + extracted
+    // to ~/.alethia/bridge/<version>/ and takes effect on next spawn. Does
+    // not block the current session — purely ahead-of-time prep.
+    void backgroundCheckForNewBridge().catch(() => { /* silent */ });
 
   process.stdin.setEncoding('utf8');
   let buffer = '';
@@ -1519,4 +1922,5 @@ const shutdown = (signal: string) => () => {
 
   process.on('SIGINT', shutdown('SIGINT'));
   process.on('SIGTERM', shutdown('SIGTERM'));
+  } // end: else branch of bootstrap check
 }

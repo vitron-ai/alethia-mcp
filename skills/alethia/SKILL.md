@@ -37,6 +37,18 @@ Tell the user, verbatim:
 
 After the user confirms they've completed those steps and restarted, the `alethia_*` tools will be in your next session's tool list. Retry the user's original request then.
 
+**If the user says their MCP client logs show "Server transport closed unexpectedly"** or the Alethia bridge appears to start and then immediately exit: they're almost certainly running a stale cached version. Tell them:
+
+```bash
+# If your client config uses `npx -y @vitronai/alethia`, clear the npx cache:
+rm -rf ~/.npm/_npx
+
+# If you installed globally, upgrade:
+npm install -g @vitronai/alethia@latest
+```
+
+Then fully quit and relaunch the MCP client (Cmd-Q on macOS). The "Server transport closed unexpectedly" symptom was fixed in bridge 0.6.1; any modern install will not hit it unless something is cached old.
+
 ## When to use this skill
 
 - **"Smoke test this page"** → `alethia_tell` with navigate + asserts
