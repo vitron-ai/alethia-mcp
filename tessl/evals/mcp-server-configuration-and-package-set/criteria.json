@@ -1,5 +1,5 @@
 {
-  "context": "Tests whether the agent produces the correct package name (@vitronai/alethia) and a correct MCP server configuration using the recommended `npx -y @vitronai/alethia` spawn pattern under mcpServers.alethia. Also checks that the sample test uses correct NLP phrasing and file:// navigation.",
+  "context": "Tests whether the agent produces the correct package name (@vitronai/alethia), correct install command (npm install -g), and correct MCP server configuration (command: alethia-mcp under mcpServers.alethia). Also checks that the sample test uses correct NLP phrasing and file:// navigation.",
   "type": "weighted_checklist",
   "checklist": [
     {
@@ -8,9 +8,9 @@
       "description": "setup_guide.md and/or mcp_config.json use the exact package name '@vitronai/alethia' (not 'alethia', 'vitronai/alethia', or any other variant)"
     },
     {
-      "name": "No manual install step required",
+      "name": "Global npm install command",
       "max_score": 10,
-      "description": "setup_guide.md does NOT require a manual `npm install -g @vitronai/alethia` step. The recommended config uses `npx -y`, which auto-installs on first spawn. A global install MAY still be mentioned as an advanced alternative."
+      "description": "setup_guide.md shows the install command as 'npm install -g @vitronai/alethia'"
     },
     {
       "name": "mcpServers key in config",
@@ -23,9 +23,9 @@
       "description": "mcp_config.json has 'alethia' as the server name under mcpServers"
     },
     {
-      "name": "npx -y spawn pattern",
+      "name": "alethia-mcp command",
       "max_score": 15,
-      "description": "mcp_config.json sets command to 'npx' with args including '-y' and '@vitronai/alethia'. This ensures both the bridge and the runtime stay current without manual upgrades. The older 'alethia-mcp' global-install form is acceptable but non-preferred."
+      "description": "mcp_config.json sets command to 'alethia-mcp' (not 'npx alethia', 'node alethia', or another value)"
     },
     {
       "name": "file:// URL in sample test",

@@ -22,17 +22,17 @@ For deeper references:
 
 ## Prerequisites
 
-The Alethia MCP server must be configured in your agent's MCP config:
+The `alethia-mcp` MCP server must be configured in your agent's MCP config:
 
 ```json
 {
   "mcpServers": {
-    "alethia": { "command": "npx", "args": ["-y", "@vitronai/alethia"] }
+    "alethia": { "command": "alethia-mcp" }
   }
 }
 ```
 
-`npx -y` pulls the latest bridge on every spawn; the bridge auto-installs the matching signed headless runtime on first use. No manual install step is required.
+If not installed: `npm install -g @vitronai/alethia`. The bridge auto-installs the signed headless runtime on first use.
 
 ## Primary Workflows
 
