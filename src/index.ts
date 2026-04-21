@@ -833,8 +833,12 @@ const runHealthCheck = async (): Promise<never> => {
       );
       if (!statusResp.error && statusResp.result) {
         const status = statusResp.result as { version?: string; defaultPolicyProfile?: string; killSwitch?: { active?: boolean } };
+        // Wire value is 'controlled-web' for API stability; display label is
+        // 'local-only' to match the cockpit badge and the actual invariant.
+        const displayProfile =
+          status.defaultPolicyProfile === 'controlled-web' ? 'local-only' : (status.defaultPolicyProfile ?? 'unknown');
         process.stdout.write(`  runtime version:  ${status.version ?? 'unknown'}\n`);
-        process.stdout.write(`  default profile:  ${status.defaultPolicyProfile ?? 'unknown'}\n`);
+        process.stdout.write(`  default profile:  ${displayProfile}\n`);
         process.stdout.write(`  kill switch:      ${status.killSwitch?.active ? 'ACTIVE' : 'inactive'}\n`);
       }
     } catch {
