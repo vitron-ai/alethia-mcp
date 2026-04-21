@@ -110,6 +110,11 @@ Copies `SKILL.md` to `~/.claude/skills/alethia/SKILL.md`. Claude Code auto-loads
 
 The skill works alongside the MCP server configured above; it's not a replacement for it.
 
+**Self-heal behavior in both directions:**
+
+- **If you configured the MCP server but haven't installed the skill**, the bridge's `initialize` response carries a one-time tip so Claude surfaces `alethia-mcp --install-skill` to you. The tip disappears once the skill file exists.
+- **If someone has the skill but not the bridge** (say, copied `SKILL.md` from a friend), the skill's first section tells Claude to walk the user through the bridge install before attempting any tool call. No hallucinated results, no confusing missing-tool errors.
+
 <details>
 <summary>Advanced: always-latest spawn pattern</summary>
 

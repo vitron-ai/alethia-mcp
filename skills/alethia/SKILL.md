@@ -9,6 +9,34 @@ Alethia is built **for AI agents**, not human test authors. You drive it in plai
 
 The runtime is local-only: it refuses to navigate to anything outside `file://`, `localhost`, `127.0.0.1`, `.local`, or RFC1918 ranges. Destructive actions (delete, purchase, transfer, submit, liquidate, purge) are blocked by default under the VITRON-EA1 policy gate — not a safety feature you can turn off, a compile-time constant.
 
+## Bootstrap: if the `alethia_*` tools aren't available yet
+
+**Before trying to use any tool in this skill, confirm it's actually available.** If `alethia_tell` and friends are missing from your tool list, the user hasn't finished installing Alethia. Don't guess, don't hallucinate results — walk them through setup first.
+
+Tell the user, verbatim:
+
+> Alethia isn't set up in this Claude Code session yet. Two steps to install:
+>
+> **1. Install the bridge** (one-time):
+> ```
+> npm install -g @vitronai/alethia
+> ```
+>
+> **2. Add to your MCP config** at `~/.claude/mcp.json` (create the file if it doesn't exist):
+> ```json
+> {
+>   "mcpServers": {
+>     "alethia": {
+>       "command": "alethia-mcp"
+>     }
+>   }
+> }
+> ```
+>
+> Then restart Claude Code. The signed headless runtime downloads automatically on first use (~100 MB, Ed25519-verified from GitHub Releases). No signup, no telemetry.
+
+After the user confirms they've completed those steps and restarted, the `alethia_*` tools will be in your next session's tool list. Retry the user's original request then.
+
 ## When to use this skill
 
 - **"Smoke test this page"** → `alethia_tell` with navigate + asserts

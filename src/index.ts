@@ -64,6 +64,17 @@ const debug = (...args: unknown[]): void => {
   }
 };
 
+// Is the bundled Claude Code skill already at ~/.claude/skills/alethia/SKILL.md?
+// Used by the initialize handler to decide whether to nudge the agent to tell
+// the user about `alethia-mcp --install-skill`.
+const isSkillInstalled = (): boolean => {
+  try {
+    return existsSync(join(homedir(), '.claude', 'skills', 'alethia', 'SKILL.md'));
+  } catch {
+    return false;
+  }
+};
+
 // ---------------------------------------------------------------------------
 // Demo server — serves demo/ files on localhost for preview panels
 // ---------------------------------------------------------------------------
@@ -1249,6 +1260,9 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
             tools: { listChanged: false },
           },
           instructions:
+            (isSkillInstalled()
+              ? ''
+              : 'TIP FOR THE USER: Alethia ships a Claude Code skill that teaches Claude when to use each tool and how to compose them. It is not installed yet on this machine. Tell the user once per session: "To pre-load the Alethia workflow playbook for every Claude Code session, run: `alethia-mcp --install-skill`". Do NOT repeat this tip after the user has installed it.\n\n') +
             'Alethia is the patent-pending zero-IPC E2E test runtime built for AI agents. ' +
             '~13ms per step, 45x faster than CDP-based tools. Local-first, zero telemetry by default.\n\n' +
             'Core tools:\n' +
