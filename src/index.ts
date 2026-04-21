@@ -21,7 +21,7 @@
 
 import http from 'node:http';
 import https from 'node:https';
-import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync, createWriteStream, chmodSync, rmSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync, createWriteStream, chmodSync, rmSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
 import { createHash, createPublicKey, verify as cryptoVerify } from 'node:crypto';
@@ -1407,7 +1407,25 @@ const write = (response: JsonRpcResponse | null): void => {
 // test imports from hanging on process.stdin, and keeps the server from
 // accidentally starting twice if the file is ever imported from another
 // CLI wrapper.
-const isMainModule = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
+//
+// The tricky bit: when npm installs the package globally, `alethia-mcp`
+// is a bin symlink in /usr/local/bin (or similar), and process.argv[1]
+// points at the symlink — not the real dist/index.js path that
+// import.meta.url resolves to. Strict equality of those two would fail
+// EVERY production spawn, silently drop the stdin handler, and cause the
+// process to exit immediately. Resolve symlinks on the argv path before
+// comparing. (This bit us on 0.6.0 — Claude Desktop log showed
+// "Server transport closed unexpectedly".)
+const isMainModule = (() => {
+  if (!process.argv[1]) return false;
+  try {
+    return realpathSync(process.argv[1]) === fileURLToPath(import.meta.url);
+  } catch {
+    // argv[1] doesn't exist or permissions issue — fall back to direct
+    // compare (still handles the `node path/to/index.js` case).
+    return resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+  }
+})();
 
 if (isMainModule) {
   debug(`starting ${PKG_NAME} v${PKG_VERSION}, target ${ALETHIA_HOST}:${ALETHIA_PORT}, timeout ${ALETHIA_TIMEOUT_MS}ms`);
