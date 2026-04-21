@@ -38,7 +38,7 @@ The cockpit is an **oversight surface**, not an authoring IDE. Humans do not wri
 npm install -g @vitronai/alethia
 ```
 
-Then in your MCP client config:
+The config snippet below goes in your MCP client. Find the path for your client in the next section.
 
 ```json
 {
@@ -50,16 +50,32 @@ Then in your MCP client config:
 }
 ```
 
-**Where that file lives:**
+The bridge auto-installs the signed runtime on first use. The cockpit opens by default so you can watch the agent drive your app live (green = pass, blue = type, red = EA1 block). Set `ALETHIA_HEADLESS=1` to hide it. CI environments auto-hide.
 
-- **Claude Code:** `~/.claude/mcp.json`
-- **Claude Desktop (macOS):** `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Claude Desktop (Windows):** `%APPDATA%\Claude\claude_desktop_config.json`
-- **Claude Desktop (Linux):** `~/.config/Claude/claude_desktop_config.json`
-- **Cursor:** Settings → MCP → Add server (paste the `"alethia": { ... }` object)
-- **Cline / Continue / anything MCP-compliant:** same shape
+### Claude Code
 
-That's it. The bridge auto-installs the signed runtime on first use. The cockpit opens by default so you can watch the agent drive your app live (green = pass, blue = type, red = EA1 block). Set `ALETHIA_HEADLESS=1` to hide it. CI environments auto-hide.
+Edit `~/.claude/mcp.json` and add the snippet above (merge with any existing `mcpServers`). Create the file if it doesn't exist.
+
+### Cursor
+
+Settings → MCP → Add server → paste the `"alethia": { ... }` object.
+
+### Cline / Continue / any MCP-compliant client
+
+Same snippet shape, wherever that client stores its MCP config.
+
+<details>
+<summary>Claude Desktop (standalone app from claude.ai/download)</summary>
+
+Claude Desktop is a separate product from Claude Code. The config file lives at a different path, and **it doesn't exist until you configure an MCP server** — either through the app's Settings UI, or by creating it manually.
+
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux:** `~/.config/Claude/claude_desktop_config.json`
+
+If the file isn't there and you're only using Claude Code, ignore this — you don't need it.
+
+</details>
 
 **Upgrading:** periodically run `npm install -g @vitronai/alethia@latest` to pick up new bridge versions. Since 0.6.0, a new bridge is no longer required for new runtime versions — the bridge queries GitHub Releases for the current runtime on every start.
 
