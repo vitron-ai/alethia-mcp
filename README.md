@@ -98,6 +98,18 @@ Same `mcpServers.alethia` entry as above, placed wherever that client stores its
 
 **Upgrading:** periodically run `npm install -g @vitronai/alethia@latest` to pick up new bridge versions. Since 0.6.0, a new bridge is no longer required for new runtime versions — the bridge queries GitHub Releases for the current runtime on every start.
 
+### Claude Code skill (optional, recommended)
+
+Alethia ships with a Claude Code skill that teaches Claude *when* to use each tool and how to compose them. Install it once:
+
+```bash
+alethia-mcp --install-skill
+```
+
+Copies `SKILL.md` to `~/.claude/skills/alethia/SKILL.md`. Claude Code auto-loads it on next start. After that, when you ask to test a page, run a compliance audit, or prove the EA1 gate, Claude invokes the right tool chain on its own — no cookbook lookup needed.
+
+The skill works alongside the MCP server configured above; it's not a replacement for it.
+
 <details>
 <summary>Advanced: always-latest spawn pattern</summary>
 

@@ -650,6 +650,8 @@ USAGE
   alethia-mcp --version            Print the version and exit
   alethia-mcp --help               Print this message and exit
   alethia-mcp --health-check       Probe the Alethia runtime and exit 0/1
+  alethia-mcp --install-skill      Install the bundled Claude Code skill to
+                                   ~/.claude/skills/alethia/SKILL.md
   alethia-mcp --debug              Run with debug logging on stderr
 
 RUNTIME
@@ -870,6 +872,36 @@ if (process.argv.includes('--health-check')) {
   // never gets a chance to close stdin out from under runHealthCheck.
   // runHealthCheck calls process.exit() so this await never resolves.
   await runHealthCheck();
+}
+
+if (process.argv.includes('--install-skill')) {
+  // Copy the bundled Claude Code skill into ~/.claude/skills/alethia/.
+  // When a user adds our MCP server they get the tools; this makes the
+  // workflow knowledge (when to use which tool chain, how NLP maps to
+  // the resolver, how to exercise the EA1 gate) also show up in their
+  // Claude Code context automatically.
+  const skillSrc = resolve(__dirname, '..', 'skills', 'alethia', 'SKILL.md');
+  const skillDest = join(homedir(), '.claude', 'skills', 'alethia', 'SKILL.md');
+  if (!existsSync(skillSrc)) {
+    process.stderr.write(`[alethia] skill source not found at ${skillSrc}. Your install may be incomplete; try reinstalling @vitronai/alethia.\n`);
+    process.exit(1);
+  }
+  try {
+    mkdirSync(dirname(skillDest), { recursive: true });
+    const content = readFileSync(skillSrc, 'utf8');
+    writeFileSync(skillDest, content, 'utf8');
+    process.stdout.write(
+      `✓ Installed Alethia skill to ${skillDest}\n` +
+      `\n` +
+      `  Claude Code will auto-load it on its next start. When you ask about\n` +
+      `  testing a page, running a compliance audit, or proving the EA1 gate,\n` +
+      `  Claude will invoke this skill with the right tool chain.\n`
+    );
+    process.exit(0);
+  } catch (err) {
+    process.stderr.write(`[alethia] failed to install skill: ${(err as Error).message}\n`);
+    process.exit(1);
+  }
 }
 
 // ---------------------------------------------------------------------------
