@@ -100,12 +100,22 @@ alethia_tell({ instructions: "navigate to http://localhost:3000\nassert the page
 
 ### Bootstrap tests on an unknown page
 ```
-1. alethia_propose_tests({ url })  → returns candidate NLP blocks, including
-                                     an auto-generated EA1 Safety Gate Verification
-                                     block with expect-block: lines for every
-                                     destructive action discovered on the page
-2. alethia_tell({ instructions: <each block> })
+1. alethia_propose_tests({ url })  → returns candidate NAMED test blocks.
+                                     Each block is a cohesive multi-step
+                                     flow (page-structure verification,
+                                     safe-button interactions, EA1 safety
+                                     gate verification, table content
+                                     verification, etc.). The safety-gate
+                                     block has expect-block: lines for
+                                     every destructive action discovered.
+2. For EACH block, call alethia_tell({ instructions: <that block's NLP> }).
 ```
+
+**Run blocks one-at-a-time, not merged.** Each block becomes its own
+signed PlanRun with its own integrity hash and history entry, the
+cockpit UI paints them as discrete runs for anyone watching live, and
+one block's failure doesn't sink the others. Merging is only OK for
+quick scratch testing where you don't care about the audit boundary.
 
 ### Full compliance audit with signed evidence
 ```

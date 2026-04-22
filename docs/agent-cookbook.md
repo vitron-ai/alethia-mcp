@@ -33,7 +33,7 @@ Use Alethia to smoke test my dev server at http://localhost:3000. Navigate to it
 Scan http://localhost:3000/settings with Alethia, generate a test suite for everything interactive on the page, and run it. Include destructive-action safety checks — I want proof the EA1 gate blocks anything that could wipe data.
 ```
 
-**What the agent does:** `alethia_propose_tests` returns a candidate suite (including auto-generated `expect block:` lines for destructive actions). The agent then calls `alethia_tell` to run each block and reports which passed, which failed, and which were correctly blocked.
+**What the agent does:** `alethia_propose_tests` returns a candidate suite of **named test blocks** — cohesive multi-step flows like "Page Structure Verification", "Safe Button Interactions", "EA1 Safety Gate Verification" (with auto-generated `expect block:` lines for each destructive action). The agent calls `alethia_tell` **once per block** (not merged) so each block becomes its own signed `PlanRun` with its own integrity hash, its own history entry, and the cockpit UI paints them as discrete runs anyone watching live can read. One block failing doesn't sink the others.
 
 ---
 
