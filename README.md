@@ -363,6 +363,18 @@ Then fully restart your MCP client (Cmd-Q on macOS, not just close the window).
 
 Every 0.6.1+ bridge is symlink-spawn-safe — if you're on a current version and still see this, open an issue at https://github.com/vitron-ai/alethia-mcp/issues.
 
+### "I see a new release on GitHub but my runtime hasn't upgraded"
+
+The bridge caches the "what is the current runtime version?" lookup for 1 hour so we don't hammer the GitHub API on every spawn. If you want a new release to take effect immediately rather than waiting for cache expiry, bust the cache manually:
+
+```bash
+rm ~/.alethia/.latest-release ~/.alethia/.bridge-registry-cache 2>/dev/null
+```
+
+Then fully restart your MCP client (Cmd-Q → reopen). On the next spawn the bridge re-queries GitHub + npm, picks up the new versions, downloads + verifies + installs them.
+
+The 1h TTL is a deliberate tradeoff. You can shorten it for CI or dev loops via `ALETHIA_SKIP_AUTO_UPDATE=1` + `ALETHIA_RUNTIME_VERSION=x.y.z` (pins an exact runtime, skips the check entirely).
+
 ---
 
 ## Go deeper
