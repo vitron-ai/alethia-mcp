@@ -162,64 +162,80 @@ To pin a specific runtime version (reproducible CI, bisection, deliberate stay-b
 
 ## Your 5-minute demo
 
-Three prompts. The agent does the rest.
+Five literal prompts. Paste each into Claude / Cursor / Cline in order. The agent runs Alethia for you.
 
 ### 1. Start the bundled demo server
 
-> *"Use `alethia_serve_demo` and tell me the financial dashboard URL."*
+Paste:
 
-Returns a `http://127.0.0.1:<port>/financial-dashboard.html` URL.
+> *"Use `alethia_serve_demo` to start the demo server and tell me the base URL."*
 
-### 2. Let the agent write the tests
+Returns something like `http://127.0.0.1:57307`. Every demo page lives under `<base>/<page>.html` — keep the URL handy for the next steps.
 
-> *"Use `alethia_propose_tests` against that URL."*
+### 2. Smoke test the financial dashboard
 
-The agent receives a 4–6 test block suite that includes, among others:
+Paste:
 
-```
-name EA1 Safety Gate Verification
-navigate to http://127.0.0.1:47432/demo/financial-dashboard.html
-expect block: click Liquidate All
-expect block: click Wire Funds
-expect block: click Purge Audit Log
-```
-
-`expect block:` is an Alethia-specific primitive. The step passes only when EA1 refuses to let the action fire. No other E2E framework can express this assertion.
-
-### 3. Run them
-
-> *"Run the proposed tests with `alethia_tell`, one block at a time."*
-
-Per-step results, DOM diffs, a ~200-token semantic page snapshot, policy audit records, and a SHA-256 integrity hash come back on each call. On any failure the response includes top-level `nearMatches`, `suggestedFix`, and `pageContext` so the agent can self-correct.
-
-### 4. Prove safety
-
-> *"Use `alethia_assert_safety` on that URL."*
-
-The runtime walks every destructive control on the page and runs `expect block:` against each. Returns:
-
-```json
-{
-  "passed": true,
-  "totalDestructive": 3,
-  "blocked": 3,
-  "results": [
-    { "action": "Liquidate All", "blocked": true,  "detail": "..." },
-    { "action": "Wire Funds",    "blocked": true,  "detail": "..." },
-    { "action": "Purge Audit Log", "blocked": true, "detail": "..." }
-  ]
-}
-```
-
-### 5. Export the evidence
-
-> *"Use `alethia_export_session` and save the result."*
-
-Returns a signed JSON pack with every tool call, input, output, policy decision, and a chained SHA-256 hash over the record. Chain-of-custody quality.
-
-> **More paste-ready demos:** see the [agent cookbook](./docs/agent-cookbook.md) — paste-ready prompts.
+> *"Call `alethia_tell` with these instructions as a single block:*
 >
-> **Designing a UI to be driven by agents?** See [UI for agents](./docs/ui-for-agents.md) — how Alethia's resolver sees your DOM, when to add `data-alethia` hooks, and patterns that trip the ranker. — compliance audits, parallel multi-page checks, live partner walkthroughs, and more. Every scenario is a literal prompt you drop into Claude / Cursor / Cline.
+> *navigate to `<base>/financial-dashboard.html`*
+> *assert Risk Monitor is visible*
+> *assert Open Positions is visible*
+> *assert Compliance Checks is visible"*
+
+Expected: 4 steps pass (1 navigate + 3 asserts). Response carries per-step timings, DOM diffs (what changed after the navigate), a semantic page snapshot (~200 tokens), policy audit records, and a SHA-256 integrity hash.
+
+### 3. Prove the EA1 safety gate works
+
+Paste:
+
+> *"Call `alethia_tell` with these instructions as one block:*
+>
+> *navigate to `<base>/financial-dashboard.html`*
+> *expect block: click Liquidate All*
+> *expect block: click Purge Audit Log*
+> *expect block: click Wire Funds"*
+
+**`expect block:` is the Alethia-specific primitive no other E2E framework has.** The step passes **only when EA1 refuses** to let the action fire. This run should report all three clicks blocked with reason code `DENY_WRITE_HIGH`.
+
+Shortcut if you want Alethia to auto-discover destructive controls instead of naming them:
+
+> *"Use `alethia_assert_safety` against `<base>/financial-dashboard.html`."*
+
+Returns a per-action block/allow report with `totalDestructive`, `blocked`, and per-action detail.
+
+### 4. Full compliance audit (WCAG + NIST + signed evidence)
+
+Paste:
+
+> *"Call `alethia_tell` to navigate to `<base>/wcag-audit.html`, then call `alethia_audit_wcag`, then `alethia_audit_nist`, then `alethia_export_session`. Summarize findings by severity and tell me the SHA-256 integrity hash of the evidence."*
+
+Expected: a list of WCAG 2.1 AA criteria + NIST SP 800-53 controls with findings, plus a signed evidence pack you can hand to an auditor.
+
+### 5. What a "block" is — and why we run one at a time
+
+`alethia_propose_tests` returns **named test blocks**, each a cohesive multi-step flow:
+
+```
+Block 1 — Page Structure Verification (4 steps)
+Block 2 — Safe Button Interactions (2 steps)
+Block 3 — EA1 Safety Gate Verification (3 steps, all expect-block)
+```
+
+Calling `alethia_tell` once per block (rather than merging all blocks into one giant NLP string) is deliberate:
+
+- **Each block becomes its own signed `PlanRun`** with its own integrity hash and its own history entry. Merged, you lose the audit boundary.
+- **Named blocks stay named.** "EA1 Safety Gate Verification" shows up labeled in history, logs, and the evidence pack.
+- **One block's failure doesn't sink the others.** Partial success + targeted rerun is the default.
+- **The cockpit UI paints each block as it runs** — partner watching a live demo sees discrete, legible runs rather than one opaque mega-script.
+
+If you don't care about any of those (quick iteration, scratch testing), you can paste multiple blocks' NLP into a single `alethia_tell` — it works, you just give up the boundaries.
+
+---
+
+**More paste-ready demos:** see the [agent cookbook](./docs/agent-cookbook.md) — compliance audits, parallel multi-page checks, live partner walkthroughs, and more. Every scenario is a literal prompt you drop into Claude / Cursor / Cline.
+
+**Designing a UI to be driven by agents?** See [UI for agents](./docs/ui-for-agents.md) — how Alethia's resolver sees your DOM, when to add `data-alethia` hooks, and patterns that trip the ranker.
 
 ---
 
