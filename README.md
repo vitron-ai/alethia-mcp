@@ -406,7 +406,9 @@ The 1h TTL is a deliberate tradeoff. You can shorten it for CI or dev loops via 
 
 The Alethia runtime (which this bridge connects to) is local-only **by architecture**, not by default setting. Its signed binary refuses to navigate to any origin outside `file://`, `localhost`, `127.0.0.1`, `.local`, and RFC1918 private ranges. The allowlist is a compile-time constant — **not a CLI flag, env var, MCP argument, profile, or UI toggle**. For partner-specific production-origin access we issue custom-signed builds; we do not ship configurability.
 
-Why this shape: Alethia's speed and stealth profile would make it an effective abuse tool if turned against the open web. It does not become that tool. Full posture at [vitron.ai/safety](https://vitron.ai/safety). Abuse reports: **gatekeeper@vitron.ai**.
+**Full security posture** — threat model, cryptographic chain of custody, supply-chain posture, update cadence, disclosure process — is at [`SECURITY.md`](./SECURITY.md).
+
+Abuse reports + vulnerability disclosure: **`gatekeeper@vitron.ai`**.
 
 ---
 
