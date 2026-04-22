@@ -196,7 +196,7 @@ Paste:
 > *expect block: click Purge Audit Log*
 > *expect block: click Wire Funds"*
 
-**`expect block:` is the Alethia-specific primitive no other E2E framework has.** The step passes **only when EA1 refuses** to let the action fire. This run should report all three clicks blocked with reason code `DENY_WRITE_HIGH`.
+**`expect block:` is unique to Alethia.** The step passes only when the **EA1 policy gate** — a framework-level safety layer no other E2E tool ships — refuses the action with reason code `DENY_WRITE_HIGH`. Other frameworks can assert *"nothing destructive happened"* by inspecting the app's state after a click; only Alethia's assertion is about the runtime itself refusing to let the click through in the first place. Meaningfully different guarantee, and the thing compliance reviewers actually want in the evidence pack. This run should report all three clicks blocked.
 
 Shortcut if you want Alethia to auto-discover destructive controls instead of naming them:
 

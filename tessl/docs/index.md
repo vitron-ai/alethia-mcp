@@ -62,7 +62,7 @@ Alethia compiles to Action IR, runs each step through the VITRON-EA1 fail-closed
 
 `expect block:` is an NLP assertion unique to Alethia. The step **passes** if the EA1 gate blocks it, **fails** if the gate lets it through. This turns Alethia from "a test runner" into "a verifiable-safety framework" — you can regression-test your app's safety boundary itself.
 
-No other E2E framework can express this cleanly, because none have a policy gate to assert against.
+Other frameworks can assert "nothing destructive happened" by inspecting the app's state after a click; only Alethia's assertion is that the *runtime itself refused* to let the click through in the first place. Meaningfully different guarantee.
 
 ## Structured response fields (new in v0.2)
 
