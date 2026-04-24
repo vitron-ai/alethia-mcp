@@ -26,7 +26,7 @@ The cockpit is an **oversight surface**, not an authoring IDE. Humans do not wri
 | Who writes the test | a human, in a `.spec` file | an AI agent, in plain English |
 | Per-step policy gate | none | VITRON-EA1 fail-closed, write-high blocked by default |
 | Destructive-action proof | manual review | `alethia_assert_safety` — automated, machine-readable |
-| Speed | ~580 ms/step (CDP overhead) | ~13 ms/step — [reproduce the numbers yourself](https://github.com/vitron-ai/alethia-starter#verify-the-faster-than-cdp-based-tools-claim-yourself) |
+| Speed (per call) | ~200 ms via Playwright MCP, ~2 s via Playwright CLI | ~40 ms — 2-5× faster than Playwright MCP; up to 50× vs Playwright CLI on simple flows — [reproduce the numbers yourself](https://github.com/vitron-ai/alethia-starter#verify-the-faster-than-cdp-based-tools-claim-yourself) |
 | Evidence | screenshots, videos | signed evidence pack with per-step integrity hashes |
 | Network | Telemetry on by default; optional cloud dashboards | **Air-gap deployable** — no cloud product, no telemetry path, bound to 127.0.0.1 |
 

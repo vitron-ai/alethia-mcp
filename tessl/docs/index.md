@@ -1,6 +1,6 @@
 # Alethia — Agent-Native E2E with Verifiable Safety
 
-Alethia is the patent-pending zero-IPC E2E runtime built for AI agents. Your agent writes the tests, runs them against a real browser, and proves destructive actions are blocked by a per-step policy gate — with a cryptographic audit trail and no cloud. ~45× faster than Playwright on the localhost test loop.
+Alethia is the patent-pending zero-IPC E2E runtime built for AI agents. Your agent writes the tests, runs them against a real browser, and proves destructive actions are blocked by a per-step policy gate — with a cryptographic audit trail and no cloud. 2–5× faster than Playwright MCP per flow; up to 50× faster than Playwright CLI on simple flows ([benchmark](https://github.com/vitron-ai/alethia-starter/blob/main/benchmark/README.md)).
 
 ## Quick start
 

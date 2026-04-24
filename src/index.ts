@@ -10,7 +10,8 @@
  * https://github.com/vitron-ai/alethia/releases
  *
  * Alethia is the patent-pending zero-IPC E2E test runtime built for AI agents.
- * 45x faster than Playwright on the localhost loop. Fail-closed by default.
+ * ~40 ms per tool call — 2-5x faster than Playwright MCP per flow; up to 50x
+ * faster than Playwright CLI on simple flows. Fail-closed by default.
  * Cryptographically chained audit packs. Local-first. Zero telemetry by default.
  * Opt-in cloud features (when they ship — none today).
  *
@@ -1715,7 +1716,7 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
               ? ''
               : 'TIP FOR THE USER: Alethia ships a Claude Code skill that teaches Claude when to use each tool and how to compose them. It is not installed yet on this machine. Tell the user once per session: "To pre-load the Alethia workflow playbook for every Claude Code session, run: `alethia-mcp --install-skill`". Do NOT repeat this tip after the user has installed it.\n\n') +
             'Alethia is the patent-pending zero-IPC E2E test runtime built for AI agents. ' +
-            '~13ms per step, 45x faster than CDP-based tools. Local-first, zero telemetry by default.\n\n' +
+            '~40 ms per tool call — 2-5x faster than Playwright MCP per flow. Local-first, zero telemetry by default.\n\n' +
             'Core tools:\n' +
             '- alethia_tell: Drive a real browser with plain English. Returns per-step results, DOM diffs (what changed), ' +
             'a semantic page snapshot (~200 tokens), EA1 policy audits, and a SHA-256 integrity hash.\n' +
