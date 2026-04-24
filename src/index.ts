@@ -1552,6 +1552,117 @@ const validateToolArgs = (toolName: string, args: Record<string, unknown>): stri
 };
 
 // ---------------------------------------------------------------------------
+// Human-readable stderr summary for tool responses.
+//
+// Two audiences read this bridge's output:
+//   1. The MCP client (agent) reads the JSON response on stdout.
+//   2. The human (developer, CI log reader) scrolls through stderr.
+//
+// The agent doesn't need verbose prose — tokens cost real money. The human
+// wants to see at a glance what happened on each call. We satisfy both by
+// emitting a compact human summary to stderr on every alethia_tell / parallel
+// call, completely independent of the JSON shape going to stdout.
+//
+// Set ALETHIA_QUIET=1 to disable (useful for automated benchmark harnesses
+// that parse stderr separately).
+// ---------------------------------------------------------------------------
+
+const humanLogsEnabled = (): boolean => process.env.ALETHIA_QUIET !== '1';
+
+const humanLog = (line: string): void => {
+  if (humanLogsEnabled()) {
+    process.stderr.write(`${line}\n`);
+  }
+};
+
+const fmtDuration = (ms: unknown): string => {
+  const n = typeof ms === 'number' ? ms : Number(ms);
+  if (!Number.isFinite(n)) return '—';
+  return n >= 1000 ? `${(n / 1000).toFixed(2)}s` : `${Math.round(n)}ms`;
+};
+
+// Parse a stepRun's failure detail into (reason, context lines) for the
+// diagnostic block. The runtime currently emits failure detail like:
+//   "Step 2/5 failed: Not found: :text(Anvil) | page title: \"X\" | N elements on page | headings: ... | buttons/links: ... | inputs: ..."
+// The first segment carries the actual "why" (e.g. "Not found: :text(Anvil)").
+// The trailing segments are page context we want to show indented under it.
+const parseFailureDetail = (step: Record<string, unknown>): { reason: string | null; context: string[] } => {
+  const detail = typeof step.detail === 'string' ? step.detail : '';
+  if (!detail) return { reason: null, context: [] };
+
+  const parts = detail.split(' | ').map((s) => s.trim()).filter(Boolean);
+  const first = parts[0] ?? '';
+  // Strip the "Step N/M failed: " prefix if present to keep the reason clean.
+  const reason = first.replace(/^Step\s+\d+\/\d+\s+failed:\s*/i, '').trim() || null;
+
+  const context = parts.slice(1).slice(0, 6); // cap at 6 context lines
+  return { reason, context };
+};
+
+// Render a compact human-readable summary of an alethia_tell result to stderr.
+// Accepts whatever shape the runtime returned; gracefully falls back to a
+// single-line marker if fields are missing.
+const printTellSummary = (toolName: string, result: unknown): void => {
+  if (!humanLogsEnabled()) return;
+  if (!result || typeof result !== 'object') {
+    humanLog(`[${toolName}] (no result)`);
+    return;
+  }
+
+  const r = result as Record<string, unknown>;
+  const ok = r.ok !== false; // default true unless explicitly false
+  const run = (r.run && typeof r.run === 'object' ? r.run : r) as Record<string, unknown>;
+  const name = typeof run.name === 'string' ? run.name : (typeof r.name === 'string' ? r.name : 'unnamed');
+  const elapsed = fmtDuration(run.elapsedMs ?? r.elapsedMs);
+  const stepRuns = Array.isArray(run.stepRuns) ? run.stepRuns : [];
+  const totalSteps = stepRuns.length;
+  const okSteps = stepRuns.filter((s: unknown) =>
+    typeof s === 'object' && s !== null && (s as Record<string, unknown>).ok !== false
+  ).length;
+
+  if (ok) {
+    // One-line success summary. Keeps CI logs scannable.
+    humanLog(`[${toolName}] ${name} · ${totalSteps} step${totalSteps === 1 ? '' : 's'} · ${elapsed} · OK`);
+    return;
+  }
+
+  // Failure — emit multi-line diagnostic block with as much context as we can
+  // extract from the result. Human reading CI should have what they need to
+  // debug without re-running locally.
+  const failedIdx = stepRuns.findIndex((s: unknown) =>
+    typeof s === 'object' && s !== null && (s as Record<string, unknown>).ok === false
+  );
+  const failedStep = failedIdx >= 0 ? (stepRuns[failedIdx] as Record<string, unknown>) : null;
+  const failedDetail = failedStep && typeof failedStep.detail === 'string' ? failedStep.detail : '';
+  const topError = typeof r.error === 'string' ? r.error : '';
+
+  // Compact one-line summary at the top so scanners see the headline.
+  humanLog('─'.repeat(72));
+  humanLog(`[${toolName}] ${name} · FAILED · ${elapsed} · ${okSteps} of ${totalSteps} step${totalSteps === 1 ? '' : 's'} passed`);
+
+  if (failedStep) {
+    const { reason, context } = parseFailureDetail(failedStep);
+    // Prefer the parsed detail (carries the real "why") over the raw reasonCode
+    // (which is a policy-gate label like ALLOW/DENY, useful for compliance but
+    // not the cause).
+    humanLog(`  failed step: ${failedIdx + 1} of ${totalSteps}`);
+    if (reason) humanLog(`  reason:      ${reason}`);
+    else if (failedStep.error) humanLog(`  reason:      ${failedStep.error}`);
+    else if (failedStep.reasonCode) humanLog(`  policy:      ${failedStep.reasonCode}`);
+
+    if (context.length > 0) {
+      humanLog('  page:');
+      for (const line of context) humanLog(`    ${line}`);
+    }
+  } else if (topError) {
+    humanLog(`  error:    ${topError}`);
+  } else if (failedDetail) {
+    humanLog(`  detail:   ${failedDetail.slice(0, 300)}`);
+  }
+  humanLog('─'.repeat(72));
+};
+
+// ---------------------------------------------------------------------------
 // MCP request handlers
 // ---------------------------------------------------------------------------
 
@@ -1707,11 +1818,24 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
         });
 
         if (httpResponse.error) {
+          humanLog(`[${toolName}] runtime error: ${httpResponse.error.message}`);
           return {
             jsonrpc: '2.0',
             id,
             result: wrapMcpResult(`Alethia runtime error: ${httpResponse.error.message}`, true),
           };
+        }
+
+        // Emit a human-readable stderr summary for tell/parallel calls. The
+        // agent still gets the structured JSON on stdout; stderr is strictly
+        // for humans scrolling a CI log or debugging locally.
+        if (toolName === 'alethia_tell' || toolName === 'alethia_tell_parallel') {
+          try {
+            printTellSummary(toolName, httpResponse.result);
+          } catch {
+            // Never let summary rendering break the bridge — failures here
+            // are strictly cosmetic.
+          }
         }
 
         // Screenshot responses get special MCP image content blocks
