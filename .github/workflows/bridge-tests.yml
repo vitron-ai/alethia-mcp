@@ -1,0 +1,55 @@
+name: bridge-tests
+
+# Runs the bridge's test suite on every push/PR against main. No live Alethia
+# runtime needed — bridge-tests use pure Node and mock the JSON-RPC surface.
+#
+# Node matrix covers the active LTS (20) and current (22). Bridge ships to
+# anyone with Node 18+; keeping the matrix narrow here because 18 is near
+# end-of-life and the 20/22 pair catches the real drift that matters.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: bridge-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '22']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build bridge
+        run: npm run build
+
+      - name: Run bridge tests
+        run: npm test
+
+      # Surface the CLI smoke check — `alethia-mcp --version` should print
+      # the installed bridge version and exit 0. Catches packaging regressions
+      # that can't be caught by unit tests.
+      - name: CLI smoke — --version
+        run: node dist/index.js --version
+
+      - name: CLI smoke — --help
+        run: node dist/index.js --help | head -5
