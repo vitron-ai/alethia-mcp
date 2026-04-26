@@ -54,31 +54,9 @@ Then configure your MCP client. Pick the section that matches what you're runnin
 
 The bridge auto-installs the signed runtime on first use. The cockpit opens by default so you can watch the agent drive your app live (green = pass, blue = type, red = EA1 block). Set `ALETHIA_HEADLESS=1` to hide it. CI environments auto-hide.
 
-### Claude Code (VS Code extension or CLI)
+### Configure your MCP client
 
-Edit `~/.claude/mcp.json`. Create it if it doesn't exist.
-
-```json
-{
-  "mcpServers": {
-    "alethia": {
-      "command": "alethia-mcp"
-    }
-  }
-}
-```
-
-If the file already has a `mcpServers` block, merge the `"alethia"` entry into it.
-
-### Claude Desktop (standalone app from claude.ai/download)
-
-A different product from Claude Code with its own config file. You can edit it through the app (Settings → Developer → Edit Config) or directly on disk:
-
-- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-- **Linux:** `~/.config/Claude/claude_desktop_config.json`
-
-The file **doesn't exist until you create it** (either through the Settings UI or manually). Contents:
+The same server entry works everywhere — only the file path differs. Paste this into your client's MCP config:
 
 ```json
 {
@@ -90,23 +68,16 @@ The file **doesn't exist until you create it** (either through the Settings UI o
 }
 ```
 
-Restart Claude Desktop after editing for the server to be picked up.
+| Client | Where it lives |
+|---|---|
+| Claude Code (VS Code extension / CLI) | `~/.claude/mcp.json` |
+| Claude Desktop — macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Claude Desktop — Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
+| Claude Desktop — Linux | `~/.config/Claude/claude_desktop_config.json` |
+| Cursor | Settings → MCP → Add server (paste the un-nested `{ "alethia": { "command": "alethia-mcp" } }` form) |
+| Cline / Continue / any MCP-compliant client | The client's own MCP config — usually a JSON file in its extension settings dir |
 
-### Cursor
-
-Settings → MCP → Add server → paste:
-
-```json
-{
-  "alethia": {
-    "command": "alethia-mcp"
-  }
-}
-```
-
-### Cline / Continue / any MCP-compliant client
-
-Same `mcpServers.alethia` entry as above, placed wherever that client stores its MCP config (usually a JSON file in the extension's settings directory; check the client's own docs for the path).
+Create the file if it doesn't exist. If it already has an `mcpServers` block, merge the `"alethia"` entry into it. Restart the client after editing so it picks up the server. Claude Desktop also exposes Settings → Developer → Edit Config as an in-app shortcut.
 
 **Upgrading:** periodically run `npm install -g @vitronai/alethia@latest` to pick up new bridge versions. Since 0.6.0, a new bridge is no longer required for new runtime versions — the bridge queries GitHub Releases for the current runtime on every start.
 
