@@ -1,114 +1,525 @@
 <!DOCTYPE html>
+<!-- Note: <html> intentionally lacks lang attribute on the next line —
+     this page is a deliberate WCAG negative-test surface. Do not "fix". -->
 <html>
 <head>
   <meta charset="utf-8">
+  <!-- Note: <title> deliberately omitted to trigger WCAG 2.4.2. -->
   <style>
+    :root {
+      --bg-0: #0a0d14;
+      --bg-1: #11151f;
+      --bg-2: #181d2a;
+      --bg-3: #20263a;
+      --line: #262d42;
+      --line-soft: #1c2235;
+      --ink: #e6ecf5;
+      --ink-muted: #9aa6c2;
+      --ink-faint: #677295;
+      --ink-dim: #4a5577;
+      --amber: #fbbf24;
+      --amber-strong: #f59e0b;
+      --amber-soft: rgba(251,191,36,.12);
+      --rose: #f87171;
+      --rose-soft: rgba(248,113,113,.12);
+      --emerald: #34d399;
+      --emerald-soft: rgba(52,211,153,.12);
+      --indigo: #818cf8;
+      --indigo-soft: rgba(129,140,248,.12);
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'SF Mono', monospace; background: #080c14; color: #c8d6e5; min-height: 100vh; padding: 1.5rem; font-size: 0.85rem; }
-    h1 { font-size: 1.2rem; color: #e2e8f0; margin-bottom: 0.3rem; }
-    .subtitle { color: #5a7a9e; font-size: 0.8rem; margin-bottom: 1.5rem; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    .panel { background: #0d1525; border: 1px solid #1a2744; border-radius: 8px; padding: 1rem; }
-    .panel h2 { font-size: 0.85rem; color: #7eb8da; margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; }
-    .violation { padding: 0.5rem 0; border-bottom: 1px solid #111d30; display: flex; justify-content: space-between; align-items: center; }
-    .violation:last-child { border-bottom: none; }
-    .violation-label { color: #c8d6e5; }
-    .violation-code { font-size: 0.7rem; color: #ff8c00; }
-    .expect-fail { font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 3px; background: #1a0808; color: #ff4444; border: 1px solid #ff4444; }
-    button { padding: 0.35rem 0.7rem; border-radius: 4px; border: 1px solid #1a2744; background: #111d30; color: #7eb8da; cursor: pointer; font: inherit; font-size: 0.75rem; }
-    input { padding: 0.35rem 0.5rem; border-radius: 4px; border: 1px solid #1a2744; background: #111d30; color: #e2e8f0; font: inherit; font-size: 0.8rem; width: 180px; }
-    img { display: inline-block; width: 60px; height: 40px; background: #2a3a5a; border: 1px solid #4a6a9a; border-radius: 4px; margin: 0.3rem 0.3rem 0 0; }
-    .low-contrast { color: #1a2744; }
-    .tiny-text { font-size: 6px; }
-    .score-bar { display: flex; gap: 1.5rem; padding: 0.8rem; background: #111d30; border-radius: 8px; border: 1px solid #1a2744; margin-bottom: 1rem; }
-    .score-label { color: #5a7a9e; font-size: 0.8rem; }
-    .score-value { font-size: 1.8rem; font-weight: 700; }
-    .score-bad { color: #ff4444; }
-    .full-width { grid-column: 1 / -1; }
+    html { color-scheme: dark; }
+    body {
+      font-family: ui-sans-serif, -apple-system, system-ui, "Inter", sans-serif;
+      background:
+        radial-gradient(1100px 600px at 0% -10%, rgba(251,191,36,.08), transparent 55%),
+        radial-gradient(900px 500px at 105% 110%, rgba(129,140,248,.05), transparent 55%),
+        var(--bg-0);
+      background-attachment: fixed;
+      color: var(--ink);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      letter-spacing: -.005em;
+      font-size: 13.5px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--line-soft);
+      background: rgba(10,13,20,.7);
+      backdrop-filter: saturate(140%) blur(8px);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+    .brand-mark {
+      width: 26px; height: 26px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, var(--amber), var(--amber-strong));
+      display: grid;
+      place-items: center;
+      box-shadow: 0 4px 14px rgba(251,191,36,.3), inset 0 1px 0 rgba(255,255,255,.2);
+    }
+    .brand-mark svg { color: #2a1a05; }
+    .brand-name { letter-spacing: -.01em; }
+    .brand-eyebrow { font-size: 11px; color: var(--ink-faint); font-weight: 500; }
+    .neg-badge {
+      padding: 4px 11px;
+      border-radius: 999px;
+      background: var(--rose-soft);
+      border: 1px solid rgba(248,113,113,.4);
+      color: var(--rose);
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .lead-card {
+      padding: 16px 18px;
+      background: linear-gradient(135deg, rgba(251,191,36,.06), rgba(248,113,113,.04));
+      border: 1px solid rgba(251,191,36,.25);
+      border-radius: 12px;
+      margin-bottom: 16px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+    .lead-icon {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      background: var(--amber-soft);
+      border: 1px solid rgba(251,191,36,.3);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      color: var(--amber);
+    }
+    .lead-card h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+    .lead-card p {
+      font-size: 13px;
+      color: var(--ink-muted);
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .summary-card {
+      background: var(--bg-1);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 16px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color .15s, transform .15s;
+    }
+    .summary-card:hover { border-color: #2c3550; transform: translateY(-1px); }
+    .summary-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(160px 90px at 100% 0%, var(--c-soft, rgba(255,255,255,.04)), transparent 70%);
+    }
+    .summary-card .head {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+    .summary-card .head .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--c, var(--ink-faint));
+      box-shadow: 0 0 8px var(--c, transparent);
+    }
+    .summary-card .val {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -.022em;
+      color: #fff;
+      margin-top: 6px;
+      line-height: 1.05;
+    }
+    .summary-card .sub {
+      font-size: 11.5px;
+      color: var(--ink-muted);
+      margin-top: 2px;
+    }
+    .card-violations { --c: var(--rose); --c-soft: rgba(248,113,113,.10); }
+    .card-criteria   { --c: var(--amber); --c-soft: rgba(251,191,36,.10); }
+    .card-pass       { --c: var(--emerald); --c-soft: rgba(52,211,153,.10); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .panel {
+      background: var(--bg-1);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.03),
+        0 2px 6px rgba(0,0,0,.18);
+    }
+    .panel.full-width { grid-column: 1 / -1; }
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .panel-head h2 {
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .panel-head h2 .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--rose);
+      box-shadow: 0 0 8px var(--rose);
+    }
+    .panel-head .pill {
+      font-size: 10.5px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--bg-3);
+      color: var(--ink-faint);
+      font-weight: 500;
+    }
+
+    .criterion {
+      font-size: 11px;
+      font-family: ui-monospace, monospace;
+      color: var(--ink-faint);
+      letter-spacing: -.01em;
+    }
+    .panel-desc {
+      font-size: 12.5px;
+      color: var(--ink-muted);
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+
+    .badge {
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .badge-fail { background: var(--rose-soft); color: var(--rose); border: 1px solid rgba(248,113,113,.3); }
+    .badge-pass { background: var(--emerald-soft); color: var(--emerald); border: 1px solid rgba(52,211,153,.3); }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line-soft);
+      font-size: 12.5px;
+    }
+    .row:last-child { border-bottom: none; }
+    .row-label { color: var(--ink); }
+    .row-label .meta { color: var(--ink-faint); margin-left: 6px; font-size: 11.5px; }
+
+    /* Violation specimens */
+    .specimen-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+      padding: 10px;
+      background: var(--bg-0);
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+    }
+    .specimen-strip img {
+      display: block;
+      width: 56px; height: 38px;
+      border-radius: 5px;
+      border: 1px solid var(--line);
+    }
+    .specimen-strip input {
+      flex: 1;
+      min-width: 140px;
+      padding: 6px 9px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: var(--bg-2);
+      color: var(--ink);
+      font: inherit;
+      font-size: 12px;
+      outline: none;
+    }
+    .specimen-strip input::placeholder { color: var(--ink-dim); }
+    .specimen-strip input:focus { border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-soft); }
+
+    /* Empty / unlabeled buttons (deliberate violations) */
+    .specimen-strip button.unlabeled {
+      width: 32px; height: 32px;
+      border-radius: 7px;
+      background: var(--bg-2);
+      border: 1px solid var(--line);
+      cursor: pointer;
+    }
+    .specimen-strip a.unlabeled {
+      width: 32px; height: 32px;
+      border-radius: 7px;
+      background: var(--bg-2);
+      border: 1px solid var(--line);
+      display: inline-block;
+    }
+
+    /* Submit report bar */
+    .submit-bar {
+      margin-top: 16px;
+      padding: 14px 16px;
+      background: var(--bg-1);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .submit-bar .left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .submit-bar .icon-circle {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: var(--indigo-soft);
+      border: 1px solid rgba(129,140,248,.3);
+      display: grid;
+      place-items: center;
+      color: var(--indigo);
+    }
+    .submit-bar p {
+      font-size: 12.5px;
+      color: var(--ink-muted);
+    }
+    .submit-bar p strong { color: var(--ink); font-weight: 600; }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s, transform .08s;
+    }
+    button:active:not([disabled]) { transform: translateY(1px); }
+    .btn {
+      padding: 7px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--bg-2);
+      color: var(--ink);
+      font-size: 12.5px;
+      font-weight: 600;
+    }
+    .btn:hover { background: var(--bg-3); border-color: #2c3550; }
+    .btn-primary {
+      background: linear-gradient(180deg, var(--amber), var(--amber-strong));
+      color: #2a1a05;
+      border: none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 4px 12px rgba(251,191,36,.2);
+    }
+    .btn-primary:hover { filter: brightness(1.05); }
+
+    .submit-success {
+      display: none;
+      margin-top: 12px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      background: var(--emerald-soft);
+      border: 1px solid rgba(52,211,153,.3);
+      color: var(--emerald);
+      font-size: 13px;
+      font-weight: 500;
+      align-items: center;
+      gap: 8px;
+    }
+    .submit-success.show { display: flex; }
   </style>
 </head>
 <body>
-  <h1>WCAG Accessibility Audit — Negative Test</h1>
-  <p class="subtitle">This page is deliberately riddled with WCAG violations. Alethia's accessibility audit should catch all of them.</p>
 
-  <div class="score-bar">
-    <div><span class="score-label">Expected violations:</span> <span class="score-value score-bad">12+</span></div>
-    <div><span class="score-label">If audit reports 0:</span> <span class="score-value score-bad">BUG</span></div>
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+      </div>
+      <div>
+        <div class="brand-name">WCAG Accessibility Audit</div>
+        <div class="brand-eyebrow">WCAG 2.1 AA · 14 criteria</div>
+      </div>
+    </div>
+    <span class="neg-badge">Negative Test Surface</span>
   </div>
 
-  <div class="grid">
-    <div class="panel">
-      <h2>Missing Alt Text (WCAG 1.1.1)</h2>
-      <div class="violation">
-        <span class="violation-label">Image without alt</span>
-        <span class="expect-fail">SHOULD CATCH</span>
-      </div>
-      <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 40'><rect width='60' height='40' fill='%234a6a9a'/><circle cx='16' cy='14' r='4' fill='%23ffd166'/><polygon points='6,32 22,18 32,26 44,14 54,32' fill='%237eb8da'/></svg>" />
-      <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 40'><rect width='60' height='40' fill='%234a6a9a'/><circle cx='16' cy='14' r='4' fill='%23ffd166'/><polygon points='6,32 22,18 32,26 44,14 54,32' fill='%237eb8da'/></svg>" />
-      <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 40'><rect width='60' height='40' fill='%234a6a9a'/><circle cx='16' cy='14' r='4' fill='%23ffd166'/><polygon points='6,32 22,18 32,26 44,14 54,32' fill='%237eb8da'/></svg>" />
-    </div>
+  <div class="container">
 
-    <div class="panel">
-      <h2>Missing Form Labels (WCAG 1.3.1)</h2>
-      <div class="violation">
-        <span class="violation-label">Input without label or aria-label</span>
-        <span class="expect-fail">SHOULD CATCH</span>
+    <div class="lead-card">
+      <div class="lead-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"></path><path d="M12 9v4M12 17h.01"></path></svg>
       </div>
-      <input type="text" placeholder="No label" />
-      <input type="email" placeholder="Also no label" />
-      <input type="tel" placeholder="Phone with no label" />
-    </div>
-
-    <div class="panel">
-      <h2>Empty Buttons & Links (WCAG 4.1.2)</h2>
-      <div class="violation">
-        <span class="violation-label">Button with no text or aria-label</span>
-        <span class="expect-fail">SHOULD CATCH</span>
-      </div>
-      <button id="empty-btn-1"></button>
-      <button id="empty-btn-2"></button>
-      <div class="violation">
-        <span class="violation-label">Link with no text</span>
-        <span class="expect-fail">SHOULD CATCH</span>
-      </div>
-      <a href="#nowhere" id="empty-link-1"></a>
-      <a href="#nowhere" id="empty-link-2"></a>
-    </div>
-
-    <div class="panel">
-      <h2>Missing Page Metadata (WCAG 2.4.2)</h2>
-      <div class="violation">
-        <span class="violation-label">No &lt;html lang&gt; attribute</span>
-        <span class="expect-fail">SHOULD CATCH</span>
-      </div>
-      <div class="violation">
-        <span class="violation-label">No &lt;title&gt; element</span>
-        <span class="expect-fail">SHOULD CATCH</span>
-      </div>
-      <div class="violation">
-        <span class="violation-label">Missing autocomplete on email/tel inputs</span>
-        <span class="expect-fail">SHOULD CATCH</span>
+      <div>
+        <h1>This page is deliberately riddled with WCAG violations.</h1>
+        <p>Alethia's accessibility audit should catch all of them. If the audit reports zero, that's a bug.</p>
       </div>
     </div>
 
-    <div class="panel full-width">
-      <h2>Correctly Accessible Elements (should NOT be flagged)</h2>
-      <div class="violation">
-        <span class="violation-label">Image with alt text</span>
-        <span style="font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;background:#001a0a;color:#00cc66;border:1px solid #00cc66">SHOULD PASS</span>
+    <div class="summary">
+      <div class="summary-card card-violations">
+        <div class="head"><span class="dot"></span>Expected Violations</div>
+        <div class="val">12+</div>
+        <div class="sub">across 4 categories</div>
       </div>
-      <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 40'><rect width='60' height='40' fill='%234a6a9a'/><circle cx='16' cy='14' r='4' fill='%23ffd166'/><polygon points='6,32 22,18 32,26 44,14 54,32' fill='%237eb8da'/></svg>" alt="Decorative placeholder" />
-      <div class="violation">
-        <span class="violation-label">Input with aria-label</span>
-        <span style="font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;background:#001a0a;color:#00cc66;border:1px solid #00cc66">SHOULD PASS</span>
+      <div class="summary-card card-criteria">
+        <div class="head"><span class="dot"></span>WCAG Criteria</div>
+        <div class="val">4</div>
+        <div class="sub">1.1.1 · 1.3.1 · 2.4.2 · 4.1.2</div>
       </div>
-      <input type="text" aria-label="Search" placeholder="Search..." />
-      <div class="violation">
-        <span class="violation-label">Button with text</span>
-        <span style="font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;background:#001a0a;color:#00cc66;border:1px solid #00cc66">SHOULD PASS</span>
+      <div class="summary-card card-pass">
+        <div class="head"><span class="dot"></span>Compliant Specimens</div>
+        <div class="val">3</div>
+        <div class="sub">should not be flagged</div>
       </div>
-      <button>Submit Report</button>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="panel-head">
+          <h2><span class="dot"></span>Missing Alt Text</h2>
+          <span class="pill">3 violations</span>
+        </div>
+        <div class="row">
+          <span class="row-label">Images without <code style="font-family: ui-monospace, monospace; color: var(--rose); font-size: 11.5px;">alt</code> attribute<span class="meta">WCAG 1.1.1 · A</span></span>
+          <span class="badge badge-fail">Should catch</span>
+        </div>
+        <p class="panel-desc" style="margin-top: 10px; margin-bottom: 4px;">Three decorative-but-untagged images below.</p>
+        <div class="specimen-strip">
+          <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 40'><rect width='60' height='40' fill='%2326304a'/><circle cx='16' cy='14' r='4' fill='%23fbbf24'/><polygon points='6,32 22,18 32,26 44,14 54,32' fill='%2367e8f9'/></svg>" />
+          <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 40'><rect width='60' height='40' fill='%2326304a'/><circle cx='44' cy='12' r='5' fill='%23a78bfa'/><polygon points='4,30 18,20 30,28 42,18 56,32' fill='%23f472b6'/></svg>" />
+          <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 40'><rect width='60' height='40' fill='%2326304a'/><circle cx='30' cy='14' r='4' fill='%2334d399'/><polygon points='2,32 16,16 28,28 40,12 58,32' fill='%2360a5fa'/></svg>" />
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2><span class="dot"></span>Missing Form Labels</h2>
+          <span class="pill">3 violations</span>
+        </div>
+        <div class="row">
+          <span class="row-label">Inputs without <code style="font-family: ui-monospace, monospace; color: var(--rose); font-size: 11.5px;">&lt;label&gt;</code> or aria-label<span class="meta">WCAG 1.3.1 · A</span></span>
+          <span class="badge badge-fail">Should catch</span>
+        </div>
+        <p class="panel-desc" style="margin-top: 10px; margin-bottom: 4px;">Placeholder-only inputs are insufficient for screen readers.</p>
+        <div class="specimen-strip">
+          <input type="text" placeholder="No label" />
+          <input type="email" placeholder="Also no label" />
+          <input type="tel" placeholder="Phone with no label" />
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2><span class="dot"></span>Empty Buttons &amp; Links</h2>
+          <span class="pill">4 violations</span>
+        </div>
+        <div class="row">
+          <span class="row-label">Buttons / links with no accessible name<span class="meta">WCAG 4.1.2 · A</span></span>
+          <span class="badge badge-fail">Should catch</span>
+        </div>
+        <p class="panel-desc" style="margin-top: 10px; margin-bottom: 4px;">Two empty buttons, two empty anchor tags.</p>
+        <div class="specimen-strip">
+          <button class="unlabeled" id="empty-btn-1"></button>
+          <button class="unlabeled" id="empty-btn-2"></button>
+          <a class="unlabeled" href="#nowhere" id="empty-link-1"></a>
+          <a class="unlabeled" href="#nowhere" id="empty-link-2"></a>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2><span class="dot"></span>Missing Page Metadata</h2>
+          <span class="pill">3 violations</span>
+        </div>
+        <div class="row"><span class="row-label">No <code style="font-family: ui-monospace, monospace; color: var(--rose); font-size: 11.5px;">&lt;html lang&gt;</code><span class="meta">WCAG 3.1.1 · A</span></span><span class="badge badge-fail">Should catch</span></div>
+        <div class="row"><span class="row-label">No <code style="font-family: ui-monospace, monospace; color: var(--rose); font-size: 11.5px;">&lt;title&gt;</code><span class="meta">WCAG 2.4.2 · A</span></span><span class="badge badge-fail">Should catch</span></div>
+        <div class="row"><span class="row-label">Missing <code style="font-family: ui-monospace, monospace; color: var(--rose); font-size: 11.5px;">autocomplete</code> on email/tel<span class="meta">WCAG 1.3.5 · AA</span></span><span class="badge badge-fail">Should catch</span></div>
+      </div>
+
+      <div class="panel full-width">
+        <div class="panel-head">
+          <h2><span class="dot" style="background: var(--emerald); box-shadow: 0 0 8px var(--emerald);"></span>Compliant Specimens</h2>
+          <span class="pill">should not be flagged</span>
+        </div>
+        <div class="row"><span class="row-label">Image with descriptive alt text</span><span class="badge badge-pass">Should pass</span></div>
+        <div class="specimen-strip">
+          <img alt="Decorative chart placeholder showing data trend"
+               src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 40'><rect width='60' height='40' fill='%2326304a'/><polygon points='6,32 22,18 32,26 44,14 54,32' fill='%2334d399'/></svg>" />
+        </div>
+        <div class="row"><span class="row-label">Input with <code style="font-family: ui-monospace, monospace; color: var(--emerald); font-size: 11.5px;">aria-label</code></span><span class="badge badge-pass">Should pass</span></div>
+        <div class="specimen-strip">
+          <input type="text" aria-label="Search compliance findings" placeholder="Search…" />
+        </div>
+        <div class="row"><span class="row-label">Button with visible text content</span><span class="badge badge-pass">Should pass</span></div>
+        <div class="submit-bar">
+          <div class="left">
+            <div class="icon-circle">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            </div>
+            <p><strong>Submit audit report.</strong> Generates the WCAG findings packet for review.</p>
+          </div>
+          <button class="btn btn-primary" id="submit-report-btn">Submit Report</button>
+        </div>
+        <div class="submit-success" id="submit-success">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="m9 11 3 3L22 4"></path></svg>
+          <span>Report submitted — findings packet generated and queued for review.</span>
+        </div>
+      </div>
     </div>
   </div>
+
+  <script>
+    document.getElementById('submit-report-btn').addEventListener('click', function () {
+      var ok = document.getElementById('submit-success');
+      ok.classList.add('show');
+      this.textContent = 'Submitted';
+      this.disabled = true;
+      this.style.filter = 'grayscale(.4) brightness(.95)';
+    });
+  </script>
 </body>
 </html>

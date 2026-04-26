@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Negative Test Surface — Alethia</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, system-ui, sans-serif;
+      background: #0a0e17;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 0.4rem;
+      color: #fff;
+    }
+    .subtitle {
+      color: #64748b;
+      font-size: 0.85rem;
+      margin-bottom: 1.5rem;
+    }
+    .banner {
+      padding: 0.7rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      background: #422006;
+      border: 1px solid #f59e0b;
+      color: #fde68a;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .panel {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .panel h2 {
+      font-size: 1rem;
+      margin-bottom: 0.6rem;
+      color: #f8fafc;
+      font-weight: 600;
+    }
+    .panel p {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-bottom: 0.5rem;
+      line-height: 1.55;
+    }
+    .panel code {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-family: ui-monospace, monospace;
+      font-size: 0.78rem;
+    }
+    .fail-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(240,96,96,0.15);
+      color: #fca5a5;
+      border: 1px solid rgba(240,96,96,0.4);
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+    .row {
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+      margin-top: 0.7rem;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #e2e8f0;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    button:hover { background: #334155; }
+    .btn-danger { background: #7f1d1d; border-color: #ef4444; color: #fef2f2; }
+    .btn-danger:hover { background: #991b1b; }
+    .btn-success { background: #14532d; border-color: #22c55e; color: #86efac; }
+    input {
+      flex: 1;
+      padding: 0.5rem 0.7rem;
+      background: #0a0e17;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      color: #e2e8f0;
+      font-size: 0.85rem;
+    }
+    .moving { animation: pulse 1.6s ease-in-out infinite; color: #fde68a; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .late-button { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Negative Test Surface</h1>
+  <p class="subtitle">Each panel below is wired to break a specific assertion or click. Drive with the canned NLP — most steps fail intentionally, the last one passes because EA1 catches it.</p>
+
+  <div class="banner" role="alert">
+    ⚠️ Every visible affordance is a failure mode by design. Watch the cockpit timeline go mostly red.
+  </div>
+
+  <div class="panel">
+    <h2>Missing-text assertion <span class="fail-tag">FAILS</span></h2>
+    <p>An assertion looks for a greeting phrase. The page never renders it, so the resolver finds no match.</p>
+  </div>
+
+  <div class="panel">
+    <h2>Wrong-text assertion <span class="fail-tag">FAILS</span></h2>
+    <p>An assertion looks for a heading that doesn't exist on this surface. This page's only h1 is the title above.</p>
+  </div>
+
+  <div class="panel">
+    <h2>Hidden-button click <span class="fail-tag">FAILS</span></h2>
+    <p>The action target below is in the DOM but has <code>display: none</code>. The resolver finds nothing clickable.</p>
+    <button class="late-button" id="ghost-action">Send Now</button>
+  </div>
+
+  <div class="panel">
+    <h2>Inert-form check <span class="fail-tag">FAILS</span></h2>
+    <p>The form has no submit handler — clicking the action and asserting a confirmation message both miss.</p>
+    <div class="row">
+      <input type="text" placeholder="Type something here…">
+      <button id="action-noop">Send Now</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Destructive-action click <span class="fail-tag">EA1 BLOCKS — passes by design</span></h2>
+    <p>The action below uses a verb in the EA1 destructive set (<code>delete</code>). The policy gate refuses the click; <code>expect block:</code> succeeds.</p>
+    <div class="row">
+      <button id="delete-btn" class="btn-danger">Delete Account</button>
+      <button class="btn-success" id="cancel-btn">Cancel</button>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('click', (e) => { e.preventDefault?.(); }, { capture: true });
+  </script>
+</body>
+</html>

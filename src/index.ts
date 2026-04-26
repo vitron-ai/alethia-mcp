@@ -1088,6 +1088,32 @@ class AlethiaConnectionError extends Error {
   }
 }
 
+// Tell the runtime about a local helper-server port (e.g. the bridge's demo
+// server) so the cockpit's discovery dropdown can include it. Best-effort:
+// silently swallows errors so a missing/unupgraded runtime doesn't break
+// alethia_serve_demo for users.
+const registerForeignTargetWithRuntime = (port: number, label: string): Promise<void> =>
+  new Promise((resolveReg) => {
+    const payload = JSON.stringify({ port, label });
+    const req = http.request(
+      {
+        hostname: ALETHIA_HOST,
+        port: ALETHIA_PORT,
+        path: '/_alethia/foreign-target/register',
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'content-length': Buffer.byteLength(payload),
+        },
+      },
+      (res) => { res.resume(); res.on('end', () => resolveReg()); res.on('error', () => resolveReg()); }
+    );
+    req.setTimeout(2000, () => { req.destroy(); resolveReg(); });
+    req.on('error', () => resolveReg());
+    req.write(payload);
+    req.end();
+  });
+
 const callAlethia = (body: unknown, timeoutMs = ALETHIA_TIMEOUT_MS): Promise<AlethiaHttpResponse> =>
   new Promise((resolveCall, rejectCall) => {
     const payload = JSON.stringify(body);
@@ -1773,6 +1799,12 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
       if (toolName === 'alethia_serve_demo') {
         try {
           const { port, url, pages } = await startDemoServer();
+          // Register the ephemeral port with the runtime so it appears in the
+          // cockpit's "Rescan / Targets" dropdown. Best-effort — if the
+          // runtime isn't up yet, the demo still works via the URL we return,
+          // it just won't auto-discover. Idempotent: re-registering the same
+          // port is a no-op on the runtime side.
+          void registerForeignTargetWithRuntime(port, 'Alethia Demo Server (bridge)');
           const pageList = pages.map(p => `  ${url}/${p}`).join('\n');
           return {
             jsonrpc: '2.0',

@@ -5,62 +5,367 @@
   <title>Agent Oversight — Autonomous System Monitor</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'SF Mono', 'Fira Code', monospace; background: #080c14; color: #c8d6e5; min-height: 100vh; padding: 1rem; font-size: 0.85rem; }
-    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1a2744; padding-bottom: 0.8rem; margin-bottom: 1rem; }
-    h1 { font-size: 1.1rem; color: #e2e8f0; }
-    .system-status { display: flex; gap: 1.5rem; font-size: 0.75rem; color: #5a7a9e; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    .panel { background: #0d1525; border: 1px solid #1a2744; border-radius: 8px; padding: 1rem; }
-    .panel h2 { font-size: 0.85rem; color: #7eb8da; margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; }
-    .agent-card { background: #111d30; border: 1px solid #1a2744; border-radius: 6px; padding: 0.8rem; margin-bottom: 0.6rem; }
-    .agent-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
-    .agent-name { color: #e2e8f0; font-weight: 600; }
-    .agent-status { padding: 0.1rem 0.5rem; border-radius: 3px; font-size: 0.7rem; }
-    .status-running { background: #001a0a; color: #00cc66; border: 1px solid #00cc66; }
-    .status-flagged { background: #1a1400; color: #ffd700; border: 1px solid #ffd700; animation: pulse 2s ease-in-out infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-    .status-halted { background: #1a0808; color: #ff4444; border: 1px solid #ff4444; }
-    .agent-detail { color: #5a7a9e; font-size: 0.75rem; line-height: 1.5; }
-    .agent-actions { display: flex; gap: 0.4rem; margin-top: 0.5rem; }
-    button { padding: 0.3rem 0.6rem; border-radius: 4px; border: 1px solid #1a2744; background: #111d30; color: #7eb8da; cursor: pointer; font: inherit; font-size: 0.75rem; }
-    .btn-review { border-color: #00bfff; color: #00bfff; }
-    .btn-halt { border-color: #ff4444; color: #ff4444; }
-    .btn-approve { border-color: #00cc66; color: #00cc66; }
-    .btn-rollback { border-color: #ff8c00; color: #ff8c00; }
-    .policy-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #111d30; }
-    .policy-pass { color: #00cc66; }
-    .policy-flag { color: #ffd700; }
-    .policy-block { color: #ff4444; }
-    .audit-entry { padding: 0.3rem 0; border-bottom: 1px solid #111d30; display: flex; gap: 0.6rem; font-size: 0.75rem; }
-    .audit-ts { color: #3a5570; min-width: 75px; }
-    .audit-agent { color: #7eb8da; min-width: 90px; }
+    :root {
+      --bg: #050c0a;
+      --bg-1: #0a1614;
+      --bg-2: #0f201d;
+      --edge: rgba(255,255,255,.06);
+      --edge-strong: rgba(255,255,255,.12);
+      --ink: #e8f5ed;
+      --ink-2: #cfdcd6;
+      --ink-muted: #93a299;
+      --ink-faint: #5d6e69;
+      --teal: #14b8a6;
+      --teal-bright: #5eead4;
+      --teal-glow: #6ee7b7;
+      --indigo: #818cf8;
+      --indigo-bright: #a5b4fc;
+      --emerald: #10b981;
+      --emerald-bright: #34d399;
+      --red: #ef4444;
+      --red-bright: #f87171;
+      --amber: #f59e0b;
+      --amber-bright: #fbbf24;
+    }
+    html { color-scheme: dark; }
+    body {
+      font-family: "SF Pro Display", -apple-system, system-ui, sans-serif;
+      background:
+        radial-gradient(ellipse 70% 40% at 10% -10%, rgba(94,234,212,.10), transparent 70%),
+        radial-gradient(ellipse 60% 40% at 90% 110%, rgba(129,140,248,.06), transparent 70%),
+        var(--bg);
+      background-attachment: fixed;
+      color: var(--ink-2);
+      min-height: 100vh;
+      padding: 1.5rem 1.75rem 2rem;
+      font-size: 13.5px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .mono, .audit-ts, .audit-agent, .agent-name, .agent-status {
+      font-family: ui-monospace, "SF Mono", "Fira Code", monospace;
+    }
+
+    /* Header */
+    .header {
+      display: flex; justify-content: space-between; align-items: flex-end;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--edge);
+    }
+    .header-left { display: flex; flex-direction: column; gap: 6px; }
+    h1 {
+      font-size: 19px; font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -.015em;
+      display: inline-flex; align-items: center; gap: 10px;
+    }
+    h1::before {
+      content: ""; width: 8px; height: 8px; border-radius: 999px;
+      background: var(--teal-bright);
+      box-shadow: 0 0 12px rgba(94,234,212,.7);
+      animation: livepulse 2s ease-in-out infinite;
+    }
+    @keyframes livepulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+    .system-status {
+      display: flex; gap: 18px;
+      color: var(--ink-faint);
+      font-size: 11.5px;
+      font-family: ui-monospace, "SF Mono", monospace;
+    }
+    .system-status span strong { color: var(--ink-muted); }
+
+    /* Response banner */
+    .response-banner {
+      display: none;
+      padding: 10px 16px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-weight: 600;
+      font-size: 12.5px;
+      border: 1px solid transparent;
+    }
+    .response-banner.visible { display: block; animation: fadeIn .25s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Metric grid */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .metric {
+      background: linear-gradient(180deg, var(--bg-1) 0%, rgba(10,22,20,.5) 100%);
+      border: 1px solid var(--edge);
+      border-radius: 12px;
+      padding: 14px 16px;
+      text-align: left;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+      transition: border-color .15s, transform .15s;
+    }
+    .metric:hover { border-color: var(--edge-strong); transform: translateY(-1px); }
+    .metric-value {
+      font-size: 22px; font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -.015em;
+      font-variant-numeric: tabular-nums;
+    }
+    .metric-label {
+      font-size: 10.5px;
+      color: var(--ink-faint);
+      margin-top: 6px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .metric-value.critical { color: var(--red-bright); }
+    .metric-value.warning  { color: var(--amber-bright); }
+    .metric-value.good     { color: var(--emerald-bright); }
+
+    /* Layout */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
     .full-width { grid-column: 1 / -1; }
-    .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; margin-bottom: 1rem; }
-    .metric { background: #111d30; border: 1px solid #1a2744; border-radius: 6px; padding: 0.8rem; text-align: center; }
-    .metric-value { font-size: 1.4rem; font-weight: 700; color: #7eb8da; }
-    .metric-label { font-size: 0.7rem; color: #5a7a9e; margin-top: 0.2rem; }
-    .metric-value.critical { color: #ff4444; }
-    .metric-value.warning { color: #ffd700; }
-    .metric-value.good { color: #00cc66; }
-    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; }
-    .modal.visible { display: flex; }
-    .modal-content { background: #0d1525; border: 1px solid #ff4444; border-radius: 8px; padding: 1.5rem; max-width: 460px; }
-    .modal-content h3 { color: #ff4444; margin-bottom: 0.6rem; }
-    .modal-content p { color: #7eb8da; margin-bottom: 1rem; line-height: 1.6; }
-    .modal-actions { display: flex; gap: 0.6rem; justify-content: flex-end; }
-    .response-banner { display: none; padding: 0.6rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-weight: 600; }
-    .response-banner.visible { display: block; }
+
+    /* Panel */
+    .panel {
+      background: linear-gradient(180deg, var(--bg-1) 0%, rgba(10,22,20,.5) 100%);
+      border: 1px solid var(--edge);
+      border-radius: 14px;
+      padding: 18px 20px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+    }
+    .panel h2 {
+      font-size: 11px; font-weight: 700;
+      color: var(--teal-bright);
+      margin-bottom: 14px;
+      text-transform: uppercase; letter-spacing: .12em;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .panel h2::before {
+      content: ""; width: 4px; height: 4px; border-radius: 999px;
+      background: var(--teal-bright);
+      box-shadow: 0 0 6px var(--teal-bright);
+    }
+
+    /* Agent card */
+    .agent-card {
+      position: relative;
+      background: linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.01));
+      border: 1px solid var(--edge);
+      border-radius: 10px;
+      padding: 12px 14px 12px 18px;
+      margin-bottom: 10px;
+      transition: border-color .15s, transform .15s;
+    }
+    .agent-card::before {
+      content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 2px;
+      border-radius: 0 2px 2px 0;
+      background: var(--teal-bright);
+      opacity: .7;
+    }
+    .agent-card:has(.status-flagged)::before {
+      background: var(--amber-bright);
+      box-shadow: 0 0 8px rgba(251,191,36,.55);
+    }
+    .agent-card:has(.status-halted)::before {
+      background: var(--red);
+      box-shadow: 0 0 10px rgba(239,68,68,.55);
+    }
+    .agent-card:hover { border-color: var(--edge-strong); }
+    .agent-card:last-child { margin-bottom: 0; }
+    .agent-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px;
+      gap: 12px;
+    }
+    .agent-name {
+      color: var(--ink); font-weight: 700; font-size: 13px;
+      letter-spacing: -.005em;
+    }
+    .agent-status {
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      white-space: nowrap;
+    }
+    .status-running {
+      background: rgba(16,185,129,.10);
+      color: var(--emerald-bright);
+      border: 1px solid rgba(16,185,129,.4);
+    }
+    .status-flagged {
+      background: rgba(245,158,11,.12);
+      color: var(--amber-bright);
+      border: 1px solid rgba(245,158,11,.5);
+      animation: flagPulse 2s ease-in-out infinite;
+    }
+    @keyframes flagPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,.0); }
+      50%      { box-shadow: 0 0 0 3px rgba(245,158,11,.25); }
+    }
+    .status-halted {
+      background: rgba(239,68,68,.12);
+      color: var(--red-bright);
+      border: 1px solid rgba(239,68,68,.5);
+    }
+    .agent-detail {
+      color: var(--ink-2); font-size: 12px;
+      line-height: 1.6;
+    }
+    .agent-actions {
+      display: flex; gap: 6px;
+      margin-top: 10px;
+    }
+
+    /* Action buttons */
+    button {
+      padding: 5px 11px;
+      border-radius: 6px;
+      border: 1px solid var(--edge);
+      background: rgba(255,255,255,.02);
+      color: var(--ink-2);
+      cursor: pointer;
+      font: inherit;
+      font-size: 11.5px;
+      font-weight: 600;
+      transition: background .12s, border-color .12s, color .12s, transform .08s, box-shadow .12s;
+    }
+    button:hover { background: rgba(255,255,255,.05); border-color: var(--edge-strong); }
+    button:active { transform: translateY(1px); }
+    .btn-review {
+      color: var(--indigo-bright);
+      border-color: rgba(129,140,248,.4);
+      background: rgba(129,140,248,.08);
+    }
+    .btn-review:hover { background: rgba(129,140,248,.16); border-color: var(--indigo); }
+    .btn-halt {
+      color: var(--red-bright);
+      border-color: rgba(239,68,68,.45);
+      background: rgba(239,68,68,.08);
+    }
+    .btn-halt:hover { background: rgba(239,68,68,.16); border-color: var(--red); box-shadow: 0 0 10px rgba(239,68,68,.25); }
+    .btn-approve {
+      color: var(--emerald-bright);
+      border-color: rgba(16,185,129,.45);
+      background: rgba(16,185,129,.08);
+    }
+    .btn-approve:hover { background: rgba(16,185,129,.16); border-color: var(--emerald); }
+    .btn-rollback {
+      color: var(--amber-bright);
+      border-color: rgba(245,158,11,.45);
+      background: rgba(245,158,11,.08);
+    }
+    .btn-rollback:hover { background: rgba(245,158,11,.16); border-color: var(--amber); }
+    .btn-cancel {
+      color: var(--ink-2);
+      border-color: var(--edge-strong);
+      background: rgba(255,255,255,.04);
+    }
+
+    /* Policy rows */
+    .policy-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 9px 0;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+      font-size: 12.5px;
+    }
+    .policy-row:last-child { border-bottom: none; }
+    .policy-row > span:first-child { color: var(--ink-2); }
+    .policy-pass, .policy-flag, .policy-block {
+      font-family: ui-monospace, "SF Mono", monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
+    .policy-pass {
+      color: var(--emerald-bright);
+      background: rgba(16,185,129,.10);
+      border: 1px solid rgba(16,185,129,.3);
+    }
+    .policy-flag {
+      color: var(--amber-bright);
+      background: rgba(245,158,11,.10);
+      border: 1px solid rgba(245,158,11,.3);
+    }
+    .policy-block {
+      color: var(--red-bright);
+      background: rgba(239,68,68,.10);
+      border: 1px solid rgba(239,68,68,.3);
+    }
+
+    /* Audit feed */
+    .audit-entry {
+      display: flex; gap: 12px; align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,.03);
+      font-size: 12px;
+    }
+    .audit-entry:last-child { border-bottom: none; }
+    .audit-ts {
+      color: var(--ink-faint);
+      min-width: 76px;
+      font-size: 11.5px;
+    }
+    .audit-agent {
+      color: var(--teal-bright);
+      min-width: 110px;
+      font-weight: 700;
+      font-size: 11.5px;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(5,12,10,.85);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .modal.visible { display: flex; animation: fadeIn .2s ease-out; }
+    .modal-content {
+      background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+      border: 1px solid rgba(239,68,68,.45);
+      border-radius: 14px;
+      padding: 22px 24px;
+      max-width: 480px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    .modal-content h3 {
+      color: var(--red-bright);
+      margin-bottom: 8px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .modal-content p {
+      color: var(--ink-2);
+      margin-bottom: 18px;
+      line-height: 1.6;
+      font-size: 13px;
+    }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+    ::selection { background: rgba(94,234,212,.3); }
   </style>
 </head>
 <body>
   <div class="header">
-    <div>
+    <div class="header-left">
       <h1>Agent Oversight Dashboard</h1>
       <div class="system-status">
-        <span>Agents active: 4</span>
-        <span>Policy violations today: 2</span>
-        <span>Human reviews pending: 1</span>
-        <span>Uptime: 99.97%</span>
+        <span>Agents active: <strong>4</strong></span>
+        <span>Policy violations today: <strong>2</strong></span>
+        <span>Human reviews pending: <strong>1</strong></span>
+        <span>Uptime: <strong>99.97%</strong></span>
       </div>
     </div>
   </div>
