@@ -164,6 +164,8 @@ To pin a specific runtime version (reproducible CI, bisection, deliberate stay-b
 
 Five literal prompts. Paste each into Claude / Cursor / Cline in order. The agent runs Alethia for you.
 
+The cockpit window opens automatically and paints each step live as the agent runs — green for pass, blue for type, red for EA1 block. (Since 0.8.3 the bridge defaults `highlights: true` for `alethia_tell` so a human watching sees the run; agents can pass `highlights: false` for max-speed CI runs, or set `ALETHIA_HIGHLIGHTS=0` in the spawn env.)
+
 ### 1. Start the bundled demo server
 
 Paste:
@@ -306,7 +308,7 @@ alethia-mcp --debug          Run with debug logging on stderr
 | `ALETHIA_DEBUG` | (unset) | Set to `1` for debug logging on stderr |
 | `ALETHIA_HEADLESS` | (unset) | Set to `1` to hide the cockpit window. Default is visible. CI environments (`CI=1`, `GITHUB_ACTIONS`, etc.) auto-hide. |
 | `ALETHIA_VISIBLE` | (unset) | **Deprecated** — set to `0` as a legacy alias for `ALETHIA_HEADLESS=1`. Removed in a future release. |
-| `ALETHIA_HIGHLIGHTS` | (unset) | Set to `1` to overlay per-step highlights on the target |
+| `ALETHIA_HIGHLIGHTS` | (default on for `tell`) | Per-step highlights on the target. Default ON since 0.8.3 so a human watching the cockpit sees the run. Set to `0` to disable for headless / max-speed runs. Per-call `highlights:false` overrides this default. |
 | `ALETHIA_RUNTIME_VERSION` | (unset) | Pin the bridge to a specific runtime version (e.g. `0.4.0`). By default the bridge queries GitHub Releases for the current latest runtime and downloads that. Use this for reproducible CI, bisection, or deliberately staying on an older runtime. |
 | `ALETHIA_RUNTIME_DIR` | `~/.alethia/runtime` | Where the auto-installed runtime lives. Override for sandboxing or to stash multiple installs. |
 | `ALETHIA_BRIDGE_VERSION` | (unset) | Pin the bridge itself to a specific version (e.g. `0.8.0`). Skips the npm auto-update check. For reproducible CI or deliberate stay-behind. |

@@ -1843,6 +1843,20 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
         // The runtime enforces controlled-web by default; profile switching
         // requires human configuration, not per-call agent override.
         const { profile: _stripped, ...safeArgs } = args;
+
+        // Default highlights ON for tell/parallel runs so a human watching
+        // the cockpit window sees per-step animations instead of the test
+        // finishing in <500 ms with no visible activity. Agents can opt
+        // back to silent fast-mode by passing highlights:false explicitly,
+        // and ALETHIA_HIGHLIGHTS=0 in the spawn env disables the default.
+        if (
+          (toolName === 'alethia_tell' || toolName === 'alethia_tell_parallel')
+          && !('highlights' in safeArgs)
+          && process.env.ALETHIA_HIGHLIGHTS !== '0'
+        ) {
+          (safeArgs as Record<string, unknown>).highlights = true;
+        }
+
         const httpResponse = await callAlethia({
           jsonrpc: '2.0',
           id: 1,
