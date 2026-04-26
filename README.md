@@ -74,10 +74,19 @@ The same server entry works everywhere — only the file path differs. Paste thi
 | Claude Desktop — macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
 | Claude Desktop — Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
 | Claude Desktop — Linux | `~/.config/Claude/claude_desktop_config.json` |
-| Cursor | Settings → MCP → Add server (paste the un-nested `{ "alethia": { "command": "alethia-mcp" } }` form) |
 | Cline / Continue / any MCP-compliant client | The client's own MCP config — usually a JSON file in its extension settings dir |
 
 Create the file if it doesn't exist. If it already has an `mcpServers` block, merge the `"alethia"` entry into it. Restart the client after editing so it picks up the server. Claude Desktop also exposes Settings → Developer → Edit Config as an in-app shortcut.
+
+**Cursor** is the one exception — its UI takes the un-nested form (no `mcpServers` wrapper). Settings → MCP → Add server, then paste:
+
+```json
+{
+  "alethia": {
+    "command": "alethia-mcp"
+  }
+}
+```
 
 **Upgrading:** periodically run `npm install -g @vitronai/alethia@latest` to pick up new bridge versions. Since 0.6.0, a new bridge is no longer required for new runtime versions — the bridge queries GitHub Releases for the current runtime on every start.
 
