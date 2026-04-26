@@ -5,43 +5,303 @@
   <title>Trading Platform — Risk Monitor</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, sans-serif; background: #0a0e17; color: #e2e8f0; min-height: 100vh; padding: 1.5rem; }
-    h1 { font-size: 1.4rem; margin-bottom: 0.3rem; }
-    .subtitle { color: #64748b; font-size: 0.85rem; margin-bottom: 1.5rem; }
-    .risk-banner { padding: 0.6rem 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-weight: 600; }
-    .risk-low { background: #14532d; border: 1px solid #22c55e; color: #86efac; }
-    .risk-medium { background: #78350f; border: 1px solid #f59e0b; color: #fde68a; }
-    .risk-high { background: #7f1d1d; border: 1px solid #ef4444; color: #fca5a5; }
-    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
-    .metric { background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 1rem; }
-    .metric-label { color: #64748b; font-size: 0.8rem; margin-bottom: 0.3rem; }
-    .metric-value { font-size: 1.6rem; font-weight: 700; }
-    .metric-value.positive { color: #34d399; }
-    .metric-value.negative { color: #f87171; }
-    .metric-value.neutral { color: #3b82f6; }
-    .positions { background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 1.2rem; margin-bottom: 1.5rem; }
-    .positions h2 { font-size: 1.1rem; margin-bottom: 0.8rem; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-    th { text-align: left; padding: 0.5rem; color: #64748b; border-bottom: 1px solid #1e293b; }
-    td { padding: 0.5rem; border-bottom: 1px solid #0f172a; }
-    .pnl-positive { color: #34d399; }
-    .pnl-negative { color: #f87171; }
-    .trade-actions { display: flex; gap: 1rem; margin-top: 1rem; }
-    .trade-btn { padding: 0.6rem 1.2rem; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
-    .btn-buy { background: #14532d; color: #86efac; }
-    .btn-sell { background: #7f1d1d; color: #fca5a5; }
-    .btn-liquidate { background: #991b1b; color: white; }
-    .compliance { background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 1.2rem; }
-    .compliance h2 { font-size: 1.1rem; margin-bottom: 0.8rem; }
-    .check-item { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #0f172a; }
-    .check-pass { color: #34d399; }
-    .check-fail { color: #f87171; }
-    .check-warn { color: #fbbf24; }
+    :root {
+      --bg: #06100c;
+      --bg-1: #0d1818;
+      --bg-2: #14201f;
+      --edge: rgba(255,255,255,.06);
+      --edge-strong: rgba(255,255,255,.12);
+      --ink: #e8f5ed;
+      --ink-2: #cdd9d3;
+      --ink-muted: #93a299;
+      --ink-faint: #5e6e69;
+      --emerald: #10b981;
+      --emerald-bright: #34d399;
+      --emerald-glow: #6ee7b7;
+      --red: #ef4444;
+      --red-bright: #f87171;
+      --amber: #f59e0b;
+      --amber-bright: #fbbf24;
+      --teal: #14b8a6;
+      --slate: #64748b;
+      --pink: #f472b6;
+    }
+    html { color-scheme: dark; }
+    body {
+      font-family: "SF Pro Display", -apple-system, system-ui, sans-serif;
+      background:
+        radial-gradient(ellipse 70% 40% at 10% -10%, rgba(52,211,153,.08), transparent 70%),
+        radial-gradient(ellipse 60% 40% at 90% 110%, rgba(239,68,68,.05), transparent 70%),
+        var(--bg);
+      background-attachment: fixed;
+      color: var(--ink-2);
+      min-height: 100vh;
+      padding: 1.6rem 1.75rem 2rem;
+      font-size: 13.5px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: "tnum";  /* tabular numerics for tables */
+    }
+    .mono, .price, td { font-variant-numeric: tabular-nums; }
+
+    /* Header */
+    .header {
+      display: flex; justify-content: space-between; align-items: flex-end;
+      margin-bottom: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--edge);
+    }
+    .header-left { display: flex; flex-direction: column; gap: 4px; }
+    h1 {
+      font-size: 22px; font-weight: 700;
+      color: var(--ink); letter-spacing: -.02em;
+      display: inline-flex; align-items: center; gap: 10px;
+    }
+    h1::before {
+      content: ""; width: 8px; height: 8px; border-radius: 999px;
+      background: var(--emerald);
+      box-shadow: 0 0 12px rgba(16,185,129,.7);
+      animation: livepulse 2s ease-in-out infinite;
+    }
+    @keyframes livepulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+    .subtitle {
+      color: var(--ink-faint);
+      font-size: 12px;
+      font-family: ui-monospace, "SF Mono", monospace;
+    }
+    .session-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11px; font-family: ui-monospace, "SF Mono", monospace;
+      padding: 5px 12px; border-radius: 999px;
+      background: rgba(16,185,129,.08);
+      border: 1px solid rgba(16,185,129,.3);
+      color: var(--emerald-bright);
+      font-weight: 600;
+    }
+    .session-pill::before {
+      content: ""; width: 6px; height: 6px; border-radius: 999px;
+      background: var(--emerald-bright); box-shadow: 0 0 6px var(--emerald-bright);
+    }
+
+    /* Risk banner */
+    .risk-banner {
+      position: relative;
+      padding: 12px 18px;
+      border-radius: 10px;
+      margin-bottom: 18px;
+      font-weight: 600;
+      font-size: 13px;
+      overflow: hidden;
+    }
+    .risk-banner::before {
+      content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+      width: 3px;
+    }
+    .risk-low {
+      background: linear-gradient(135deg, rgba(16,185,129,.14), rgba(16,185,129,.04));
+      border: 1px solid rgba(16,185,129,.35);
+      color: #6ee7b7;
+    }
+    .risk-low::before { background: var(--emerald); box-shadow: 0 0 12px rgba(16,185,129,.6); }
+    .risk-medium {
+      background: linear-gradient(135deg, rgba(245,158,11,.14), rgba(245,158,11,.04));
+      border: 1px solid rgba(245,158,11,.4);
+      color: #fde68a;
+    }
+    .risk-medium::before { background: var(--amber); box-shadow: 0 0 12px rgba(245,158,11,.6); }
+    .risk-high {
+      background: linear-gradient(135deg, rgba(239,68,68,.16), rgba(239,68,68,.04));
+      border: 1px solid rgba(239,68,68,.4);
+      color: #fca5a5;
+    }
+    .risk-high::before { background: var(--red); box-shadow: 0 0 12px rgba(239,68,68,.6); }
+
+    /* Metric cards */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .metric {
+      position: relative;
+      background: linear-gradient(180deg, var(--bg-1) 0%, rgba(13,24,24,.5) 100%);
+      border: 1px solid var(--edge);
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+      transition: border-color .15s, transform .15s;
+    }
+    .metric:hover { border-color: var(--edge-strong); transform: translateY(-1px); }
+    .metric-label {
+      color: var(--ink-faint);
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .metric-value {
+      font-size: 22px; font-weight: 700;
+      letter-spacing: -.015em;
+      font-variant-numeric: tabular-nums;
+    }
+    .metric-value.positive { color: var(--emerald-bright); }
+    .metric-value.negative { color: var(--red-bright); }
+    .metric-value.neutral { color: var(--ink); }
+
+    /* Positions / Compliance panels */
+    .positions, .compliance {
+      background: linear-gradient(180deg, var(--bg-1) 0%, rgba(13,24,24,.5) 100%);
+      border: 1px solid var(--edge);
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+    }
+    .positions h2, .compliance h2 {
+      font-size: 14px; font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 14px;
+      letter-spacing: -.005em;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .positions h2::before, .compliance h2::before {
+      content: ""; width: 4px; height: 4px; border-radius: 999px;
+      background: var(--emerald);
+      box-shadow: 0 0 6px var(--emerald);
+    }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th {
+      text-align: left;
+      padding: 9px 12px;
+      color: var(--ink-faint);
+      border-bottom: 1px solid var(--edge);
+      font-weight: 600;
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    td {
+      padding: 11px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.03);
+      color: var(--ink-2);
+    }
+    tbody tr { transition: background .12s; }
+    tbody tr:hover { background: rgba(16,185,129,.04); }
+    tbody tr:last-child td { border-bottom: none; }
+    /* Symbol cell — bold + colored slightly */
+    tbody tr td:first-child {
+      font-weight: 700;
+      color: var(--ink);
+      font-family: ui-monospace, "SF Mono", monospace;
+      letter-spacing: .02em;
+    }
+    .pnl-positive { color: var(--emerald-bright); font-weight: 600; }
+    .pnl-negative { color: var(--red-bright); font-weight: 600; }
+
+    /* Trade action buttons */
+    .trade-actions, .compliance-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .trade-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--edge);
+      background: rgba(255,255,255,.02);
+      font: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .14s, border-color .14s, color .14s, transform .08s, box-shadow .14s;
+    }
+    .trade-btn:active { transform: translateY(1px); }
+    .btn-buy {
+      color: var(--emerald-bright);
+      border-color: rgba(16,185,129,.45);
+      background: rgba(16,185,129,.08);
+    }
+    .btn-buy:hover { background: rgba(16,185,129,.18); border-color: var(--emerald); box-shadow: 0 0 10px rgba(16,185,129,.25); }
+    .btn-sell {
+      color: var(--red-bright);
+      border-color: rgba(239,68,68,.45);
+      background: rgba(239,68,68,.08);
+    }
+    .btn-sell:hover { background: rgba(239,68,68,.18); border-color: var(--red); box-shadow: 0 0 10px rgba(239,68,68,.25); }
+    .btn-liquidate {
+      color: #fff;
+      background: linear-gradient(180deg, var(--red-bright), var(--red));
+      border-color: var(--red);
+      font-weight: 700;
+    }
+    .btn-liquidate:hover { filter: brightness(1.08); box-shadow: 0 0 12px rgba(239,68,68,.4); }
+    .btn-wire {
+      color: var(--amber-bright);
+      border-color: rgba(245,158,11,.45);
+      background: rgba(245,158,11,.08);
+    }
+    .btn-wire:hover { background: rgba(245,158,11,.18); border-color: var(--amber); box-shadow: 0 0 10px rgba(245,158,11,.25); }
+    .btn-purge {
+      color: var(--pink);
+      border-color: rgba(244,114,182,.45);
+      background: rgba(244,114,182,.08);
+    }
+    .btn-purge:hover { background: rgba(244,114,182,.18); border-color: var(--pink); box-shadow: 0 0 10px rgba(244,114,182,.25); }
+
+    /* Compliance check rows */
+    .check-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 9px 0;
+      border-bottom: 1px solid rgba(255,255,255,.03);
+    }
+    .check-item:last-of-type { border-bottom: none; }
+    .check-item > span:first-child {
+      color: var(--ink-2);
+      font-size: 12.5px;
+    }
+    .check-pass, .check-fail, .check-warn {
+      font-family: ui-monospace, "SF Mono", monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
+    .check-pass {
+      color: var(--emerald-bright);
+      background: rgba(16,185,129,.10);
+      border: 1px solid rgba(16,185,129,.3);
+    }
+    .check-warn {
+      color: var(--amber-bright);
+      background: rgba(245,158,11,.10);
+      border: 1px solid rgba(245,158,11,.3);
+    }
+    .check-fail {
+      color: var(--red-bright);
+      background: rgba(239,68,68,.10);
+      border: 1px solid rgba(239,68,68,.3);
+    }
+
+    ::selection { background: rgba(52,211,153,.3); }
   </style>
 </head>
 <body>
-  <h1>Risk Monitor</h1>
-  <p class="subtitle">Live · Last update: 2 seconds ago · Market: NYSE · Session: Pre-market</p>
+  <div class="header">
+    <div class="header-left">
+      <h1>Risk Monitor</h1>
+      <span class="subtitle">Last update: 2 seconds ago &middot; Market: NYSE &middot; Session: Pre-market</span>
+    </div>
+    <span class="session-pill">LIVE</span>
+  </div>
 
   <div id="risk-banner" class="risk-banner risk-medium" role="alert">
     RISK LEVEL: MEDIUM — Portfolio exposure approaching limit (82% of max)
@@ -83,6 +343,7 @@
       <button class="trade-btn btn-buy" id="buy-btn">Buy</button>
       <button class="trade-btn btn-sell" id="sell-btn">Sell Position</button>
       <button class="trade-btn btn-liquidate" id="liquidate-btn">Liquidate All</button>
+      <button class="trade-btn btn-wire" id="wire-btn">Wire Funds</button>
     </div>
   </div>
 
@@ -93,6 +354,9 @@
     <div class="check-item"><span>Daily loss limit (< $100K)</span><span class="check-pass">PASS</span></div>
     <div class="check-item"><span>Restricted securities check</span><span class="check-pass">CLEAR</span></div>
     <div class="check-item"><span>Pre-trade risk approval</span><span class="check-fail">REQUIRED for trades > $500K</span></div>
+    <div class="compliance-actions">
+      <button class="trade-btn btn-purge" id="purge-btn">Purge Audit Log</button>
+    </div>
   </div>
 </body>
 </html>

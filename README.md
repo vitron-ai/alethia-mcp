@@ -196,7 +196,7 @@ Paste:
 > *expect block: click Purge Audit Log*
 > *expect block: click Wire Funds"*
 
-**`expect block:` is unique to Alethia.** The step passes only when the **EA1 policy gate** — a framework-level safety layer no other E2E tool ships — refuses the action with reason code `DENY_WRITE_HIGH`. Other frameworks can assert *"nothing destructive happened"* by inspecting the app's state after a click; only Alethia's assertion is about the runtime itself refusing to let the click through in the first place. Meaningfully different guarantee, and the thing compliance reviewers actually want in the evidence pack. This run should report all three clicks blocked.
+**`expect block:` is unique to Alethia.** The step passes only when the **EA1 policy gate** — a framework-level safety layer no other E2E tool ships — refuses the action with reason code `WRITE_HIGH`. Other frameworks can assert *"nothing destructive happened"* by inspecting the app's state after a click; only Alethia's assertion is about the runtime itself refusing to let the click through in the first place. Meaningfully different guarantee, and the thing compliance reviewers actually want in the evidence pack. This run should report all three clicks blocked.
 
 Shortcut if you want Alethia to auto-discover destructive controls instead of naming them:
 
@@ -256,6 +256,7 @@ If you don't care about any of those (quick iteration, scratch testing), you can
 | `alethia_export_session` | Signed evidence pack of the whole session. |
 | `alethia_activate_kill_switch` / `alethia_reset_kill_switch` | Emergency halt and resume. |
 | `alethia_serve_demo` | Start the bundled localhost demo server. |
+| `alethia_show_cockpit` / `alethia_hide_cockpit` | Toggle the live oversight window mid-session. |
 
 Destructive actions (delete, purchase, transfer, liquidate, revoke, terminate, ...) are blocked by default under the hardened local-only profile. Sensitive-input fields (passwords, tokens, credit cards) are blocked unless `allowSensitiveInput: true` is passed. Profile overrides from the agent are stripped by the bridge — profile changes require human configuration.
 
@@ -340,9 +341,9 @@ alethia-mcp --debug          Run with debug logging on stderr
 2. Confirm the runtime process is listening on `127.0.0.1:47432`.
 3. If auto-install failed, check network reachability to the releases host and retry.
 
-### "DENY_WRITE_HIGH" in the audit log
+### "WRITE_HIGH" / "EA1 POLICY BLOCK" in the audit log
 
-A destructive action was blocked by the default `controlled-web` profile. This is correct behavior. Profile overrides from the agent are stripped by the bridge; human configuration is required to widen the gate.
+A destructive action was blocked by the default `local-only` profile. This is correct behavior. Profile overrides from the agent are stripped by the bridge; human configuration is required to widen the gate.
 
 ### "SENSITIVE_INPUT_DENIED"
 

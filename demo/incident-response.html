@@ -4,263 +4,703 @@
   <meta charset="utf-8">
   <title>SIEM — Incident Response Console</title>
   <style>
+    :root {
+      --bg-0: #0a0d12;
+      --bg-1: #11141b;
+      --bg-2: #181c25;
+      --bg-3: #20242f;
+      --line: #262b37;
+      --line-soft: #1c2029;
+      --ink: #e6e9ef;
+      --ink-muted: #9ba3b3;
+      --ink-faint: #6e7689;
+      --ink-dim: #4d5466;
+      --crit: #f87171;
+      --crit-soft: rgba(248,113,113,.12);
+      --high: #fb923c;
+      --high-soft: rgba(251,146,60,.12);
+      --med: #fbbf24;
+      --med-soft: rgba(251,191,36,.12);
+      --low: #60a5fa;
+      --low-soft: rgba(96,165,250,.12);
+      --ok: #34d399;
+      --ok-soft: rgba(52,211,153,.12);
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'SF Mono', 'Fira Code', monospace; background: #080c14; color: #c8d6e5; min-height: 100vh; padding: 1rem; font-size: 0.85rem; }
-    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1a2744; padding-bottom: 0.8rem; margin-bottom: 1rem; }
-    .header h1 { font-size: 1.1rem; color: #e2e8f0; font-weight: 600; }
-    .severity-critical { color: #ff4444; font-weight: 700; animation: pulse 1.5s ease-in-out infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-    .severity-high { color: #ff8c00; }
-    .severity-medium { color: #ffd700; }
-    .severity-low { color: #00bfff; }
-    .status-bar { display: flex; gap: 2rem; color: #5a7a9e; font-size: 0.75rem; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    .panel { background: #0d1525; border: 1px solid #1a2744; border-radius: 8px; padding: 1rem; }
-    .panel h2 { font-size: 0.9rem; color: #7eb8da; margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; }
-    .alert-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #111d30; }
-    .alert-row:last-child { border-bottom: none; }
-    .alert-info { display: flex; flex-direction: column; gap: 0.15rem; }
-    .alert-id { color: #5a7a9e; font-size: 0.7rem; }
-    .alert-msg { color: #c8d6e5; }
-    .alert-source { color: #5a7a9e; font-size: 0.7rem; }
-    .actions { display: flex; gap: 0.4rem; }
-    button { padding: 0.3rem 0.6rem; border-radius: 4px; border: 1px solid #1a2744; background: #111d30; color: #7eb8da; cursor: pointer; font: inherit; font-size: 0.75rem; }
-    button:hover { border-color: #3a8fd4; }
-    .btn-acknowledge { border-color: #00bfff; color: #00bfff; }
-    .btn-escalate { border-color: #ff8c00; color: #ff8c00; }
-    .btn-isolate { border-color: #ff4444; color: #ff4444; }
-    .btn-quarantine { border-color: #ff4444; color: #ff4444; background: #1a0808; }
-    .log-feed { max-height: 200px; overflow-y: auto; font-size: 0.75rem; }
-    .log-entry { padding: 0.2rem 0; display: flex; gap: 0.6rem; }
-    .log-ts { color: #3a5570; min-width: 80px; }
-    .log-level-crit { color: #ff4444; }
-    .log-level-warn { color: #ffd700; }
-    .log-level-info { color: #00bfff; }
-    .ioc-list { list-style: none; }
-    .ioc-item { padding: 0.4rem 0; border-bottom: 1px solid #111d30; display: flex; justify-content: space-between; }
-    .ioc-value { color: #ff8c00; }
-    .ioc-type { color: #5a7a9e; font-size: 0.7rem; }
-    .timeline { list-style: none; position: relative; padding-left: 1.2rem; }
-    .timeline::before { content: ''; position: absolute; left: 4px; top: 0; bottom: 0; width: 1px; background: #1a2744; }
-    .timeline li { padding: 0.4rem 0; position: relative; }
-    .timeline li::before { content: ''; position: absolute; left: -1.2rem; top: 0.55rem; width: 8px; height: 8px; border-radius: 50%; background: #1a2744; border: 1px solid #3a5570; }
-    .timeline li.active::before { background: #ff4444; border-color: #ff4444; box-shadow: 0 0 6px #ff4444; }
-    .host-card { background: #111d30; border: 1px solid #1a2744; border-radius: 6px; padding: 0.6rem; margin-bottom: 0.5rem; }
-    .host-name { color: #e2e8f0; font-weight: 600; }
-    .host-ip { color: #5a7a9e; }
-    .host-status { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 3px; font-size: 0.7rem; }
-    .host-compromised { background: #1a0808; color: #ff4444; border: 1px solid #ff4444; }
-    .host-at-risk { background: #1a1400; color: #ffd700; border: 1px solid #ffd700; }
-    .host-clean { background: #001a0a; color: #00cc66; border: 1px solid #00cc66; }
-    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; }
+    html { color-scheme: dark; }
+    body {
+      font-family: ui-sans-serif, -apple-system, system-ui, "Inter", sans-serif;
+      background:
+        radial-gradient(1100px 600px at 0% -10%, rgba(248,113,113,.08), transparent 55%),
+        radial-gradient(900px 500px at 105% 110%, rgba(251,146,60,.05), transparent 55%),
+        var(--bg-0);
+      background-attachment: fixed;
+      color: var(--ink);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      letter-spacing: -.005em;
+      font-size: 13.5px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--line-soft);
+      background: rgba(10,13,18,.7);
+      backdrop-filter: saturate(140%) blur(8px);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+    }
+    .brand-mark {
+      width: 26px; height: 26px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, var(--crit), #dc2626);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 4px 14px rgba(248,113,113,.3), inset 0 1px 0 rgba(255,255,255,.2);
+    }
+    .brand-mark svg { color: #fff; }
+    .brand-name { letter-spacing: -.01em; }
+    .brand-eyebrow { font-size: 11px; color: var(--ink-faint); font-weight: 500; }
+
+    .crit-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: var(--crit-soft);
+      border: 1px solid rgba(248,113,113,.35);
+      color: var(--crit);
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+    .crit-badge::before {
+      content: "";
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--crit);
+      box-shadow: 0 0 8px var(--crit);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .meta-bar {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 10px 14px;
+      background: var(--bg-1);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+    .meta-bar strong { color: var(--ink); font-weight: 600; }
+    .meta-bar .meta-item { display: flex; align-items: center; gap: 8px; }
+    .meta-bar .meta-item::before {
+      content: ""; width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--ink-faint);
+    }
+
+    .response-banner {
+      display: none;
+      padding: 11px 14px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      font-weight: 500;
+      align-items: center;
+      gap: 10px;
+    }
+    .response-banner.visible { display: flex; }
+    .response-banner.ok {
+      background: var(--ok-soft);
+      border: 1px solid rgba(52,211,153,.3);
+      color: var(--ok);
+    }
+    .response-banner.warn {
+      background: var(--med-soft);
+      border: 1px solid rgba(251,191,36,.3);
+      color: var(--med);
+    }
+    .response-banner svg { flex-shrink: 0; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .panel {
+      position: relative;
+      background: var(--bg-1);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.03),
+        0 2px 6px rgba(0,0,0,.18);
+    }
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .panel-head h2 {
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .panel-head h2 .icon-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--crit);
+      box-shadow: 0 0 8px var(--crit);
+    }
+    .panel-head .pill {
+      font-size: 10.5px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--bg-3);
+      color: var(--ink-faint);
+      font-weight: 500;
+    }
+
+    /* Severity pills */
+    .sev {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+    .sev.crit { background: var(--crit-soft); color: var(--crit); border: 1px solid rgba(248,113,113,.35); }
+    .sev.high { background: var(--high-soft); color: var(--high); border: 1px solid rgba(251,146,60,.35); }
+    .sev.med { background: var(--med-soft); color: var(--med); border: 1px solid rgba(251,191,36,.35); }
+    .sev.low { background: var(--low-soft); color: var(--low); border: 1px solid rgba(96,165,250,.35); }
+
+    /* Alert rows */
+    .alert-row {
+      display: flex;
+      gap: 12px;
+      padding: 12px;
+      margin-bottom: 8px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--bg-2);
+      transition: border-color .15s, background .15s;
+    }
+    .alert-row:hover { border-color: #34394a; background: var(--bg-3); }
+    .alert-row:last-child { margin-bottom: 0; }
+    .alert-row.is-critical { border-left: 3px solid var(--crit); }
+    .alert-row.is-high { border-left: 3px solid var(--high); }
+    .alert-row.is-med { border-left: 3px solid var(--med); }
+    .alert-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+    .alert-id-row { display: flex; align-items: center; gap: 8px; }
+    .alert-id { font-family: ui-monospace, monospace; font-size: 11px; color: var(--ink-faint); letter-spacing: -.01em; }
+    .alert-msg { font-size: 13px; color: var(--ink); line-height: 1.45; }
+    .alert-source {
+      font-size: 11px;
+      color: var(--ink-faint);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .alert-source .src-tag {
+      padding: 1px 6px;
+      border-radius: 3px;
+      background: var(--bg-3);
+      color: var(--ink-muted);
+      font-family: ui-monospace, monospace;
+      font-size: 10.5px;
+    }
+    .alert-actions {
+      display: flex;
+      gap: 6px;
+      align-items: flex-start;
+      flex-shrink: 0;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s, transform .08s;
+    }
+    button:active:not([disabled]) { transform: translateY(1px); }
+    .btn {
+      padding: 5px 11px;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      background: var(--bg-2);
+      color: var(--ink-muted);
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+    .btn:hover:not([disabled]) { background: var(--bg-3); border-color: #3a3f51; color: var(--ink); }
+    .btn[disabled] { cursor: default; opacity: .85; }
+    .btn-acknowledge { border-color: rgba(96,165,250,.4); color: var(--low); }
+    .btn-acknowledge:hover:not([disabled]) { background: var(--low-soft); border-color: var(--low); }
+    .btn-escalate { border-color: rgba(251,146,60,.4); color: var(--high); }
+    .btn-escalate:hover:not([disabled]) { background: var(--high-soft); border-color: var(--high); }
+    .btn-isolate { border-color: rgba(248,113,113,.4); color: var(--crit); }
+    .btn-isolate:hover { background: var(--crit-soft); border-color: var(--crit); }
+    .btn-quarantine {
+      border-color: rgba(248,113,113,.4);
+      color: var(--crit);
+      background: rgba(248,113,113,.04);
+    }
+    .btn-quarantine:hover { background: var(--crit-soft); border-color: var(--crit); }
+    .btn-done { border-color: rgba(52,211,153,.4); color: var(--ok); }
+
+    /* Hosts */
+    .host-card {
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--bg-2);
+      margin-bottom: 8px;
+      transition: border-color .15s, background .15s;
+    }
+    .host-card:hover { background: var(--bg-3); border-color: #34394a; }
+    .host-card:last-child { margin-bottom: 0; }
+    .host-row { display: flex; justify-content: space-between; align-items: center; }
+    .host-name {
+      font-weight: 600;
+      color: var(--ink);
+      font-size: 13px;
+      letter-spacing: -.01em;
+    }
+    .host-ip {
+      font-family: ui-monospace, monospace;
+      font-size: 11px;
+      color: var(--ink-faint);
+      margin-left: 6px;
+    }
+    .host-status {
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+    .host-compromised { background: var(--crit-soft); color: var(--crit); border: 1px solid rgba(248,113,113,.4); }
+    .host-at-risk { background: var(--med-soft); color: var(--med); border: 1px solid rgba(251,191,36,.4); }
+    .host-clean { background: var(--ok-soft); color: var(--ok); border: 1px solid rgba(52,211,153,.4); }
+    .host-actions { display: flex; gap: 6px; margin-top: 10px; }
+
+    /* IOCs */
+    .ioc-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .ioc-row:last-child { border-bottom: none; }
+    .ioc-value {
+      font-family: ui-monospace, monospace;
+      font-size: 12px;
+      color: var(--high);
+    }
+    .ioc-type {
+      font-size: 10.5px;
+      color: var(--ink-faint);
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--bg-2);
+      border: 1px solid var(--line);
+    }
+
+    /* Timeline */
+    .timeline {
+      position: relative;
+      padding-left: 18px;
+    }
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 4px;
+      bottom: 4px;
+      width: 1px;
+      background: linear-gradient(to bottom, var(--line) 0%, var(--crit) 50%, var(--line) 100%);
+    }
+    .tl-item {
+      position: relative;
+      padding: 7px 0;
+      font-size: 12.5px;
+      color: var(--ink);
+    }
+    .tl-item::before {
+      content: "";
+      position: absolute;
+      left: -18px;
+      top: 11px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--bg-3);
+      border: 1.5px solid var(--ink-dim);
+    }
+    .tl-item.active::before {
+      background: var(--crit);
+      border-color: var(--crit);
+      box-shadow: 0 0 10px rgba(248,113,113,.7);
+    }
+    .tl-time {
+      font-family: ui-monospace, monospace;
+      color: var(--ink-faint);
+      font-size: 11px;
+      margin-right: 8px;
+    }
+
+    /* Live feed */
+    .feed {
+      max-height: 220px;
+      overflow-y: auto;
+      font-family: ui-monospace, monospace;
+      font-size: 11.5px;
+      padding-right: 4px;
+    }
+    .feed::-webkit-scrollbar { width: 6px; }
+    .feed::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 3px; }
+    .feed-entry {
+      display: grid;
+      grid-template-columns: 70px 50px 1fr;
+      gap: 10px;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--line-soft);
+      align-items: baseline;
+    }
+    .feed-entry:last-child { border-bottom: none; }
+    .feed-ts { color: var(--ink-dim); }
+    .lvl-crit { color: var(--crit); font-weight: 700; letter-spacing: .04em; }
+    .lvl-warn { color: var(--med); font-weight: 700; letter-spacing: .04em; }
+    .lvl-info { color: var(--low); font-weight: 700; letter-spacing: .04em; }
+    .feed-msg { color: var(--ink); }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
     .modal.visible { display: flex; }
-    .modal-content { background: #0d1525; border: 1px solid #ff4444; border-radius: 8px; padding: 1.5rem; max-width: 420px; }
-    .modal-content h3 { color: #ff4444; margin-bottom: 0.6rem; }
-    .modal-content p { color: #7eb8da; margin-bottom: 1rem; font-size: 0.85rem; line-height: 1.5; }
-    .modal-actions { display: flex; gap: 0.6rem; justify-content: flex-end; }
-    .btn-cancel { background: #111d30; color: #7eb8da; }
-    .btn-confirm-isolate { background: #1a0808; border-color: #ff4444; color: #ff4444; font-weight: 700; }
-    .response-banner { display: none; padding: 0.6rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-weight: 600; }
-    .response-banner.visible { display: block; }
-    .response-success { background: #001a0a; border: 1px solid #00cc66; color: #00cc66; }
-    .response-escalated { background: #1a1400; border: 1px solid #ffd700; color: #ffd700; }
+    .modal-content {
+      background: var(--bg-1);
+      border: 1px solid var(--line);
+      border-top: 3px solid var(--crit);
+      border-radius: 12px;
+      padding: 22px;
+      max-width: 480px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    }
+    .modal-content h3 {
+      color: var(--crit);
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-content p {
+      color: var(--ink-muted);
+      font-size: 13px;
+      line-height: 1.55;
+      margin-bottom: 16px;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .btn-cancel { background: transparent; border-color: var(--line); color: var(--ink-muted); padding: 7px 14px; }
+    .btn-cancel:hover { background: var(--bg-2); }
+    .btn-confirm {
+      background: var(--crit);
+      color: #fff;
+      border: 1px solid var(--crit);
+      padding: 7px 14px;
+      font-weight: 700;
+    }
+    .btn-confirm:hover { filter: brightness(1.08); }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div>
-      <h1>Incident Response Console</h1>
-      <div class="status-bar">
-        <span>Analyst: soc-analyst-4 &bull; Shift: Night</span>
-        <span>Active incidents: 3</span>
-        <span>Mean time to respond: 4m 12s</span>
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+      </div>
+      <div>
+        <div class="brand-name">Incident Response Console</div>
+        <div class="brand-eyebrow">SOC Platform · v3.2</div>
       </div>
     </div>
-    <span class="severity-critical">CRITICAL INCIDENT ACTIVE</span>
+    <span class="crit-badge">Critical Incident Active</span>
   </div>
 
-  <div id="response-banner" class="response-banner"></div>
+  <div class="container">
 
-  <div class="grid">
-    <div class="panel">
-      <h2>Active Alerts</h2>
-      <div class="alert-row">
-        <div class="alert-info">
-          <span class="alert-id">INC-2026-0847</span>
-          <span class="alert-msg"><span class="severity-critical">CRITICAL</span> — Lateral movement detected: WORKSTATION-14 → DC-PRIMARY</span>
-          <span class="alert-source">Source: EDR &bull; MITRE: T1021.002</span>
+    <div class="meta-bar">
+      <span class="meta-item">Analyst: <strong>soc-analyst-4</strong></span>
+      <span class="meta-item">Shift: <strong>Night</strong></span>
+      <span class="meta-item">Active incidents: <strong>3</strong></span>
+      <span class="meta-item">MTTR: <strong>4m 12s</strong></span>
+      <span class="meta-item">SLA: <strong style="color: var(--ok);">on target</strong></span>
+    </div>
+
+    <div id="response-banner" class="response-banner"></div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="panel-head">
+          <h2><span class="icon-dot"></span>Active Alerts</h2>
+          <span class="pill">3 open</span>
         </div>
-        <div class="actions">
-          <button class="btn-acknowledge" id="ack-847">Acknowledge</button>
-          <button class="btn-escalate" id="esc-847">Escalate</button>
+
+        <div class="alert-row is-critical">
+          <div class="alert-info">
+            <div class="alert-id-row">
+              <span class="sev crit">Critical</span>
+              <span class="alert-id">INC-2026-0847</span>
+            </div>
+            <div class="alert-msg">Lateral movement detected: WORKSTATION-14 → DC-PRIMARY</div>
+            <div class="alert-source"><span class="src-tag">EDR</span><span class="src-tag">MITRE T1021.002</span><span>SMB to admin share</span></div>
+          </div>
+          <div class="alert-actions">
+            <button class="btn btn-acknowledge" id="ack-847">Acknowledge</button>
+            <button class="btn btn-escalate" id="esc-847">Escalate</button>
+          </div>
+        </div>
+
+        <div class="alert-row is-high">
+          <div class="alert-info">
+            <div class="alert-id-row">
+              <span class="sev high">High</span>
+              <span class="alert-id">INC-2026-0848</span>
+            </div>
+            <div class="alert-msg">Credential dump attempt: lsass.exe memory access</div>
+            <div class="alert-source"><span class="src-tag">EDR</span><span class="src-tag">MITRE T1003.001</span><span>WORKSTATION-14</span></div>
+          </div>
+          <div class="alert-actions">
+            <button class="btn btn-acknowledge" id="ack-848">Acknowledge</button>
+          </div>
+        </div>
+
+        <div class="alert-row is-med">
+          <div class="alert-info">
+            <div class="alert-id-row">
+              <span class="sev med">Medium</span>
+              <span class="alert-id">INC-2026-0849</span>
+            </div>
+            <div class="alert-msg">Unusual outbound DNS: TXT queries to .xyz domain</div>
+            <div class="alert-source"><span class="src-tag">NDR</span><span class="src-tag">MITRE T1071.004</span><span>egress filter</span></div>
+          </div>
+          <div class="alert-actions">
+            <button class="btn btn-acknowledge" id="ack-849">Acknowledge</button>
+          </div>
         </div>
       </div>
-      <div class="alert-row">
-        <div class="alert-info">
-          <span class="alert-id">INC-2026-0848</span>
-          <span class="alert-msg"><span class="severity-high">HIGH</span> — Credential dump attempt: lsass.exe memory access</span>
-          <span class="alert-source">Source: EDR &bull; MITRE: T1003.001</span>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2><span class="icon-dot"></span>Affected Hosts</h2>
+          <span class="pill">3 hosts</span>
         </div>
-        <div class="actions">
-          <button class="btn-acknowledge" id="ack-848">Acknowledge</button>
+
+        <div class="host-card">
+          <div class="host-row">
+            <div><span class="host-name">WORKSTATION-14</span><span class="host-ip">10.0.4.14</span></div>
+            <span class="host-status host-compromised">Compromised</span>
+          </div>
+          <div class="host-actions">
+            <button class="btn btn-isolate" id="isolate-ws14">Isolate from Network</button>
+            <button class="btn btn-quarantine" id="quarantine-ws14">Quarantine &amp; Image</button>
+          </div>
+        </div>
+
+        <div class="host-card">
+          <div class="host-row">
+            <div><span class="host-name">DC-PRIMARY</span><span class="host-ip">10.0.1.1</span></div>
+            <span class="host-status host-at-risk">At Risk</span>
+          </div>
+          <div class="host-actions">
+            <button class="btn btn-isolate" id="isolate-dc">Isolate from Network</button>
+          </div>
+        </div>
+
+        <div class="host-card">
+          <div class="host-row">
+            <div><span class="host-name">FILE-SERVER-02</span><span class="host-ip">10.0.2.8</span></div>
+            <span class="host-status host-clean">Clean</span>
+          </div>
         </div>
       </div>
-      <div class="alert-row">
-        <div class="alert-info">
-          <span class="alert-id">INC-2026-0849</span>
-          <span class="alert-msg"><span class="severity-medium">MEDIUM</span> — Unusual outbound DNS: TXT queries to .xyz domain</span>
-          <span class="alert-source">Source: NDR &bull; MITRE: T1071.004</span>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2><span class="icon-dot" style="background: var(--high); box-shadow: 0 0 8px var(--high);"></span>Indicators of Compromise</h2>
+          <span class="pill">5 IOCs</span>
         </div>
-        <div class="actions">
-          <button class="btn-acknowledge" id="ack-849">Acknowledge</button>
+        <div class="ioc-row"><span class="ioc-value">185.220.101.42</span><span class="ioc-type">C2 IP</span></div>
+        <div class="ioc-row"><span class="ioc-value">evil-update.xyz</span><span class="ioc-type">C2 Domain</span></div>
+        <div class="ioc-row"><span class="ioc-value">a3f2b8c1…d94e</span><span class="ioc-type">SHA-256</span></div>
+        <div class="ioc-row"><span class="ioc-value">svchost-update.exe</span><span class="ioc-type">Process</span></div>
+        <div class="ioc-row"><span class="ioc-value">HKLM\Software\MalRun</span><span class="ioc-type">Registry</span></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2><span class="icon-dot"></span>Attack Timeline</h2>
+          <span class="pill">28 min · ongoing</span>
+        </div>
+        <div class="timeline">
+          <div class="tl-item"><span class="tl-time">09:14:22</span>Phishing email delivered to user jsmith</div>
+          <div class="tl-item"><span class="tl-time">09:18:45</span>Malicious attachment opened on WORKSTATION-14</div>
+          <div class="tl-item"><span class="tl-time">09:19:02</span>Payload executed: svchost-update.exe</div>
+          <div class="tl-item"><span class="tl-time">09:22:18</span>C2 beacon to 185.220.101.42</div>
+          <div class="tl-item"><span class="tl-time">09:34:11</span>Credential dump: lsass.exe memory access</div>
+          <div class="tl-item active"><span class="tl-time">09:41:33</span>Lateral movement to DC-PRIMARY via SMB</div>
+          <div class="tl-item"><span class="tl-time">09:42:07</span>DNS exfiltration to evil-update.xyz</div>
         </div>
       </div>
     </div>
 
-    <div class="panel">
-      <h2>Affected Hosts</h2>
-      <div class="host-card">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div><span class="host-name">WORKSTATION-14</span> <span class="host-ip">10.0.4.14</span></div>
-          <span class="host-status host-compromised">COMPROMISED</span>
-        </div>
-        <div class="actions" style="margin-top:0.5rem">
-          <button class="btn-isolate" id="isolate-ws14">Isolate from Network</button>
-          <button class="btn-quarantine" id="quarantine-ws14">Quarantine &amp; Image</button>
-        </div>
+    <div class="panel" style="margin-top: 14px;">
+      <div class="panel-head">
+        <h2><span class="icon-dot" style="background: var(--low); box-shadow: 0 0 8px var(--low);"></span>Live Event Feed</h2>
+        <span class="pill">streaming · 5 events</span>
       </div>
-      <div class="host-card">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div><span class="host-name">DC-PRIMARY</span> <span class="host-ip">10.0.1.1</span></div>
-          <span class="host-status host-at-risk">AT RISK</span>
-        </div>
-        <div class="actions" style="margin-top:0.5rem">
-          <button class="btn-isolate" id="isolate-dc">Isolate from Network</button>
-        </div>
+      <div class="feed" id="log-feed">
+        <div class="feed-entry"><span class="feed-ts">09:42:07</span><span class="lvl-crit">CRIT</span><span class="feed-msg">DNS exfiltration: TXT query to evil-update.xyz from 10.0.4.14</span></div>
+        <div class="feed-entry"><span class="feed-ts">09:41:33</span><span class="lvl-crit">CRIT</span><span class="feed-msg">SMB lateral movement: 10.0.4.14 → 10.0.1.1 using stolen creds</span></div>
+        <div class="feed-entry"><span class="feed-ts">09:34:11</span><span class="lvl-warn">WARN</span><span class="feed-msg">Credential access: lsass.exe memory read by svchost-update.exe</span></div>
+        <div class="feed-entry"><span class="feed-ts">09:22:18</span><span class="lvl-warn">WARN</span><span class="feed-msg">C2 beacon: HTTPS POST to 185.220.101.42:443 every 30s</span></div>
+        <div class="feed-entry"><span class="feed-ts">09:19:02</span><span class="lvl-info">INFO</span><span class="feed-msg">Process start: svchost-update.exe (PID 4892) on WORKSTATION-14</span></div>
       </div>
-      <div class="host-card">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div><span class="host-name">FILE-SERVER-02</span> <span class="host-ip">10.0.2.8</span></div>
-          <span class="host-status host-clean">CLEAN</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="panel">
-      <h2>Indicators of Compromise</h2>
-      <ul class="ioc-list">
-        <li class="ioc-item"><span class="ioc-value">185.220.101.42</span><span class="ioc-type">C2 IP</span></li>
-        <li class="ioc-item"><span class="ioc-value">evil-update.xyz</span><span class="ioc-type">C2 Domain</span></li>
-        <li class="ioc-item"><span class="ioc-value">a3f2b8c1...d94e</span><span class="ioc-type">Malware SHA-256</span></li>
-        <li class="ioc-item"><span class="ioc-value">svchost-update.exe</span><span class="ioc-type">Process Name</span></li>
-        <li class="ioc-item"><span class="ioc-value">HKLM\Software\MalRun</span><span class="ioc-type">Registry Key</span></li>
-      </ul>
-    </div>
-
-    <div class="panel">
-      <h2>Attack Timeline</h2>
-      <ul class="timeline">
-        <li>09:14:22 — Initial phishing email delivered to user jsmith</li>
-        <li>09:18:45 — Malicious attachment opened on WORKSTATION-14</li>
-        <li>09:19:02 — Payload executed: svchost-update.exe</li>
-        <li>09:22:18 — C2 beacon established to 185.220.101.42</li>
-        <li>09:34:11 — Credential dump: lsass.exe memory access</li>
-        <li class="active">09:41:33 — Lateral movement to DC-PRIMARY via SMB</li>
-        <li>09:42:07 — DNS exfiltration attempt to evil-update.xyz</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="panel" style="margin-top:1rem">
-    <h2>Live Event Feed</h2>
-    <div class="log-feed" id="log-feed">
-      <div class="log-entry"><span class="log-ts">09:42:07</span><span class="log-level-crit">CRIT</span> DNS exfiltration: TXT query to evil-update.xyz from 10.0.4.14</div>
-      <div class="log-entry"><span class="log-ts">09:41:33</span><span class="log-level-crit">CRIT</span> SMB lateral movement: 10.0.4.14 → 10.0.1.1 using stolen creds</div>
-      <div class="log-entry"><span class="log-ts">09:34:11</span><span class="log-level-warn">WARN</span> Credential access: lsass.exe memory read by svchost-update.exe</div>
-      <div class="log-entry"><span class="log-ts">09:22:18</span><span class="log-level-warn">WARN</span> C2 beacon: HTTPS POST to 185.220.101.42:443 every 30s</div>
-      <div class="log-entry"><span class="log-ts">09:19:02</span><span class="log-level-info">INFO</span> Process start: svchost-update.exe (PID 4892) on WORKSTATION-14</div>
     </div>
   </div>
 
   <div id="isolate-modal" class="modal">
     <div class="modal-content">
-      <h3>Confirm Network Isolation</h3>
+      <h3>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+        Confirm Network Isolation
+      </h3>
       <p id="isolate-modal-text">This will immediately sever all network connectivity for the target host. Active sessions will be terminated. This action is logged and requires SOC manager approval for reversal.</p>
       <div class="modal-actions">
         <button class="btn-cancel" id="cancel-isolate">Cancel</button>
-        <button class="btn-confirm-isolate" id="confirm-isolate">Confirm Isolation</button>
+        <button class="btn-confirm" id="confirm-isolate">Confirm Isolation</button>
       </div>
     </div>
   </div>
 
   <script>
-    var isolateTarget = '';
-    document.getElementById('ack-847').addEventListener('click', function() {
-      this.textContent = 'Acknowledged';
-      this.disabled = true;
-      this.style.borderColor = '#00cc66';
-      this.style.color = '#00cc66';
-      addLog('INFO', 'INC-2026-0847 acknowledged by soc-analyst-4');
-    });
-    document.getElementById('ack-848').addEventListener('click', function() {
-      this.textContent = 'Acknowledged';
-      this.disabled = true;
-      this.style.borderColor = '#00cc66';
-      this.style.color = '#00cc66';
-      addLog('INFO', 'INC-2026-0848 acknowledged by soc-analyst-4');
-    });
-    document.getElementById('ack-849').addEventListener('click', function() {
-      this.textContent = 'Acknowledged';
-      this.disabled = true;
-      this.style.borderColor = '#00cc66';
-      this.style.color = '#00cc66';
-      addLog('INFO', 'INC-2026-0849 acknowledged by soc-analyst-4');
-    });
-    document.getElementById('esc-847').addEventListener('click', function() {
+    function ackBtn(id, alertId) {
+      var btn = document.getElementById(id);
+      btn.addEventListener('click', function () {
+        btn.textContent = 'Acknowledged';
+        btn.disabled = true;
+        btn.classList.remove('btn-acknowledge');
+        btn.classList.add('btn-done');
+        addLog('INFO', alertId + ' acknowledged by soc-analyst-4');
+      });
+    }
+    ackBtn('ack-847', 'INC-2026-0847');
+    ackBtn('ack-848', 'INC-2026-0848');
+    ackBtn('ack-849', 'INC-2026-0849');
+
+    document.getElementById('esc-847').addEventListener('click', function () {
       var banner = document.getElementById('response-banner');
-      banner.className = 'response-banner visible response-escalated';
-      banner.textContent = 'INC-2026-0847 escalated to SOC Manager. ETA: 2 minutes.';
+      banner.className = 'response-banner visible warn';
+      banner.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m12 8 0 4M12 16h.01"></path></svg> INC-2026-0847 escalated to SOC Manager. ETA: 2 minutes.';
       this.textContent = 'Escalated';
       this.disabled = true;
       addLog('WARN', 'INC-2026-0847 escalated to SOC Manager by soc-analyst-4');
     });
-    document.getElementById('isolate-ws14').addEventListener('click', function() {
-      isolateTarget = 'WORKSTATION-14';
-      document.getElementById('isolate-modal-text').textContent =
-        'This will immediately sever all network connectivity for WORKSTATION-14 (10.0.4.14). Active sessions will be terminated. This action is logged and requires SOC manager approval for reversal.';
+
+    var isolateTarget = '';
+    function showIsolateModal(target, text) {
+      isolateTarget = target;
+      document.getElementById('isolate-modal-text').textContent = text;
       document.getElementById('isolate-modal').classList.add('visible');
+    }
+    document.getElementById('isolate-ws14').addEventListener('click', function () {
+      showIsolateModal('WORKSTATION-14',
+        'This will immediately sever all network connectivity for WORKSTATION-14 (10.0.4.14). Active sessions will be terminated. This action is logged and requires SOC manager approval for reversal.');
     });
-    document.getElementById('isolate-dc').addEventListener('click', function() {
-      isolateTarget = 'DC-PRIMARY';
-      document.getElementById('isolate-modal-text').textContent =
-        'WARNING: Isolating DC-PRIMARY (10.0.1.1) will affect all Active Directory authentication. This will immediately sever all network connectivity. This action is logged and requires SOC manager approval for reversal.';
-      document.getElementById('isolate-modal').classList.add('visible');
+    document.getElementById('isolate-dc').addEventListener('click', function () {
+      showIsolateModal('DC-PRIMARY',
+        'WARNING: Isolating DC-PRIMARY (10.0.1.1) will affect all Active Directory authentication. This will sever all network connectivity and require SOC manager approval for reversal.');
     });
-    document.getElementById('quarantine-ws14').addEventListener('click', function() {
-      isolateTarget = 'WORKSTATION-14';
-      document.getElementById('isolate-modal-text').textContent =
-        'This will isolate WORKSTATION-14, capture a forensic disk image, and quarantine the host for analysis. The host will be offline until forensic review is complete.';
-      document.getElementById('isolate-modal').classList.add('visible');
+    document.getElementById('quarantine-ws14').addEventListener('click', function () {
+      showIsolateModal('WORKSTATION-14',
+        'This will isolate WORKSTATION-14, capture a forensic disk image, and quarantine the host for analysis. The host will be offline until forensic review is complete.');
     });
-    document.getElementById('cancel-isolate').addEventListener('click', function() {
+    document.getElementById('cancel-isolate').addEventListener('click', function () {
       document.getElementById('isolate-modal').classList.remove('visible');
       addLog('INFO', 'Isolation cancelled for ' + isolateTarget);
     });
-    document.getElementById('confirm-isolate').addEventListener('click', function() {
+    document.getElementById('confirm-isolate').addEventListener('click', function () {
       document.getElementById('isolate-modal').classList.remove('visible');
       var banner = document.getElementById('response-banner');
-      banner.className = 'response-banner visible response-success';
-      banner.textContent = isolateTarget + ' isolated from network. Forensic imaging initiated.';
+      banner.className = 'response-banner visible ok';
+      banner.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="m9 11 3 3L22 4"></path></svg> ' + isolateTarget + ' isolated from network. Forensic imaging initiated.';
       addLog('CRIT', isolateTarget + ' network isolation executed by soc-analyst-4');
     });
+
     function addLog(level, msg) {
       var feed = document.getElementById('log-feed');
       var entry = document.createElement('div');
-      entry.className = 'log-entry';
+      entry.className = 'feed-entry';
       var now = new Date();
       var ts = now.toTimeString().slice(0, 8);
-      var cls = level === 'CRIT' ? 'log-level-crit' : level === 'WARN' ? 'log-level-warn' : 'log-level-info';
-      entry.innerHTML = '<span class="log-ts">' + ts + '</span><span class="' + cls + '">' + level + '</span> ' + msg;
+      var cls = level === 'CRIT' ? 'lvl-crit' : level === 'WARN' ? 'lvl-warn' : 'lvl-info';
+      entry.innerHTML =
+        '<span class="feed-ts">' + ts + '</span>' +
+        '<span class="' + cls + '">' + level + '</span>' +
+        '<span class="feed-msg">' + msg + '</span>';
       feed.insertBefore(entry, feed.firstChild);
     }
   </script>
