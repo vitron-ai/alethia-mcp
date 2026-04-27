@@ -430,6 +430,19 @@ const MIME_TYPES: Record<string, string> = {
   '.svg': 'image/svg+xml',
 };
 
+// Dark-theme scrollbar override injected into every demo HTML response.
+// Targets WebKit (Chrome/Edge/Electron) and Firefox via scrollbar-color.
+// Colors picked to read on every demo's bg: dim-cyan thumb on translucent
+// dark track, slightly brighter on hover.
+const DEMO_SCROLLBAR_CSS = `<style>
+  html { scrollbar-color: rgba(95, 180, 247, 0.35) rgba(10, 20, 40, 0.4); scrollbar-width: thin; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: rgba(10, 20, 40, 0.4); }
+  ::-webkit-scrollbar-thumb { background: rgba(95, 180, 247, 0.35); border-radius: 6px; border: 2px solid transparent; background-clip: padding-box; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(95, 180, 247, 0.6); background-clip: padding-box; }
+  ::-webkit-scrollbar-corner { background: transparent; }
+</style>`;
+
 const startDemoServer = (): Promise<{ port: number; url: string; pages: string[] }> => {
   if (demoServer && demoServerPort) {
     const pages = getDemoPages();
@@ -450,8 +463,23 @@ const startDemoServer = (): Promise<{ port: number; url: string; pages: string[]
       try {
         const data = readFileSync(filePath);
         const ext = '.' + (filePath.split('.').pop() ?? 'html');
-        res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] ?? 'application/octet-stream' });
-        res.end(data);
+        const mime = MIME_TYPES[ext] ?? 'application/octet-stream';
+        // Inject a dark-theme scrollbar override into every demo HTML response.
+        // Demos have varied backgrounds — the default OS scrollbar (light/white
+        // on macOS) reads as out-of-theme on every one of them. Injection at
+        // the server avoids touching all 12 demo files individually.
+        if (ext === '.html') {
+          const html = data.toString('utf8');
+          const themed = html.replace(
+            /<\/head>/i,
+            `${DEMO_SCROLLBAR_CSS}</head>`,
+          );
+          res.writeHead(200, { 'Content-Type': mime });
+          res.end(themed);
+        } else {
+          res.writeHead(200, { 'Content-Type': mime });
+          res.end(data);
+        }
       } catch {
         res.writeHead(404).end('Not found');
       }
