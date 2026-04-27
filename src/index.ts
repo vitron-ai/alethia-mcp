@@ -1304,7 +1304,7 @@ const TOOLS = [
         },
         name: {
           type: 'string',
-          description: 'Optional run name for audit logs and replay.',
+          description: 'Short label for the run (e.g. "signin smoke", "delete-blocked check", "checkout regression"). Strongly recommended — without it the run shows up as "tell" in cockpit history and audit trails, which makes review painful when many runs accumulate. Alternatively, prefix the first line of `instructions` with `name <label>` and the NLP compiler will read it.',
         },
         allowSensitiveInput: {
           type: 'boolean',
@@ -1771,6 +1771,7 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
             '- Conditional steps: "if cookie banner exists, click Accept" — skips gracefully.\n' +
             '- Interaction checks: verifies elements are visible, enabled, and not blocked by overlays.\n' +
             '- EA1 safety gate: destructive actions (delete, purchase, transfer) are blocked by default.\n\n' +
+            'Best practice: pass a short `name` (e.g. "signin smoke") on every alethia_tell call so the run is identifiable in cockpit history and exported audit packs. Without it, runs land in history as "tell" and reviewing later sessions becomes painful.\n\n' +
             'The runtime auto-installs on first use and runs locally on 127.0.0.1:47432. ' +
             'Works with local files (file://) and localhost dev servers.',
         },
