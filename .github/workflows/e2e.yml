@@ -41,11 +41,11 @@ jobs:
           node-version: '20'
           cache: npm
 
-      - name: Install Electron system deps
-        # The runtime is an Electron app; it needs nss/atk/gtk/etc. installed
-        # at the OS level even when run "headless" via ALETHIA_HEADLESS=1
-        # (Electron initializes its rendering pipeline regardless). xvfb
-        # provides the virtual display the runtime expects.
+      - name: Install runtime system deps
+        # The Alethia runtime requires a few common Linux GUI/system
+        # libraries at the OS level + a virtual display, even when
+        # ALETHIA_HEADLESS=1 suppresses any visible window. xvfb provides
+        # that display in CI.
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
@@ -114,7 +114,7 @@ jobs:
       - name: Run alethia against the demo
         # The wrapping ::group:: collapsible keeps the GHA log scannable
         # while still surfacing per-step diagnostics on failure.
-        # xvfb-run provides the virtual display Electron needs to start;
+        # xvfb-run provides the virtual display the runtime expects.
         # ALETHIA_HEADLESS=1 keeps the cockpit window from being shown
         # *within* that virtual display.
         env:
