@@ -994,7 +994,10 @@ const spawnRuntime = async (runtimeVersion?: string): Promise<void> => {
   });
 
   // Wait for port to bind
-  const maxWait = 15_000;
+  // CI runners have cold caches, slower disk IO, and warmup penalties; the
+  // 15s budget that's plenty for local hits 'first run' floors in CI. Give
+  // CI a 60s window and keep local snappy.
+  const maxWait = isCi ? 60_000 : 15_000;
   const interval = 300;
   const start = Date.now();
   while (Date.now() - start < maxWait) {
