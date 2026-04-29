@@ -1,0 +1,88 @@
+# End-to-end run of `alethia run` against our own demo suite.
+#
+# This is the workflow that proves the full stack works together — bridge,
+# runtime, NLP compiler, executor, policy gate, browser execution. The
+# bridge's other CI (bridge-tests.yml) only covers unit + smoke tests of
+# the bridge surface; this one drives a real demo through `alethia run`
+# end-to-end.
+#
+# Spec: docs/e2e-ci-spec.md
+
+name: e2e
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pin the runtime version so the cache key is stable + the test is
+  # reproducible. Bump this in tandem with a new alethia-core release.
+  ALETHIA_RUNTIME_VERSION: '0.7.1'
+  # Demo's NLP file references http://localhost:8765/<demo>.html — the
+  # static server below binds this port.
+  DEMO_PORT: '8765'
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install + build bridge from source
+        # Use the PR's bridge code, not the published one — catches
+        # regressions BEFORE they ship to npm.
+        run: |
+          npm ci
+          npm run build
+
+      - name: Cache the signed runtime
+        # The bridge auto-fetches the runtime from GitHub Releases on first
+        # use (~100 MB). On cache hit this is a no-op; on miss the bridge
+        # downloads + Ed25519-verifies it.
+        uses: actions/cache@v4
+        with:
+          path: ~/.alethia/runtime
+          key: alethia-runtime-${{ runner.os }}-${{ env.ALETHIA_RUNTIME_VERSION }}
+
+      - name: Start static demo server
+        # python's http.server is preinstalled on ubuntu-latest; avoids
+        # introducing an npm dep just for serving a directory.
+        run: |
+          python3 -m http.server ${{ env.DEMO_PORT }} --directory demo &
+          echo "DEMO_PID=$!" >> $GITHUB_ENV
+          # Wait for the port to be ready before kicking off the runtime.
+          for i in 1 2 3 4 5; do
+            if curl -sf http://localhost:${{ env.DEMO_PORT }}/ >/dev/null; then
+              echo "Demo server ready on port ${{ env.DEMO_PORT }}"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Demo server failed to bind port ${{ env.DEMO_PORT }} after 5s"
+          exit 1
+
+      - name: Run alethia against the demo
+        # The wrapping ::group:: collapsible keeps the GHA log scannable
+        # while still surfacing per-step diagnostics on failure.
+        run: |
+          echo "::group::alethia run demo/claude-code-app.alethia"
+          node dist/index.js run demo/claude-code-app.alethia
+          echo "::endgroup::"
+
+      - name: Stop demo server
+        if: always()
+        run: |
+          if [ -n "${DEMO_PID:-}" ]; then kill "$DEMO_PID" 2>/dev/null || true; fi
