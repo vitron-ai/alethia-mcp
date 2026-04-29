@@ -1,0 +1,62 @@
+# Drop-in GitHub Actions workflow for running an Alethia E2E test suite.
+# Save as `.github/workflows/alethia.yml` in your repo and adjust the
+# `Start your app` step to match your stack.
+#
+# How it works:
+#   1. Install the @vitronai/alethia bridge globally. The bridge auto-installs
+#      the signed runtime on first use (Ed25519-verified, no signup).
+#   2. Start your app in the background.
+#   3. `alethia run tests/...` drives the runtime headless and exits 0/1
+#      based on whether every step passed. CI environments are auto-detected
+#      so the cockpit window stays hidden.
+#
+# Test files (.alethia) are plain text — same NLP your agents already use.
+
+name: E2E (Alethia)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  alethia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Pin a specific runtime version for reproducible CI. Drop this if you
+      # always want the latest signed release on the default branch.
+      - name: Install Alethia bridge
+        run: npm install -g @vitronai/alethia
+
+      # Replace this with how YOUR app boots. Common patterns:
+      #   npm run start &              # most Node apps
+      #   docker compose up -d         # containerized stacks
+      #   python -m http.server 3000 & # static sites
+      - name: Start your app
+        run: |
+          npm ci
+          npm run build
+          npm start &
+          npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: Run Alethia E2E suite
+        run: |
+          for test in tests/e2e/*.alethia; do
+            echo "::group::$test"
+            alethia run "$test"
+            echo "::endgroup::"
+          done
+        env:
+          # Pin runtime version for reproducible CI runs. Remove to always
+          # fetch the latest signed release.
+          # ALETHIA_RUNTIME_VERSION: '0.7.1'
+          # The bridge auto-detects CI and runs headless; this is just for
+          # belt-and-suspenders if you set CI=false somewhere.
+          ALETHIA_HEADLESS: '1'

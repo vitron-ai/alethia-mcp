@@ -1027,6 +1027,10 @@ WHAT THIS IS
 
 USAGE
   alethia-mcp                      Run as a stdio MCP server (default)
+  alethia-mcp run <path>           Run an NLP test file from the shell (CI-friendly)
+  alethia-mcp run --nlp "<text>"   Run inline NLP from the shell
+  alethia-mcp run -                Run NLP read from stdin
+  alethia-mcp run --help           Print run-mode help
   alethia-mcp --version            Print the version and exit
   alethia-mcp --help               Print this message and exit
   alethia-mcp --health-check       Probe the Alethia runtime and exit 0/1
@@ -1070,6 +1074,275 @@ const printAndExit = (message: string, code = 0): never => {
   if (!message.endsWith('\n')) process.stdout.write('\n');
   process.exit(code);
 };
+
+// ---------------------------------------------------------------------------
+// `alethia-mcp run <...>` — agent-less CLI runner for CI
+// ---------------------------------------------------------------------------
+// Spawns the runtime via the bridge's existing install/spawn machinery,
+// drives a single alethia_tell call with the user-provided NLP, formats
+// per-step results to stdout, exits 0 on pass / 1 on fail / 2 on bad args.
+// Pure helpers (parseRunArgs, formatRunResult) are exported for unit tests.
+
+const RUN_HELP = `${PKG_NAME} run — agent-less CLI runner for CI
+
+USAGE
+  alethia run <path>               Run an NLP test file
+  alethia run --nlp "<text>"       Run inline NLP
+  alethia run -                    Read NLP from stdin
+  alethia run --help               Print this message
+
+OPTIONS
+  --name "<label>"                 Plan name (otherwise auto-generated)
+  --json                           Emit machine-readable JSON instead of text
+  --quiet, -q                      One-line summary only
+
+EXAMPLES
+  alethia run tests/login.alethia
+  alethia run --nlp "navigate to http://localhost:3000\\nclick Sign In\\nassert dashboard is visible"
+  cat tests/login.alethia | alethia run -
+  alethia run tests/login.alethia --quiet
+
+EXIT CODES
+  0    All steps passed
+  1    Run failed (one or more steps failed, or runtime error)
+  2    Invalid arguments
+`;
+
+export type RunCliArgs =
+  | { mode: 'help' }
+  | { mode: 'inline'; nlp: string; json: boolean; quiet: boolean; name?: string }
+  | { mode: 'file'; path: string; json: boolean; quiet: boolean; name?: string }
+  | { mode: 'stdin'; json: boolean; quiet: boolean; name?: string }
+  | { mode: 'error'; message: string };
+
+export const parseRunArgs = (argv: string[]): RunCliArgs => {
+  if (argv.length === 0) {
+    return { mode: 'error', message: 'No NLP source provided. Use a file path, --nlp <text>, or - for stdin. Try --help.' };
+  }
+  if (argv.includes('--help') || argv.includes('-h')) return { mode: 'help' };
+
+  let json = false;
+  let quiet = false;
+  let name: string | undefined;
+  let nlpInline: string | undefined;
+  let positional: string | undefined;
+
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === '--json') { json = true; continue; }
+    if (a === '--quiet' || a === '-q') { quiet = true; continue; }
+    if (a === '--name') {
+      const v = argv[++i];
+      if (v === undefined) return { mode: 'error', message: '--name requires a value.' };
+      name = v;
+      continue;
+    }
+    if (a === '--nlp') {
+      const v = argv[++i];
+      if (v === undefined) return { mode: 'error', message: '--nlp requires a value.' };
+      nlpInline = v;
+      continue;
+    }
+    if (a === '-') {
+      if (positional !== undefined) return { mode: 'error', message: `Unexpected extra argument: -` };
+      positional = '-';
+      continue;
+    }
+    if (a && !a.startsWith('-')) {
+      if (positional !== undefined) return { mode: 'error', message: `Unexpected extra argument: ${a}` };
+      positional = a;
+      continue;
+    }
+    return { mode: 'error', message: `Unknown flag: ${a}` };
+  }
+
+  if (nlpInline !== undefined) {
+    if (positional !== undefined) {
+      return { mode: 'error', message: 'Provide either --nlp or a path, not both.' };
+    }
+    return { mode: 'inline', nlp: nlpInline, json, quiet, name };
+  }
+  if (positional === '-') return { mode: 'stdin', json, quiet, name };
+  if (positional !== undefined) return { mode: 'file', path: positional, json, quiet, name };
+  return { mode: 'error', message: 'No NLP source provided. Use a file path, --nlp <text>, or - for stdin. Try --help.' };
+};
+
+export type RunStep = { ok: boolean; line: string; detail: string; elapsedMs: number; reasonCode?: string };
+export type RunResult = {
+  ok: boolean;
+  name: string;
+  passCount: number;
+  failCount: number;
+  stepCount: number;
+  elapsedMs: number;
+  steps: RunStep[];
+};
+
+// Extract a normalized RunResult from the alethia_tell response. The runtime
+// wraps the run in MCP content blocks; we want the raw run object.
+export const extractRunResult = (response: unknown): RunResult => {
+  const r = (response as Record<string, unknown> | null) ?? {};
+  // The runtime returns either { ok, run: {...} } directly or wrapped in
+  // MCP content. Handle both shapes.
+  let run = r.run as Record<string, unknown> | undefined;
+  if (!run && r.content && Array.isArray(r.content)) {
+    // MCP content shape — first text block holds JSON
+    const text = (r.content[0] as { text?: string } | undefined)?.text;
+    if (text) {
+      try {
+        const parsed = JSON.parse(text) as Record<string, unknown>;
+        run = (parsed.run as Record<string, unknown>) ?? parsed;
+      } catch { /* leave run undefined; will fall through to defaults */ }
+    }
+  }
+  run = run ?? r;
+
+  const stepRunsRaw = Array.isArray(run.stepRuns) ? run.stepRuns : [];
+  const linesRaw = Array.isArray(run.lines) ? run.lines : [];
+
+  const steps: RunStep[] = stepRunsRaw.map((s: unknown, i: number) => {
+    const step = (s as Record<string, unknown> | null) ?? {};
+    const lineEntry = (linesRaw[i] as Record<string, unknown> | undefined) ?? {};
+    return {
+      ok: step.ok !== false,
+      line: typeof lineEntry.original === 'string' ? lineEntry.original : `step ${i + 1}`,
+      detail: typeof step.detail === 'string' ? step.detail : '',
+      elapsedMs: typeof step.elapsedMs === 'number' ? step.elapsedMs : 0,
+      reasonCode: typeof step.reasonCode === 'string' ? step.reasonCode : undefined,
+    };
+  });
+  const passCount = steps.filter((s) => s.ok).length;
+  const failCount = steps.length - passCount;
+  return {
+    ok: failCount === 0 && r.ok !== false,
+    name: typeof run.name === 'string' ? run.name : 'unnamed',
+    passCount,
+    failCount,
+    stepCount: steps.length,
+    elapsedMs: typeof run.elapsedMs === 'number' ? run.elapsedMs : 0,
+    steps,
+  };
+};
+
+export const formatRunResult = (result: RunResult, opts: { json: boolean; quiet: boolean }): string => {
+  if (opts.json) return JSON.stringify(result, null, 2);
+
+  if (opts.quiet) {
+    return result.ok
+      ? `${result.passCount}/${result.stepCount} passed in ${result.elapsedMs}ms`
+      : `${result.failCount} of ${result.stepCount} failed (${result.elapsedMs}ms)`;
+  }
+
+  const lines: string[] = [];
+  lines.push(`Alethia · ${result.name}`);
+  lines.push('');
+  for (let i = 0; i < result.steps.length; i++) {
+    const s = result.steps[i]!;
+    const mark = s.ok ? '✓' : '✗';
+    lines.push(`  ${mark} ${i + 1}. ${s.line}  (${s.elapsedMs}ms)`);
+    if (!s.ok && s.detail) {
+      // Indent the detail under the step.
+      for (const detailLine of s.detail.split('\n')) {
+        lines.push(`      ${detailLine}`);
+      }
+    }
+  }
+  lines.push('');
+  lines.push(result.ok
+    ? `✓ ${result.passCount}/${result.stepCount} passed in ${result.elapsedMs}ms.`
+    : `✗ ${result.failCount} of ${result.stepCount} failed (${result.elapsedMs}ms).`);
+  return lines.join('\n');
+};
+
+const readStdin = (): Promise<string> => new Promise((resolveRead, rejectRead) => {
+  let data = '';
+  process.stdin.setEncoding('utf8');
+  process.stdin.on('data', (chunk: string) => { data += chunk; });
+  process.stdin.on('end', () => resolveRead(data));
+  process.stdin.on('error', rejectRead);
+});
+
+const runCli = async (argv: string[]): Promise<never> => {
+  const args = parseRunArgs(argv);
+  if (args.mode === 'help') {
+    process.stdout.write(RUN_HELP);
+    process.exit(0);
+  }
+  if (args.mode === 'error') {
+    process.stderr.write(`alethia run: ${args.message}\n`);
+    process.exit(2);
+  }
+
+  // Resolve NLP source.
+  let nlp: string;
+  try {
+    if (args.mode === 'inline') {
+      nlp = args.nlp;
+    } else if (args.mode === 'file') {
+      if (!existsSync(args.path)) {
+        process.stderr.write(`alethia run: file not found: ${args.path}\n`);
+        process.exit(1);
+      }
+      nlp = readFileSync(args.path, 'utf8');
+    } else {
+      nlp = await readStdin();
+    }
+  } catch (err) {
+    process.stderr.write(`alethia run: ${(err as Error).message}\n`);
+    process.exit(1);
+  }
+  if (!nlp.trim()) {
+    process.stderr.write('alethia run: NLP source is empty.\n');
+    process.exit(2);
+  }
+
+  // Spawn the runtime via the bridge's existing install/spawn machinery.
+  try {
+    await ensureCorrectRuntimeVersion();
+    await ensureRuntime();
+  } catch (err) {
+    process.stderr.write(`alethia run: could not start runtime: ${(err as Error).message}\n`);
+    process.exit(1);
+  }
+
+  // Drive one alethia_tell call. The bridge's MCP wrapping is bypassed —
+  // we go straight to the runtime's HTTP server like the cockpit does.
+  try {
+    const response = await callAlethia({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/call',
+      params: {
+        name: 'alethia_tell',
+        arguments: { instructions: nlp, ...(args.name ? { name: args.name } : {}) },
+      },
+    });
+    if (response.error) {
+      process.stderr.write(`alethia run: runtime error: ${response.error.message}\n`);
+      cleanupRuntime();
+      process.exit(1);
+    }
+    const result = extractRunResult(response.result);
+    process.stdout.write(formatRunResult(result, args) + '\n');
+    cleanupRuntime();
+    process.exit(result.ok ? 0 : 1);
+  } catch (err) {
+    process.stderr.write(`alethia run: ${(err as Error).message}\n`);
+    cleanupRuntime();
+    process.exit(1);
+  }
+};
+
+// `alethia-mcp run <...>` — agent-less CLI runner for CI. Branches BEFORE
+// the global --help / --version handlers so `alethia run --help` shows
+// run-specific help, not the top-level help. Below this block, control
+// falls through to the existing MCP stdio-server bootstrap.
+if (process.argv[2] === 'run') {
+  await runCli(process.argv.slice(3));
+  // runCli() always calls process.exit(); this is unreachable but satisfies
+  // the type system.
+  process.exit(0);
+}
 
 if (process.argv.includes('--help') || process.argv.includes('-h')) {
   printAndExit(CLI_HELP);
