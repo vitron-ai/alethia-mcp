@@ -1360,21 +1360,13 @@ const runCli = async (argv: string[]): Promise<never> => {
   }
 };
 
-// `alethia-mcp run <...>` — agent-less CLI runner for CI. Branches BEFORE
-// the global --help / --version handlers so `alethia run --help` shows
-// run-specific help, not the top-level help. Below this block, control
-// falls through to the existing MCP stdio-server bootstrap.
-if (process.argv[2] === 'run') {
-  await runCli(process.argv.slice(3));
-  // runCli() always calls process.exit(); this is unreachable but satisfies
-  // the type system.
-  process.exit(0);
-}
-
-if (process.argv.includes('--help') || process.argv.includes('-h')) {
+// Skip the global --help / --version handlers when the user is in run mode.
+// run-mode has its own --help and the dispatcher fires below in isMainModule.
+const inRunMode = process.argv[2] === 'run';
+if (!inRunMode && (process.argv.includes('--help') || process.argv.includes('-h'))) {
   printAndExit(CLI_HELP);
 }
-if (process.argv.includes('--version') || process.argv.includes('-v')) {
+if (!inRunMode && (process.argv.includes('--version') || process.argv.includes('-v'))) {
   printAndExit(`${PKG_NAME} v${PKG_VERSION}`);
 }
 
@@ -2341,6 +2333,16 @@ const isMainModule = (() => {
 })();
 
 if (isMainModule) {
+  // `alethia-mcp run <...>` — agent-less CLI runner for CI. Has to dispatch
+  // here, AFTER all module-level const declarations (callAlethia, ensureRuntime
+  // et al.) have evaluated; calling runCli earlier hits a temporal-dead-zone
+  // error when spawnRuntime references callAlethia. Bypasses bootstrap
+  // handoff + the MCP stdio server below — runCli always exits.
+  if (process.argv[2] === 'run') {
+    await runCli(process.argv.slice(3));
+    process.exit(0);
+  }
+
   // BOOTSTRAP HANDOFF: if a newer, signature-verified bridge is installed
   // at ~/.alethia/bridge/<version>/, exec to it instead of running ourselves.
   // This is how the self-update mechanism hands off control without requiring
