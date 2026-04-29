@@ -1,7 +1,24 @@
 # E2E CI Pipeline — Spec
 
-**Status:** proposed
+**Status:** partial — workflow built, **blocked on runtime-side issue**.
+Manual-trigger-only until resolved.
 **Date:** 2026-04-28
+**Last attempted:** 2026-04-29
+
+## Status as of 2026-04-29
+
+Bridge-side improvements landed (cleanly):
+- `--no-sandbox` auto-passed when bridge detects CI
+- 60s spawn timeout in CI (vs 15s local)
+- Runtime stderr surfaced in CI for diagnostics
+
+Workflow blocker (runtime-side): the runtime starts under xvfb in GHA — bridge
+sees stderr proving init runs (D-Bus warmup logs etc.) — but it doesn't bind
+`127.0.0.1:47432` within even a 60s budget. Cause is almost certainly
+window-bootstrap gating the HTTP server start under a virtual display.
+
+Next step is on **alethia-core**: trace why the HTTP server bind doesn't fire
+when run under xvfb-run in CI. Until then, `e2e.yml` is `workflow_dispatch`-only.
 **Goal:** Run `alethia run` against our own demo suite in GitHub Actions so the
 public CI badge proves the runtime + bridge + NLP compiler all work end-to-end
 together, not just in isolation.
