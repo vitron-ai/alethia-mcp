@@ -1,4 +1,4 @@
-# Dogfood CI Pipeline — Spec
+# E2E CI Pipeline — Spec
 
 **Status:** proposed
 **Date:** 2026-04-28
@@ -26,12 +26,12 @@ Three concrete payoffs:
 3. **Living example.** `examples/github-actions.yml` we ship to users is then
    exactly what we use ourselves — no template-vs-real-world drift.
 
-## Scope (v1 — minimum viable dogfood)
+## Scope (v1 — minimum viable end-to-end run)
 
 One workflow, one demo. Prove the end-to-end path before expanding to the full
 demo matrix.
 
-**File:** `alethia-mcp/.github/workflows/e2e-dogfood.yml`
+**File:** `alethia-mcp/.github/workflows/e2e.yml`
 
 **Job shape:**
 
@@ -90,7 +90,7 @@ Update the "Running in CI" section to:
    history reads cleanly when the same NLP runs locally.
 2. **Use realistic paths** like `tests/e2e/login.alethia` — not enforced
    conventions. Whatever directory makes sense in the user's repo.
-3. Reference our own dogfood workflow as a real-world example link.
+3. Reference our own E2E workflow as a real-world example link.
 
 ## Cost / shape
 
@@ -106,9 +106,9 @@ Update the "Running in CI" section to:
    bridge repo so checkout + `npx serve demo` is the simplest path. Verify
    that the demo's NLP file references match the static server's URL shape
    (port 8765 in the existing `.alethia` files — adjust workflow to match).
-2. **Do we want a separate `e2e-dogfood` job or fold into `bridge-tests`?**
+2. **Do we want a separate `e2e.yml` workflow or fold into `bridge-tests`?**
    Separate keeps the matrix clean (Node 20 + 22 unit-tests stay fast) and
-   lets the dogfood job run only on linux-x64 without slowing the matrix.
+   lets the E2E job run only on linux-x64 without slowing the matrix.
    Recommend separate file.
 3. **Should runtime download happen in CI or pre-bake into a base image?**
    Cache-keyed download is simpler today; base-image is a v2 optimization
