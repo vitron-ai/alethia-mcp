@@ -100,11 +100,16 @@ jobs:
           ALETHIA_HEADLESS: '1'
         run: |
           node dist/index.js --health-check || true
-          # Generic glob: any *-sandbox helper in the install tree.
-          find ~/.alethia/runtime -type f -name '*-sandbox' -print0 | \
-            xargs -0 -r sudo chown root:root || true
-          find ~/.alethia/runtime -type f -name '*-sandbox' -print0 | \
-            xargs -0 -r sudo chmod 4755 || true
+          # Find sandbox helpers anywhere under the install tree, list
+          # them so we can verify the glob matched, then root-own +
+          # setuid them.
+          mapfile -t HELPERS < <(find ~/.alethia/runtime -type f -name '*sandbox*')
+          echo "Sandbox helpers found: ${#HELPERS[@]}"
+          for h in "${HELPERS[@]}"; do
+            echo "  $h"
+            sudo chown root:root "$h"
+            sudo chmod 4755 "$h"
+          done
 
       - name: Run alethia against the demo
         # The wrapping ::group:: collapsible keeps the GHA log scannable
