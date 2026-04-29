@@ -41,6 +41,15 @@ jobs:
           node-version: '20'
           cache: npm
 
+      - name: Allow unprivileged user namespaces
+        # Ubuntu 24.04 added an AppArmor restriction on unprivileged user
+        # namespace creation (kernel.apparmor_restrict_unprivileged_userns).
+        # That restriction breaks the runtime's process-isolation model in
+        # CI, where root-owned setuid helpers alone aren't sufficient.
+        # Permitted only here in CI; production installs are unaffected.
+        run: |
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+
       - name: Install runtime system deps
         # The Alethia runtime requires a few common Linux GUI/system
         # libraries at the OS level + a virtual display, even when
