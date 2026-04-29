@@ -91,6 +91,26 @@ jobs:
           echo "Demo server failed to bind port ${{ env.DEMO_PORT }} after 5s"
           exit 1
 
+      - name: Diagnose runtime spawn (visible stderr)
+        # The bridge's spawnRuntime uses stdio:'ignore', which hides why the
+        # runtime fails to bind 47432. Run the binary directly first so we
+        # see the actual error if it's still broken.
+        env:
+          ALETHIA_HEADLESS: '1'
+        run: |
+          # Force the bridge to install the runtime if cache missed.
+          node dist/index.js --health-check || true
+          ls -la ~/.alethia/runtime/ || true
+          BIN=$(find ~/.alethia/runtime -type f -name 'alethia' -o -name 'Alethia' 2>/dev/null | head -1)
+          echo "Runtime binary: $BIN"
+          if [ -z "$BIN" ]; then
+            echo "::error::No runtime binary found"
+            exit 1
+          fi
+          echo "::group::Direct runtime spawn (5s)"
+          timeout 5 xvfb-run -a "$BIN" 2>&1 | head -50 || echo "(timeout or exit — expected; checking if it bound the port)"
+          echo "::endgroup::"
+
       - name: Run alethia against the demo
         # The wrapping ::group:: collapsible keeps the GHA log scannable
         # while still surfacing per-step diagnostics on failure.
