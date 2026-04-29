@@ -26,7 +26,7 @@ The cockpit is an **oversight surface**, not an authoring IDE. Humans do not wri
 | Who writes the test | a human, in a `.spec` file | an AI agent, in plain English |
 | Per-step policy gate | none | VITRON-EA1 fail-closed, write-high blocked by default |
 | Destructive-action proof | manual review | `alethia_assert_safety` — automated, machine-readable |
-| Speed (per call) | ~200 ms via Playwright MCP, ~2 s via Playwright CLI | ~40 ms — 2-5× faster than Playwright MCP; up to 50× vs Playwright CLI on simple flows — [reproduce the numbers yourself](https://github.com/vitron-ai/alethia-starter#verify-the-faster-than-cdp-based-tools-claim-yourself) |
+| Speed (per call) | ~200 ms via Playwright MCP, ~2 s via Playwright CLI | ~40 ms — 2-5× faster than Playwright MCP; up to 50× vs Playwright CLI on simple flows — [reproduce the numbers yourself](https://github.com/vitron-ai/alethia-anvil#verify-the-faster-than-cdp-based-tools-claim-yourself) |
 | Evidence | screenshots, videos | signed evidence pack with per-step integrity hashes |
 | Network | Telemetry on by default; optional cloud dashboards | **Air-gap deployable** — no cloud product, no telemetry path, bound to 127.0.0.1 |
 
@@ -382,7 +382,7 @@ The 1h TTL is a deliberate tradeoff. You can shorten it for CI or dev loops via 
 - [VITRON-EA1 safety standard](https://vitron.ai/safety)
 - [FAQ](https://vitron.ai/faq)
 - [Releases](https://github.com/vitron-ai/alethia/releases)
-- [Starter + benchmarks](https://github.com/vitron-ai/alethia-starter) — working starter repo with CI, Playwright comparison kit, and reproducible numbers
+- [Starter + benchmarks](https://github.com/vitron-ai/alethia-anvil) — working starter repo with CI, Playwright comparison kit, and reproducible numbers
 
 ---
 
