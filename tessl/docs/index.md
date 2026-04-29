@@ -12,7 +12,7 @@ The bridge auto-installs the signed headless runtime on first use. No signup, no
 
 ### Starter repo — try it in 30 seconds
 
-Fork [alethia-anvil](https://github.com/vitron-ai/alethia-anvil) and point your agent at `__alethia__/`. Ships a 250-line SPA called Atlas and 14 `.alethia` test files covering CRUD, search, priority, bulk actions, keyboard shortcuts, tab filters, toast stack, export — plus the `expect block:` safety test. Drop-in GitHub Actions workflow + runner included.
+Fork [alethia-anvil](https://github.com/vitron-ai/alethia-anvil) and point your agent at `__alethia__/`. Ships a 250-line SPA called Anvil and 14 `.alethia` test files covering CRUD, search, priority, bulk actions, keyboard shortcuts, tab filters, toast stack, export — plus the `expect block:` safety test. Drop-in GitHub Actions workflow + runner included.
 
 ## MCP setup
 
@@ -30,16 +30,19 @@ Add to your agent's MCP config (`.mcp.json`, Claude Code settings, Cursor MCP, e
 
 | Tool | Purpose |
 |---|---|
-| `alethia_propose_tests` | **New in v0.2.** Scan a URL and generate a candidate NLP test suite — agent bootstraps coverage in one call. Auto-wraps destructive actions in `expect block:`. |
-| `alethia_assert_safety` | **New in v0.2.** Walk every destructive action on a page and verify the EA1 policy gate blocks each one. Automated compliance proof. |
+| `alethia_propose_tests` | Scan a URL and generate a candidate NLP test suite — agent bootstraps coverage in one call. Auto-wraps destructive actions in `expect block:`. |
+| `alethia_assert_safety` | Walk every destructive action on a page and verify the EA1 policy gate blocks each one. Automated compliance proof. |
 | `alethia_tell` | Execute natural-language test instructions. ~13 ms per step. Returns per-step DOM diffs, near-matches, suggested fixes, and structured page context on every call. |
-| `alethia_compile_nlp` | Compile NL to Action IR without executing. Preview before you run. |
+| `alethia_compile` | Compile NL to Action IR without executing. Preview before you run. |
 | `alethia_status` | Health probe. Version, profile, kill switch state, driver stats. |
 | `alethia_screenshot` | Capture a PNG screenshot of the current page. Visual verification for agent loops. |
 | `alethia_eval` | Evaluate a JS expression in the page under test. Escape hatch for raw DOM queries. |
 | `alethia_audit_wcag` | WCAG 2.1 AA accessibility audit — 14 criteria. Section 508 compliance. |
-| `alethia_audit_nist` | NIST SP 800-53 Rev. 5 security controls audit — 11 controls across 5 families (AC, IA, SC, SI, CM). |
+| `alethia_audit_nist` | NIST SP 800-53 security controls audit — 8 controls. |
 | `alethia_tell_parallel` | Run multiple test flows concurrently against different URLs. |
+| `alethia_serve_demo` | Start a localhost server for built-in demo pages. Opens in preview panels. |
+| `alethia_show_cockpit` | Toggle the live oversight window on during a session. |
+| `alethia_hide_cockpit` | Toggle the live oversight window off during a session. |
 | `alethia_export_session` | Export signed evidence pack — SHA-256 chained proof of every agent action in this session. |
 | `alethia_activate_kill_switch` | Halt all automation immediately. Logged in audit trail. |
 | `alethia_reset_kill_switch` | Clear an active kill switch. Re-enables `tell()` calls. |
@@ -64,7 +67,7 @@ Alethia compiles to Action IR, runs each step through the VITRON-EA1 fail-closed
 
 Other frameworks can assert "nothing destructive happened" by inspecting the app's state after a click; only Alethia's assertion is that the *runtime itself refused* to let the click through in the first place. Meaningfully different guarantee.
 
-## Structured response fields (new in v0.2)
+## Structured response fields
 
 Every `alethia_tell` response now returns top-level:
 

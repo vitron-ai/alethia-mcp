@@ -3,7 +3,7 @@
 ## Always
 
 - Use `alethia_status` before running tests to verify the runtime is healthy and the kill switch is inactive.
-- Use `alethia_compile_nlp` to preview Action IR before running expensive test flows — catch NLP compilation issues early.
+- Use `alethia_compile` to preview Action IR before running expensive test flows — catch NLP compilation issues early.
 - Respect `DENY_WRITE_HIGH` policy blocks. They are a safety feature, not a bug. Explain to the user why the action was blocked.
 - Include a `name` parameter in `alethia_tell` calls for audit trail clarity.
 - When a step fails, read the top-level `nearMatches`, `suggestedFix`, and `pageContext` fields — they are structured JSON, not prose. Use them for self-repair instead of regex-parsing the `detail` string.
