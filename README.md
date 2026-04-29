@@ -225,25 +225,34 @@ If you don't care about any of those (quick iteration, scratch testing), you can
 
 Once the MCP is configured (above), Alethia is available to any agent in any project — no per-project install, no scaffold to run. To add tests:
 
-1. **Create the directory.** Convention is `__alethia__/` at the project root, mirroring how Jest/Vitest treat `__tests__/`.
+1. **Drop a `.alethia` file anywhere your repo treats as test code.** No enforced directory; pick whatever fits your existing layout (e.g. `tests/e2e/`, `e2e/`, `cypress/`-style — your call).
 
-2. **Write a smoke test.** Plain English, one file per scenario:
+2. **Write the test in plain English.** First line is a `name <label>` so cockpit history reads cleanly when the same file runs locally:
+
    ```
-   # __alethia__/smoke.alethia
+   # tests/e2e/login.alethia
+   name login flow
    navigate to http://127.0.0.1:5173
    assert "Sign in" is visible
+   click Sign in
+   type dev@company.com into the email field
+   assert dashboard is visible
    ```
 
 3. **Ask your agent to run it:**
-   > *"Run the Alethia tests in `__alethia__/` against the app at http://127.0.0.1:5173."*
+   > *"Run `tests/e2e/login.alethia` against the app at http://127.0.0.1:5173."*
 
-   The agent calls `alethia_tell` once per file and reports pass/fail.
+   The agent calls `alethia_tell` and reports pass/fail.
 
-4. **For CI**, copy [`ci-runner.mjs`](https://github.com/vitron-ai/alethia-anvil/blob/main/__alethia__/ci-runner.mjs) from alethia-anvil — a small stdio MCP client that pipes every `.alethia` file through the bridge and exits non-zero on failure. Wire it into GitHub Actions or your pipeline of choice.
+4. **For CI**, use the native `alethia run` subcommand — no MCP host or extra scripts needed:
+   ```bash
+   alethia run tests/e2e/login.alethia
+   ```
+   Exits 0 on pass, 1 on fail. See [Running in CI](#running-in-ci) below + the drop-in workflow at [`examples/github-actions.yml`](examples/github-actions.yml).
 
 5. **For evidence**, ask the agent to call `alethia_export_session` after a run — produces a signed evidence pack with per-step integrity hashes and full audit trail.
 
-The full reference example lives at [**vitron-ai/alethia-anvil**](https://github.com/vitron-ai/alethia-anvil) — Anvil demo app + 14 spec files + CI workflow + the head-to-head Playwright/PW-MCP benchmark. Fork it to see the pattern end-to-end.
+The full reference example lives at [**vitron-ai/alethia-anvil**](https://github.com/vitron-ai/alethia-anvil) — demo app + spec files + CI workflow + the head-to-head Playwright/PW-MCP benchmark. Fork it to see the pattern end-to-end.
 
 ---
 
@@ -319,11 +328,12 @@ subcommand that drives the runtime headless and exits 0 (all passed) or 1
 (any failed):
 
 ```bash
-# from a file
+# from a file (recommended — first line "name <label>" lands in cockpit history)
 alethia run tests/e2e/login.alethia
 
 # inline
-alethia run --nlp "navigate to http://localhost:3000
+alethia run --nlp "name smoke
+navigate to http://localhost:3000
 click Sign In
 assert dashboard is visible"
 
