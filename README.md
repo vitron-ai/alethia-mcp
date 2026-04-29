@@ -221,6 +221,32 @@ If you don't care about any of those (quick iteration, scratch testing), you can
 
 ---
 
+## Add Alethia to your project
+
+Once the MCP is configured (above), Alethia is available to any agent in any project — no per-project install, no scaffold to run. To add tests:
+
+1. **Create the directory.** Convention is `__alethia__/` at the project root, mirroring how Jest/Vitest treat `__tests__/`.
+
+2. **Write a smoke test.** Plain English, one file per scenario:
+   ```
+   # __alethia__/smoke.alethia
+   navigate to http://127.0.0.1:5173
+   assert "Sign in" is visible
+   ```
+
+3. **Ask your agent to run it:**
+   > *"Run the Alethia tests in `__alethia__/` against the app at http://127.0.0.1:5173."*
+
+   The agent calls `alethia_tell` once per file and reports pass/fail.
+
+4. **For CI**, copy [`ci-runner.mjs`](https://github.com/vitron-ai/alethia-anvil/blob/main/__alethia__/ci-runner.mjs) from alethia-anvil — a small stdio MCP client that pipes every `.alethia` file through the bridge and exits non-zero on failure. Wire it into GitHub Actions or your pipeline of choice.
+
+5. **For evidence**, ask the agent to call `alethia_export_session` after a run — produces a signed evidence pack with per-step integrity hashes and full audit trail.
+
+The full reference example lives at [**vitron-ai/alethia-anvil**](https://github.com/vitron-ai/alethia-anvil) — Anvil demo app + 14 spec files + CI workflow + the head-to-head Playwright/PW-MCP benchmark. Fork it to see the pattern end-to-end.
+
+---
+
 ## Tools
 
 | Tool | Purpose |
