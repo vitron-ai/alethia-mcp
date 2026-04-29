@@ -100,26 +100,6 @@ jobs:
           echo "Demo server failed to bind port ${{ env.DEMO_PORT }} after 5s"
           exit 1
 
-      - name: Prime runtime install + sandbox helper permissions
-        # First call installs the runtime to ~/.alethia/runtime/ if the
-        # cache missed. Then the bundled helper binary needs root-owned
-        # setuid permissions for CI to permit it to launch under xvfb
-        # (the OS' default ownership after a tar extract isn't enough).
-        env:
-          ALETHIA_HEADLESS: '1'
-        run: |
-          node dist/index.js --health-check || true
-          # Find sandbox helpers anywhere under the install tree, list
-          # them so we can verify the glob matched, then root-own +
-          # setuid them.
-          mapfile -t HELPERS < <(find ~/.alethia/runtime -type f -name '*sandbox*')
-          echo "Sandbox helpers found: ${#HELPERS[@]}"
-          for h in "${HELPERS[@]}"; do
-            echo "  $h"
-            sudo chown root:root "$h"
-            sudo chmod 4755 "$h"
-          done
-
       - name: Run alethia against the demo
         # The wrapping ::group:: collapsible keeps the GHA log scannable
         # while still surfacing per-step diagnostics on failure.

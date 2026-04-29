@@ -972,7 +972,13 @@ const spawnRuntime = async (runtimeVersion?: string): Promise<void> => {
   // setting on the caller's shell doesn't silently re-route the runtime
   // into a non-runtime interpreter mode.
   const { ELECTRON_RUN_AS_NODE: _stripped, ...safeEnv } = process.env;
-  runtimeProcess = spawn(exe, [], {
+  // In CI, pass --no-sandbox to the runtime. Container/runner environments
+  // typically lack the kernel-level isolation primitives the runtime's
+  // sandbox relies on; without this flag the runtime aborts before binding
+  // its port. Production / local installs aren't affected — the flag only
+  // applies when the bridge has detected a CI environment above.
+  const ciArgs: string[] = isCi ? ['--no-sandbox'] : [];
+  runtimeProcess = spawn(exe, ciArgs, {
     env: { ...safeEnv, ...(visible ? {} : { ALETHIA_HEADLESS: '1' }) },
     stdio: 'ignore',
     detached: false,
