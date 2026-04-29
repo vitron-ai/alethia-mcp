@@ -298,11 +298,46 @@ expect block: <action>         # policy-verification assertion
 
 ```
 alethia-mcp                  Run as a stdio MCP server (default)
+alethia-mcp run <path>       Run an NLP test file from the shell (CI mode)
+alethia-mcp run --nlp "..."  Run inline NLP from the shell
+alethia-mcp run -            Read NLP from stdin
+alethia-mcp run --help       Print run-mode help
 alethia-mcp --version        Print the version and exit
 alethia-mcp --help           Print usage and exit
 alethia-mcp --health-check   Probe the Alethia runtime and exit 0/1
 alethia-mcp --debug          Run with debug logging on stderr
 ```
+
+The package also exposes a shorter `alethia` alias (same binary), so
+the run subcommand can be invoked as `alethia run <path>`.
+
+## Running in CI
+
+The same NLP your agents use can run as your end-to-end test suite — no
+agent in the loop, no MCP host required. The bridge ships a `run`
+subcommand that drives the runtime headless and exits 0 (all passed) or 1
+(any failed):
+
+```bash
+# from a file
+alethia run tests/e2e/login.alethia
+
+# inline
+alethia run --nlp "navigate to http://localhost:3000
+click Sign In
+assert dashboard is visible"
+
+# from stdin
+cat tests/e2e/login.alethia | alethia run -
+```
+
+CI environments are auto-detected (`CI`, `GITHUB_ACTIONS`, `GITLAB_CI`,
+`CIRCLECI`, `BUILDKITE`) and the cockpit window stays hidden. Pin a
+specific runtime version for reproducible runs via
+`ALETHIA_RUNTIME_VERSION=0.7.1`.
+
+A drop-in GitHub Actions workflow is included at
+[`examples/github-actions.yml`](examples/github-actions.yml).
 
 ## Environment variables
 
