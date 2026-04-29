@@ -41,6 +41,23 @@ jobs:
           node-version: '20'
           cache: npm
 
+      - name: Install Electron system deps
+        # The runtime is an Electron app; it needs nss/atk/gtk/etc. installed
+        # at the OS level even when run "headless" via ALETHIA_HEADLESS=1
+        # (Electron initializes its rendering pipeline regardless). xvfb
+        # provides the virtual display the runtime expects.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libnss3 \
+            libatk1.0-0t64 \
+            libatk-bridge2.0-0t64 \
+            libgbm1 \
+            libgtk-3-0t64 \
+            libxss1 \
+            libasound2t64 \
+            xvfb
+
       - name: Install + build bridge from source
         # Use the PR's bridge code, not the published one — catches
         # regressions BEFORE they ship to npm.
@@ -77,9 +94,14 @@ jobs:
       - name: Run alethia against the demo
         # The wrapping ::group:: collapsible keeps the GHA log scannable
         # while still surfacing per-step diagnostics on failure.
+        # xvfb-run provides the virtual display Electron needs to start;
+        # ALETHIA_HEADLESS=1 keeps the cockpit window from being shown
+        # *within* that virtual display.
+        env:
+          ALETHIA_HEADLESS: '1'
         run: |
           echo "::group::alethia run demo/claude-code-app.alethia"
-          node dist/index.js run demo/claude-code-app.alethia
+          xvfb-run -a node dist/index.js run demo/claude-code-app.alethia
           echo "::endgroup::"
 
       - name: Stop demo server
