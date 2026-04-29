@@ -1000,14 +1000,28 @@ const spawnRuntime = async (runtimeVersion?: string): Promise<void> => {
   const maxWait = isCi ? 60_000 : 15_000;
   const interval = 300;
   const start = Date.now();
+  let lastErr: unknown;
+  let pollCount = 0;
   while (Date.now() - start < maxWait) {
     try {
       await callAlethia({ jsonrpc: '2.0', id: 0, method: 'tools/list' }, 2_000);
       process.stderr.write('[alethia] Runtime is ready.\n');
       return;
-    } catch {
+    } catch (err) {
+      lastErr = err;
+      pollCount++;
+      if (isCi && pollCount % 10 === 1) {
+        // Surface the polling error every ~3s in CI so a stuck spawn is
+        // diagnosable. The error is otherwise silently swallowed.
+        const msg = err instanceof Error ? err.message : String(err);
+        process.stderr.write(`[alethia] poll ${pollCount} failed: ${msg.slice(0, 120)}\n`);
+      }
       await new Promise(r => setTimeout(r, interval));
     }
+  }
+  if (isCi && lastErr) {
+    const msg = lastErr instanceof Error ? lastErr.message : String(lastErr);
+    process.stderr.write(`[alethia] last poll error: ${msg}\n`);
   }
   throw new Error(`Runtime failed to start within ${maxWait / 1000}s. Check ${RUNTIME_DIR} for issues.`);
 };
