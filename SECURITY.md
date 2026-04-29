@@ -137,7 +137,7 @@ The runtime source is closed. The public surfaces are:
 
 - **[alethia](https://github.com/vitron-ai/alethia)** — signed release binaries only, no source.
 - **[alethia-mcp](https://github.com/vitron-ai/alethia-mcp)** — MIT-licensed bridge that speaks JSON-RPC to a runtime you already have. The MIT license **does not** grant a patent license under U.S. Application No. 19/571,437.
-- **[alethia-starter](https://github.com/vitron-ai/alethia-starter)** — test target only.
+- **[alethia-anvil](https://github.com/vitron-ai/alethia-anvil)** — test target only.
 
 A reimplementation of the runtime from scratch that reproduces the claimed behaviors would infringe. Do not fork to bypass the local-only invariant or the EA1 policy gate.
 

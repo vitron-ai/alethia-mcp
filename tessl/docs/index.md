@@ -1,6 +1,6 @@
 # Alethia — Agent-Native E2E with Verifiable Safety
 
-Alethia is the patent-pending zero-IPC E2E runtime built for AI agents. Your agent writes the tests, runs them against a real browser, and proves destructive actions are blocked by a per-step policy gate — with a cryptographic audit trail and no cloud. 2–5× faster than Playwright MCP per flow; up to 50× faster than Playwright CLI on simple flows ([benchmark](https://github.com/vitron-ai/alethia-starter/blob/main/benchmark/README.md)).
+Alethia is the patent-pending zero-IPC E2E runtime built for AI agents. Your agent writes the tests, runs them against a real browser, and proves destructive actions are blocked by a per-step policy gate — with a cryptographic audit trail and no cloud. 2–5× faster than Playwright MCP per flow; up to 50× faster than Playwright CLI on simple flows ([benchmark](https://github.com/vitron-ai/alethia-anvil/blob/main/benchmark/README.md)).
 
 ## Quick start
 
@@ -12,7 +12,7 @@ The bridge auto-installs the signed headless runtime on first use. No signup, no
 
 ### Starter repo — try it in 30 seconds
 
-Fork [alethia-starter](https://github.com/vitron-ai/alethia-starter) and point your agent at `__alethia__/`. Ships a 250-line SPA called Atlas and 14 `.alethia` test files covering CRUD, search, priority, bulk actions, keyboard shortcuts, tab filters, toast stack, export — plus the `expect block:` safety test. Drop-in GitHub Actions workflow + runner included.
+Fork [alethia-anvil](https://github.com/vitron-ai/alethia-anvil) and point your agent at `__alethia__/`. Ships a 250-line SPA called Atlas and 14 `.alethia` test files covering CRUD, search, priority, bulk actions, keyboard shortcuts, tab filters, toast stack, export — plus the `expect block:` safety test. Drop-in GitHub Actions workflow + runner included.
 
 ## MCP setup
 
@@ -97,6 +97,6 @@ Alethia refuses to navigate to any origin outside `file://`, `localhost`, `127.0
 - npm: [npmjs.com/package/@vitronai/alethia](https://www.npmjs.com/package/@vitronai/alethia)
 - Bridge source (MIT): [github.com/vitron-ai/alethia-mcp](https://github.com/vitron-ai/alethia-mcp)
 - Runtime releases: [github.com/vitron-ai/alethia](https://github.com/vitron-ai/alethia)
-- Starter template: [github.com/vitron-ai/alethia-starter](https://github.com/vitron-ai/alethia-starter)
+- Starter template: [github.com/vitron-ai/alethia-anvil](https://github.com/vitron-ai/alethia-anvil)
 - Website: [vitron.ai](https://vitron.ai)
 - Licensing: gatekeeper@vitron.ai
