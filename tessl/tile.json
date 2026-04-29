@@ -1,7 +1,7 @@
 {
   "name": "vitron-ai/alethia",
-  "version": "0.4.2",
-  "summary": "Agent-native E2E runtime with verifiable safety. 13 MCP tools including alethia_propose_tests (agent generates tests from a URL), alethia_assert_safety (proves destructive actions are blocked), and the expect block: NLP primitive unique to Alethia. Zero-IPC; 2-5x faster than Playwright MCP per flow; signed evidence packs. Works with Claude Code, Cursor, Cline.",
+  "version": "0.8.4",
+  "summary": "Agent-native E2E runtime with verifiable safety. 16 MCP tools including alethia_propose_tests (agent generates tests from a URL), alethia_assert_safety (proves destructive actions are blocked), and the expect block: NLP primitive unique to Alethia. Zero-IPC; 2-5x faster than Playwright MCP per flow; signed evidence packs. Works with Claude Code, Cursor, Cline.",
   "private": false,
   "docs": "docs/index.md",
   "skills": {

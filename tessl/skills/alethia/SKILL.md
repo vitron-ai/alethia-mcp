@@ -54,7 +54,7 @@ If not installed: `npm install -g @vitronai/alethia`. The bridge auto-installs t
 ### C. "Run this specific test" — direct NLP
 
 1. Call `alethia_status` for liveness.
-2. Optional: call `alethia_compile_nlp` to preview the Action IR.
+2. Optional: call `alethia_compile` to preview the Action IR.
 3. Call `alethia_tell` with newline-separated plain-English instructions.
 4. Read the PlanRun; on failure use the structured response fields for self-repair.
 
