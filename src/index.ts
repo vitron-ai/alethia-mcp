@@ -978,9 +978,13 @@ const spawnRuntime = async (runtimeVersion?: string): Promise<void> => {
   // its port. Production / local installs aren't affected — the flag only
   // applies when the bridge has detected a CI environment above.
   const ciArgs: string[] = isCi ? ['--no-sandbox'] : [];
+  // In CI, surface the runtime's stderr to the bridge's stderr so spawn
+  // failures aren't silent. Local/production keep stdio:'ignore' to avoid
+  // leaking lower-level diagnostics in normal use.
+  const ciStdio: ['ignore', 'ignore', 'inherit'] = ['ignore', 'ignore', 'inherit'];
   runtimeProcess = spawn(exe, ciArgs, {
     env: { ...safeEnv, ...(visible ? {} : { ALETHIA_HEADLESS: '1' }) },
-    stdio: 'ignore',
+    stdio: isCi ? ciStdio : 'ignore',
     detached: false,
   });
 
