@@ -1335,6 +1335,8 @@ const runCli = async (argv: string[]): Promise<never> => {
   // Drive one alethia_tell call. The bridge's MCP wrapping is bypassed —
   // we go straight to the runtime's HTTP server like the cockpit does.
   try {
+    const isCi = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+    if (isCi) process.stderr.write(`[alethia run] sending ${nlp.length}-byte NLP, first line: ${nlp.split('\n')[0].slice(0, 80)}\n`);
     const response = await callAlethia({
       jsonrpc: '2.0',
       id: 1,
@@ -1344,6 +1346,10 @@ const runCli = async (argv: string[]): Promise<never> => {
         arguments: { instructions: nlp, ...(args.name ? { name: args.name } : {}) },
       },
     });
+    if (isCi) {
+      const dump = JSON.stringify(response.result, null, 2).slice(0, 2000);
+      process.stderr.write(`[alethia run] response.result (first 2KB):\n${dump}\n`);
+    }
     if (response.error) {
       process.stderr.write(`alethia run: runtime error: ${response.error.message}\n`);
       cleanupRuntime();
