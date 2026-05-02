@@ -1691,13 +1691,6 @@ const TOOLS = [
     },
   },
   {
-    name: 'alethia_reset_kill_switch',
-    description:
-      'Clear an active kill switch and resume normal operation. ' +
-      'Re-enables tell() calls. The reset itself is logged in the audit trail for compliance review.',
-    inputSchema: { type: 'object', properties: {} },
-  },
-  {
     name: 'alethia_screenshot',
     description:
       'Capture a PNG screenshot of the current page and return it as a base64-encoded image. ' +
@@ -1846,7 +1839,6 @@ const TOOL_NAME_MAP: Record<string, string> = {
   alethia_compile: 'alethia_compile_nlp',
   alethia_status: 'alethia_status',
   alethia_activate_kill_switch: 'alethia_activate_kill_switch',
-  alethia_reset_kill_switch: 'alethia_reset_kill_switch',
   alethia_screenshot: 'alethia_screenshot',
   alethia_eval: 'alethia_eval',
   alethia_audit_wcag: 'alethia_audit_wcag',
@@ -1896,7 +1888,6 @@ const validateToolArgs = (toolName: string, args: Record<string, unknown>): stri
       return null;
     }
     case 'alethia_status':
-    case 'alethia_reset_kill_switch':
     case 'alethia_screenshot':
     case 'alethia_audit_wcag':
     case 'alethia_audit_nist':
@@ -2082,7 +2073,7 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
             '- alethia_status: Health check — version, policy profile, kill switch state.\n' +
             '- alethia_screenshot: Capture a PNG screenshot of the current page.\n' +
             '- alethia_eval: Run JavaScript in the page under test.\n' +
-            '- alethia_activate_kill_switch / alethia_reset_kill_switch: Emergency halt and resume.\n' +
+            '- alethia_activate_kill_switch: Emergency halt. The kill auto-clears on the operator\'s next Run from the cockpit; agents have no self-release path by design.\n' +
             '- alethia_audit_wcag: WCAG 2.1 AA accessibility audit — 14 criteria.\n' +
             '- alethia_audit_nist: NIST SP 800-53 security controls audit — 8 controls.\n' +
             '- alethia_export_session: Export signed evidence pack of everything the agent did this session.\n' +
