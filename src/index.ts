@@ -1206,26 +1206,29 @@ export type RunResult = {
 };
 
 // Extract a normalized RunResult from the alethia_tell response. The runtime
-// wraps the run in MCP content blocks; we want the raw run object.
+// returns one of three shapes:
+//   1. Compact (default): { ok, runId, name, elapsedMs, steps[], snapshot }
+//   2. Audit: { ok, run: { stepRuns[], lines[], name, elapsedMs, ... }, ... }
+//   3. MCP-wrapped: { content: [{ type: 'text', text: <JSON of (1) or (2)> }] }
+// extractRunResult handles all three.
 export const extractRunResult = (response: unknown): RunResult => {
-  const r = (response as Record<string, unknown> | null) ?? {};
-  // The runtime returns either { ok, run: {...} } directly or wrapped in
-  // MCP content. Handle both shapes.
-  let run = r.run as Record<string, unknown> | undefined;
-  if (!run && r.content && Array.isArray(r.content)) {
-    // MCP content shape — first text block holds JSON
+  let r = (response as Record<string, unknown> | null) ?? {};
+
+  // MCP-wrapped — unwrap the inner JSON.
+  if (Array.isArray(r.content) && r.content.length > 0) {
     const text = (r.content[0] as { text?: string } | undefined)?.text;
     if (text) {
-      try {
-        const parsed = JSON.parse(text) as Record<string, unknown>;
-        run = (parsed.run as Record<string, unknown>) ?? parsed;
-      } catch { /* leave run undefined; will fall through to defaults */ }
+      try { r = JSON.parse(text) as Record<string, unknown>; } catch { /* keep r */ }
     }
   }
-  run = run ?? r;
 
-  const stepRunsRaw = Array.isArray(run.stepRuns) ? run.stepRuns : [];
-  const linesRaw = Array.isArray(run.lines) ? run.lines : [];
+  // Audit shape has r.run.stepRuns; compact has r.steps directly.
+  const auditRun = (r.run && typeof r.run === 'object' ? r.run : null) as Record<string, unknown> | null;
+  const stepRunsRaw =
+    auditRun && Array.isArray(auditRun.stepRuns) ? auditRun.stepRuns :
+    Array.isArray(r.steps) ? r.steps :
+    [];
+  const linesRaw = auditRun && Array.isArray(auditRun.lines) ? auditRun.lines : [];
 
   const steps: RunStep[] = stepRunsRaw.map((s: unknown, i: number) => {
     const step = (s as Record<string, unknown> | null) ?? {};
@@ -1240,13 +1243,22 @@ export const extractRunResult = (response: unknown): RunResult => {
   });
   const passCount = steps.filter((s) => s.ok).length;
   const failCount = steps.length - passCount;
+  // Plan name: audit.run.name is the actual plan name (from NAME directive
+  // or --name arg); compact's r.name is just the tool tag ("tell"). For
+  // compact, prefer r.runId or fall back.
+  const planName =
+    (auditRun && typeof auditRun.name === 'string' && auditRun.name) ? auditRun.name :
+    (typeof r.runId === 'string' ? r.runId : 'alethia run');
   return {
     ok: failCount === 0 && r.ok !== false,
-    name: typeof run.name === 'string' ? run.name : 'unnamed',
+    name: planName,
     passCount,
     failCount,
     stepCount: steps.length,
-    elapsedMs: typeof run.elapsedMs === 'number' ? run.elapsedMs : 0,
+    elapsedMs:
+      auditRun && typeof auditRun.elapsedMs === 'number' ? auditRun.elapsedMs :
+      typeof r.elapsedMs === 'number' ? r.elapsedMs :
+      0,
     steps,
   };
 };
@@ -1335,8 +1347,6 @@ const runCli = async (argv: string[]): Promise<never> => {
   // Drive one alethia_tell call. The bridge's MCP wrapping is bypassed —
   // we go straight to the runtime's HTTP server like the cockpit does.
   try {
-    const isCi = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
-    if (isCi) process.stderr.write(`[alethia run] sending ${nlp.length}-byte NLP, first line: ${nlp.split('\n')[0].slice(0, 80)}\n`);
     const response = await callAlethia({
       jsonrpc: '2.0',
       id: 1,
@@ -1346,10 +1356,6 @@ const runCli = async (argv: string[]): Promise<never> => {
         arguments: { instructions: nlp, ...(args.name ? { name: args.name } : {}) },
       },
     });
-    if (isCi) {
-      const dump = JSON.stringify(response.result, null, 2).slice(0, 2000);
-      process.stderr.write(`[alethia run] response.result (first 2KB):\n${dump}\n`);
-    }
     if (response.error) {
       process.stderr.write(`alethia run: runtime error: ${response.error.message}\n`);
       cleanupRuntime();
