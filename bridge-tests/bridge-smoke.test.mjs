@@ -27,7 +27,6 @@ const EXPECTED_TOOLS = [
   'alethia_compile',
   'alethia_status',
   'alethia_activate_kill_switch',
-  'alethia_reset_kill_switch',
   'alethia_screenshot',
   'alethia_eval',
   'alethia_audit_wcag',
