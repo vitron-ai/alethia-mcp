@@ -4,3 +4,6 @@ dist/
 .DS_Store
 package-lock.json
 *.tgz
+.themis/
+__themis__/reports/
+__themis__/shims/
