@@ -8,9 +8,6 @@
 //   - Validation rejects malformed tools/call args
 //
 // Run with `npm test` (uses node:test, no external dependencies).
-
-import test from 'node:test';
-import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
@@ -102,31 +99,31 @@ const sendRpc = async (requests, { timeoutMs = 5000, port = '1', extraEnv = {} }
 
 test('--version prints package name and version', async () => {
   const { code, stdout } = await runCli(['--version']);
-  assert.equal(code, 0);
-  assert.match(stdout, new RegExp(PKG.name.replace('/', '\\/')));
-  assert.match(stdout, new RegExp(`v${PKG.version.replace(/\./g, '\\.')}`));
+  expect(code).toBe(0);
+  expect(stdout).toMatch(new RegExp(PKG.name.replace('/', '\\/')));
+  expect(stdout).toMatch(new RegExp(`v${PKG.version.replace(/\./g, '\\.')}`));
 });
 
 test('-v is an alias for --version', async () => {
   const { code, stdout } = await runCli(['-v']);
-  assert.equal(code, 0);
-  assert.match(stdout, /v\d+\.\d+\.\d+/);
+  expect(code).toBe(0);
+  expect(stdout).toMatch(/v\d+\.\d+\.\d+/);
 });
 
 test('--help prints usage information', async () => {
   const { code, stdout } = await runCli(['--help']);
-  assert.equal(code, 0);
-  assert.match(stdout, /USAGE/);
-  assert.match(stdout, /alethia-mcp/);
-  assert.match(stdout, /ALETHIA_HOST/);
-  assert.match(stdout, /ALETHIA_PORT/);
-  assert.match(stdout, /Patent Pending/);
+  expect(code).toBe(0);
+  expect(stdout).toMatch(/USAGE/);
+  expect(stdout).toMatch(/alethia-mcp/);
+  expect(stdout).toMatch(/ALETHIA_HOST/);
+  expect(stdout).toMatch(/ALETHIA_PORT/);
+  expect(stdout).toMatch(/Patent Pending/);
 });
 
 test('-h is an alias for --help', async () => {
   const { code, stdout } = await runCli(['-h']);
-  assert.equal(code, 0);
-  assert.match(stdout, /USAGE/);
+  expect(code).toBe(0);
+  expect(stdout).toMatch(/USAGE/);
 });
 
 test('--health-check exits non-zero when no Alethia runtime is reachable', async () => {
@@ -137,9 +134,9 @@ test('--health-check exits non-zero when no Alethia runtime is reachable', async
   let stdout = '';
   proc.stdout.on('data', (d) => { stdout += d.toString(); });
   const code = await new Promise((resolveCode) => proc.on('exit', resolveCode));
-  assert.equal(code, 1, 'health check should exit 1 when offline');
-  assert.match(stdout, /Probing Alethia/);
-  assert.match(stdout, /not running|offline|Connection|✗/i);
+  expect(code).toBe(1);
+  expect(stdout).toMatch(/Probing Alethia/);
+  expect(stdout).toMatch(/not running|offline|Connection|✗/i);
 });
 
 // ---------------------------------------------------------------------------
@@ -150,32 +147,32 @@ test('initialize returns correct protocol version and server info', async () => 
   const responses = await sendRpc([
     { jsonrpc: '2.0', method: 'initialize', id: 1 },
   ]);
-  assert.equal(responses.length, 1);
+  expect(responses.length).toBe(1);
   const r = responses[0];
-  assert.equal(r.jsonrpc, '2.0');
-  assert.equal(r.id, 1);
-  assert.ok(r.result, 'initialize should return a result');
-  assert.equal(r.result.serverInfo.name, '@vitronai/alethia');
-  assert.match(r.result.serverInfo.version, /^\d+\.\d+\.\d+/);
-  assert.ok(r.result.protocolVersion, 'should declare a protocol version');
-  assert.ok(r.result.capabilities?.tools, 'should declare tools capability');
+  expect(r.jsonrpc).toBe('2.0');
+  expect(r.id).toBe(1);
+  expect(r.result).toBeTruthy();
+  expect(r.result.serverInfo.name).toBe('@vitronai/alethia');
+  expect(r.result.serverInfo.version).toMatch(/^\d+\.\d+\.\d+/);
+  expect(r.result.protocolVersion).toBeTruthy();
+  expect(r.result.capabilities?.tools).toBeTruthy();
 });
 
 test('tools/list returns the expected set of MCP tools', async () => {
   const responses = await sendRpc([
     { jsonrpc: '2.0', method: 'tools/list', id: 1 },
   ]);
-  assert.equal(responses.length, 1);
+  expect(responses.length).toBe(1);
   const tools = responses[0].result.tools;
-  assert.ok(Array.isArray(tools));
-  assert.equal(tools.length, EXPECTED_TOOLS.length);
+  expect(Array.isArray(tools)).toBeTruthy();
+  expect(tools.length).toBe(EXPECTED_TOOLS.length);
   const names = tools.map((t) => t.name).sort();
-  assert.deepEqual(names, [...EXPECTED_TOOLS].sort());
+  expect(names).toEqual([...EXPECTED_TOOLS].sort());
 
   // Each tool must have a non-trivial description (the LLM-facing pitch)
   for (const t of tools) {
-    assert.ok(t.description.length > 50, `${t.name} description too short`);
-    assert.ok(t.inputSchema, `${t.name} missing inputSchema`);
+    expect(t.description.length > 50).toBeTruthy();
+    expect(t.inputSchema).toBeTruthy();
   }
 });
 
@@ -183,28 +180,28 @@ test('tools/call with unknown tool name returns isError content', async () => {
   const responses = await sendRpc([
     { jsonrpc: '2.0', method: 'tools/call', id: 1, params: { name: 'definitely_not_a_tool', arguments: {} } },
   ]);
-  assert.equal(responses.length, 1);
+  expect(responses.length).toBe(1);
   const r = responses[0];
-  assert.ok(r.result?.content, 'should return MCP content envelope, not error');
-  assert.equal(r.result.isError, true);
-  assert.match(r.result.content[0].text, /Unknown tool/);
+  expect(r.result?.content).toBeTruthy();
+  expect(r.result.isError).toBe(true);
+  expect(r.result.content[0].text).toMatch(/Unknown tool/);
 });
 
 test('tools/call alethia_tell with empty instructions returns validation error', async () => {
   const responses = await sendRpc([
     { jsonrpc: '2.0', method: 'tools/call', id: 1, params: { name: 'alethia_tell', arguments: { instructions: '' } } },
   ]);
-  assert.equal(responses.length, 1);
-  assert.equal(responses[0].result.isError, true);
-  assert.match(responses[0].result.content[0].text, /non-empty/);
+  expect(responses.length).toBe(1);
+  expect(responses[0].result.isError).toBe(true);
+  expect(responses[0].result.content[0].text).toMatch(/non-empty/);
 });
 
 test('tools/call alethia_tell with non-string instructions returns validation error', async () => {
   const responses = await sendRpc([
     { jsonrpc: '2.0', method: 'tools/call', id: 1, params: { name: 'alethia_tell', arguments: { instructions: 42 } } },
   ]);
-  assert.equal(responses[0].result.isError, true);
-  assert.match(responses[0].result.content[0].text, /string/);
+  expect(responses[0].result.isError).toBe(true);
+  expect(responses[0].result.content[0].text).toMatch(/string/);
 });
 
 test('tools/call alethia_tell when offline auto-installs or returns error gracefully', async () => {
@@ -214,21 +211,21 @@ test('tools/call alethia_tell when offline auto-installs or returns error gracef
   const responses = await sendRpc([
     { jsonrpc: '2.0', method: 'tools/call', id: 1, params: { name: 'alethia_tell', arguments: { instructions: 'wait 50 milliseconds' } } },
   ], { timeoutMs: 90000 });
-  assert.equal(responses.length, 1);
+  expect(responses.length).toBe(1);
   const r = responses[0];
-  assert.ok(r.result?.content, 'should return MCP content envelope, not crash');
+  expect(r.result?.content).toBeTruthy();
   // Either auto-install succeeded (isError: false) or failed gracefully (isError: true)
-  assert.equal(typeof r.result.isError, 'boolean');
+  expect(typeof r.result.isError).toBe('boolean');
 });
 
 test('unknown method returns standard JSON-RPC method-not-found error', async () => {
   const responses = await sendRpc([
     { jsonrpc: '2.0', method: 'definitely/not/a/method', id: 1 },
   ]);
-  assert.equal(responses.length, 1);
+  expect(responses.length).toBe(1);
   const r = responses[0];
-  assert.ok(r.error, 'should return error for unknown method');
-  assert.equal(r.error.code, -32601);
+  expect(r.error).toBeTruthy();
+  expect(r.error.code).toBe(-32601);
 });
 
 // ---------------------------------------------------------------------------
@@ -286,13 +283,13 @@ test('refuses to operate against a stale runtime squatting on the port', async (
       }],
       { timeoutMs: 8000, port: fake.port, extraEnv: { ALETHIA_RUNTIME_DIR: '/tmp/alethia-test-noop' } },
     );
-    assert.equal(responses.length, 1);
+    expect(responses.length).toBe(1);
     const r = responses[0];
-    assert.ok(r.result?.content, 'should return MCP envelope, not crash');
-    assert.equal(r.result.isError, true, 'must refuse stale runtime, not silently use it');
+    expect(r.result?.content).toBeTruthy();
+    expect(r.result.isError).toBe(true);
     const msg = r.result.content[0].text;
-    assert.match(msg, /[Ss]tale Alethia runtime/, 'error must name the staleness condition');
-    assert.match(msg, /0\.0\.0-orphaned-stale/, 'error must report the offending version');
+    expect(msg).toMatch(/[Ss]tale Alethia runtime/);
+    expect(msg).toMatch(/0\.0\.0-orphaned-stale/);
   } finally {
     await fake.close();
   }
@@ -310,8 +307,8 @@ test('malformed JSON on stdin returns parse error', async () => {
   await new Promise((r) => setTimeout(r, 500));
   proc.kill('SIGKILL');
   const lines = stdout.split('\n').filter(Boolean);
-  assert.ok(lines.length >= 1);
+  expect(lines.length >= 1).toBeTruthy();
   const err = JSON.parse(lines[0]);
-  assert.equal(err.error?.code, -32700);
-  assert.match(err.error.message, /Parse error/);
+  expect(err.error?.code).toBe(-32700);
+  expect(err.error.message).toMatch(/Parse error/);
 });

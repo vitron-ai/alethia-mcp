@@ -1,0 +1,12 @@
+{
+  "testDir": "bridge-tests",
+  "generatedTestsDir": "__themis__/tests",
+  "testRegex": "\\.(test|spec)\\.(mjs)$",
+  "maxWorkers": 5,
+  "reporter": "next",
+  "environment": "node",
+  "setupFiles": [],
+  "tsconfigPath": null,
+  "htmlReportPath": "__themis__/reports/report.html",
+  "testIgnore": []
+}

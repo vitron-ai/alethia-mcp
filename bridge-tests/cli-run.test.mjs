@@ -6,9 +6,6 @@
 // The actual run-against-runtime flow isn't tested here — it would need
 // a live runtime + a target page. The bridge-smoke.test.mjs already
 // covers the runtime-spawn path; this file covers the new CLI surface.
-
-import test from 'node:test';
-import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,74 +18,74 @@ const { parseRunArgs, extractRunResult, formatRunResult } = await import('../dis
 
 test('parseRunArgs: empty argv returns error', () => {
   const r = parseRunArgs([]);
-  assert.equal(r.mode, 'error');
+  expect(r.mode).toBe('error');
 });
 
 test('parseRunArgs: --help returns help mode', () => {
-  assert.equal(parseRunArgs(['--help']).mode, 'help');
-  assert.equal(parseRunArgs(['-h']).mode, 'help');
+  expect(parseRunArgs(['--help']).mode).toBe('help');
+  expect(parseRunArgs(['-h']).mode).toBe('help');
 });
 
 test('parseRunArgs: positional path', () => {
   const r = parseRunArgs(['tests/login.alethia']);
-  assert.equal(r.mode, 'file');
-  assert.equal(r.path, 'tests/login.alethia');
-  assert.equal(r.json, false);
-  assert.equal(r.quiet, false);
+  expect(r.mode).toBe('file');
+  expect(r.path).toBe('tests/login.alethia');
+  expect(r.json).toBe(false);
+  expect(r.quiet).toBe(false);
 });
 
 test('parseRunArgs: stdin via -', () => {
-  assert.equal(parseRunArgs(['-']).mode, 'stdin');
+  expect(parseRunArgs(['-']).mode).toBe('stdin');
 });
 
 test('parseRunArgs: --nlp inline', () => {
   const r = parseRunArgs(['--nlp', 'navigate to /\nclick Sign In']);
-  assert.equal(r.mode, 'inline');
-  assert.equal(r.nlp, 'navigate to /\nclick Sign In');
+  expect(r.mode).toBe('inline');
+  expect(r.nlp).toBe('navigate to /\nclick Sign In');
 });
 
 test('parseRunArgs: --nlp without value errors', () => {
   const r = parseRunArgs(['--nlp']);
-  assert.equal(r.mode, 'error');
-  assert.match(r.message, /requires a value/);
+  expect(r.mode).toBe('error');
+  expect(r.message).toMatch(/requires a value/);
 });
 
 test('parseRunArgs: --json + --quiet flags', () => {
   const r = parseRunArgs(['tests/x.alethia', '--json', '--quiet']);
-  assert.equal(r.mode, 'file');
-  assert.equal(r.json, true);
-  assert.equal(r.quiet, true);
+  expect(r.mode).toBe('file');
+  expect(r.json).toBe(true);
+  expect(r.quiet).toBe(true);
 });
 
 test('parseRunArgs: --name forwarded', () => {
   const r = parseRunArgs(['--nlp', 'click X', '--name', 'login flow']);
-  assert.equal(r.mode, 'inline');
-  assert.equal(r.name, 'login flow');
+  expect(r.mode).toBe('inline');
+  expect(r.name).toBe('login flow');
 });
 
 test('parseRunArgs: --nlp + path is rejected', () => {
   const r = parseRunArgs(['--nlp', 'click X', 'tests/login.alethia']);
-  assert.equal(r.mode, 'error');
-  assert.match(r.message, /either --nlp or a path/);
+  expect(r.mode).toBe('error');
+  expect(r.message).toMatch(/either --nlp or a path/);
 });
 
 test('parseRunArgs: two positional args is rejected', () => {
   const r = parseRunArgs(['tests/a.alethia', 'tests/b.alethia']);
-  assert.equal(r.mode, 'error');
-  assert.match(r.message, /Unexpected extra argument/);
+  expect(r.mode).toBe('error');
+  expect(r.message).toMatch(/Unexpected extra argument/);
 });
 
 test('parseRunArgs: unknown flag is rejected', () => {
   const r = parseRunArgs(['--unknown-flag']);
-  assert.equal(r.mode, 'error');
-  assert.match(r.message, /Unknown flag/);
+  expect(r.mode).toBe('error');
+  expect(r.message).toMatch(/Unknown flag/);
 });
 
 test('extractRunResult: empty response yields zeroed result', () => {
   const r = extractRunResult({});
-  assert.equal(r.stepCount, 0);
-  assert.equal(r.passCount, 0);
-  assert.equal(r.failCount, 0);
+  expect(r.stepCount).toBe(0);
+  expect(r.passCount).toBe(0);
+  expect(r.failCount).toBe(0);
 });
 
 test('extractRunResult: parses runtime response with stepRuns + lines', () => {
@@ -110,14 +107,14 @@ test('extractRunResult: parses runtime response with stepRuns + lines', () => {
     },
   };
   const r = extractRunResult(response);
-  assert.equal(r.name, 'login flow');
-  assert.equal(r.elapsedMs, 234);
-  assert.equal(r.stepCount, 3);
-  assert.equal(r.passCount, 2);
-  assert.equal(r.failCount, 1);
-  assert.equal(r.ok, false);
-  assert.equal(r.steps[2].line, 'assert Welcome is visible');
-  assert.equal(r.steps[2].reasonCode, 'ELEMENT_NOT_FOUND');
+  expect(r.name).toBe('login flow');
+  expect(r.elapsedMs).toBe(234);
+  expect(r.stepCount).toBe(3);
+  expect(r.passCount).toBe(2);
+  expect(r.failCount).toBe(1);
+  expect(r.ok).toBe(false);
+  expect(r.steps[2].line).toBe('assert Welcome is visible');
+  expect(r.steps[2].reasonCode).toBe('ELEMENT_NOT_FOUND');
 });
 
 test('extractRunResult: success run', () => {
@@ -125,8 +122,8 @@ test('extractRunResult: success run', () => {
     ok: true,
     run: { name: 'all good', elapsedMs: 100, stepRuns: [{ ok: true, detail: 'ok', elapsedMs: 50 }], lines: [{ original: 'click X', ir: '', confidence: 1 }] },
   });
-  assert.equal(r.ok, true);
-  assert.equal(r.passCount, 1);
+  expect(r.ok).toBe(true);
+  expect(r.passCount).toBe(1);
 });
 
 test('formatRunResult: --json emits valid JSON', () => {
@@ -136,20 +133,20 @@ test('formatRunResult: --json emits valid JSON', () => {
   };
   const out = formatRunResult(result, { json: true, quiet: false });
   const parsed = JSON.parse(out);
-  assert.equal(parsed.ok, true);
-  assert.equal(parsed.passCount, 1);
+  expect(parsed.ok).toBe(true);
+  expect(parsed.passCount).toBe(1);
 });
 
 test('formatRunResult: --quiet emits one-line summary', () => {
   const passing = formatRunResult({
     ok: true, name: 'x', passCount: 3, failCount: 0, stepCount: 3, elapsedMs: 100, steps: [],
   }, { json: false, quiet: true });
-  assert.match(passing, /3\/3 passed in 100ms/);
+  expect(passing).toMatch(/3\/3 passed in 100ms/);
 
   const failing = formatRunResult({
     ok: false, name: 'x', passCount: 1, failCount: 2, stepCount: 3, elapsedMs: 100, steps: [],
   }, { json: false, quiet: true });
-  assert.match(failing, /2 of 3 failed/);
+  expect(failing).toMatch(/2 of 3 failed/);
 });
 
 test('formatRunResult: default text format includes step lines + summary', () => {
@@ -160,30 +157,30 @@ test('formatRunResult: default text format includes step lines + summary', () =>
       { ok: false, line: 'click Sign In', detail: 'Element not found', elapsedMs: 150 },
     ],
   }, { json: false, quiet: false });
-  assert.match(out, /Alethia · login/);
-  assert.match(out, /1\. navigate to \//);
-  assert.match(out, /2\. click Sign In/);
-  assert.match(out, /Element not found/);
-  assert.match(out, /1 of 2 failed/);
+  expect(out).toMatch(/Alethia · login/);
+  expect(out).toMatch(/1\. navigate to \//);
+  expect(out).toMatch(/2\. click Sign In/);
+  expect(out).toMatch(/Element not found/);
+  expect(out).toMatch(/1 of 2 failed/);
 });
 
 // End-to-end smoke: spawning the built bridge with `run --help` should exit 0
 // and emit the run-mode help.
 test('e2e: alethia-mcp run --help exits 0 with usage', () => {
   const r = spawnSync('node', [BRIDGE_BIN, 'run', '--help'], { encoding: 'utf8' });
-  assert.equal(r.status, 0, `expected exit 0, got ${r.status}: ${r.stderr}`);
-  assert.match(r.stdout, /USAGE/);
-  assert.match(r.stdout, /alethia run/);
+  expect(r.status).toBe(0);
+  expect(r.stdout).toMatch(/USAGE/);
+  expect(r.stdout).toMatch(/alethia run/);
 });
 
 test('e2e: alethia-mcp run with no args exits 2', () => {
   const r = spawnSync('node', [BRIDGE_BIN, 'run'], { encoding: 'utf8' });
-  assert.equal(r.status, 2, `expected exit 2, got ${r.status}: ${r.stdout}${r.stderr}`);
-  assert.match(r.stderr, /No NLP source/);
+  expect(r.status).toBe(2);
+  expect(r.stderr).toMatch(/No NLP source/);
 });
 
 test('e2e: alethia-mcp run with non-existent file exits 1', () => {
   const r = spawnSync('node', [BRIDGE_BIN, 'run', '/tmp/nonexistent-alethia-test-file.alethia'], { encoding: 'utf8' });
-  assert.equal(r.status, 1, `expected exit 1, got ${r.status}`);
-  assert.match(r.stderr, /file not found/);
+  expect(r.status).toBe(1);
+  expect(r.stderr).toMatch(/file not found/);
 });

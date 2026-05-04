@@ -21,9 +21,6 @@
 // This test spawns the bridge via a symlink (the same code path every
 // production install takes) and asserts the stdin handler IS attached
 // by writing an MCP `initialize` request and waiting for a response.
-
-import test from 'node:test';
-import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { symlinkSync, rmSync, existsSync, mkdtempSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
@@ -34,11 +31,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const BIN = resolve(__dirname, '..', 'dist', 'index.js');
 
-test(
-  'regression: bridge responds to initialize when spawned via a symlink (0.6.0 silent-exit bug)',
-  { timeout: 10_000 },
-  async () => {
-    assert.ok(existsSync(BIN), `dist/index.js missing at ${BIN}; run \`npm run build\` first`);
+test('regression: bridge responds to initialize when spawned via a symlink (0.6.0 silent-exit bug)', async () => {
+    expect(existsSync(BIN)).toBeTruthy();
 
     // Mirror what npm global-install does: create a symlink that points at
     // the real dist/index.js in a throwaway directory. argv[1] will be the
@@ -98,21 +92,13 @@ test(
       // stdin (the 0.6.0 bug) or it hung without responding. The former
       // is the common failure; the latter is effectively the same symptom
       // from a user's perspective.
-      assert.ok(
-        gotResponse,
-        `bridge did not respond to initialize within 3s when spawned via symlink.\n` +
-        `This is the 0.6.0 silent-exit bug class.\n` +
-        `exitCode: ${exitCode}\n` +
-        `stdout: ${JSON.stringify(stdout)}\n` +
-        `stderr: ${JSON.stringify(stderr)}`,
-      );
+      expect(gotResponse).toBeTruthy();
 
       // Response should contain jsonrpc protocol marker + serverInfo.
-      assert.match(stdout, /"jsonrpc"\s*:\s*"2\.0"/, 'response should be valid JSON-RPC 2.0');
-      assert.match(stdout, /"serverInfo"/, 'response should include serverInfo');
+      expect(stdout).toMatch(/"jsonrpc"\s*:\s*"2\.0"/);
+      expect(stdout).toMatch(/"serverInfo"/);
     } finally {
       try { rmSync(symlinkPath, { force: true }); } catch { /* ignore */ }
       try { rmSync(symlinkDir, { recursive: true, force: true }); } catch { /* ignore */ }
     }
-  },
-);
+  });

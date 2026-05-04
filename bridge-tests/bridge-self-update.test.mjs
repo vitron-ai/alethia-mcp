@@ -19,9 +19,6 @@
 //   - Real tarball download + integrity verification
 //
 // All tests are in-process, ~200ms total.
-
-import test from 'node:test';
-import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -57,12 +54,12 @@ const wipeInstallRoot = () => {
   try { rmSync(BRIDGE_INSTALL_ROOT, { recursive: true, force: true }); } catch { /* ignore */ }
 };
 
-test.afterEach(() => {
+afterEach(() => {
   wipeInstallRoot();
   delete process.env.ALETHIA_BRIDGE_VERSION;
 });
 
-test.after(() => {
+afterAll(() => {
   try { rmSync(TEST_HOME, { recursive: true, force: true }); } catch { /* ignore */ }
 });
 
@@ -71,25 +68,25 @@ test.after(() => {
 // ---------------------------------------------------------------------------
 
 test('semverParts: parses x.y.z and x.y.z-pre.N into [M, m, p]', () => {
-  assert.deepEqual(semverParts('0.0.0'), [0, 0, 0]);
-  assert.deepEqual(semverParts('1.2.3'), [1, 2, 3]);
-  assert.deepEqual(semverParts('10.20.30'), [10, 20, 30]);
-  assert.deepEqual(semverParts('1.2.3-beta.5'), [1, 2, 3]); // prerelease stripped
-  assert.deepEqual(semverParts('garbage'), [0, 0, 0]);
+  expect(semverParts('0.0.0')).toEqual([0, 0, 0]);
+  expect(semverParts('1.2.3')).toEqual([1, 2, 3]);
+  expect(semverParts('10.20.30')).toEqual([10, 20, 30]);
+  expect(semverParts('1.2.3-beta.5')).toEqual([1, 2, 3]); // prerelease stripped
+  expect(semverParts('garbage')).toEqual([0, 0, 0]);
 });
 
 test('compareSemver: returns positive/negative/zero correctly', () => {
-  assert.ok(compareSemver('1.0.0', '0.9.9') > 0, '1.0.0 > 0.9.9');
-  assert.ok(compareSemver('0.7.1', '0.7.2') < 0, '0.7.1 < 0.7.2');
-  assert.equal(compareSemver('0.6.0', '0.6.0'), 0, '0.6.0 == 0.6.0');
-  assert.ok(compareSemver('0.10.0', '0.9.9') > 0, '0.10.0 > 0.9.9 (numeric, not lexical)');
+  expect(compareSemver('1.0.0', '0.9.9') > 0).toBeTruthy();
+  expect(compareSemver('0.7.1', '0.7.2') < 0).toBeTruthy();
+  expect(compareSemver('0.6.0', '0.6.0')).toBe(0);
+  expect(compareSemver('0.10.0', '0.9.9') > 0).toBeTruthy();
 });
 
 test('isMajorBoundaryCrossed: flags 1.x -> 2.x but not within same major', () => {
-  assert.equal(isMajorBoundaryCrossed('0.7.1', '0.8.0'), false);
-  assert.equal(isMajorBoundaryCrossed('0.7.1', '0.9.99'), false);
-  assert.equal(isMajorBoundaryCrossed('1.0.0', '2.0.0'), true);
-  assert.equal(isMajorBoundaryCrossed('0.7.1', '1.0.0'), true);
+  expect(isMajorBoundaryCrossed('0.7.1', '0.8.0')).toBe(false);
+  expect(isMajorBoundaryCrossed('0.7.1', '0.9.99')).toBe(false);
+  expect(isMajorBoundaryCrossed('1.0.0', '2.0.0')).toBe(true);
+  expect(isMajorBoundaryCrossed('0.7.1', '1.0.0')).toBe(true);
 });
 
 // ---------------------------------------------------------------------------
@@ -98,14 +95,14 @@ test('isMajorBoundaryCrossed: flags 1.x -> 2.x but not within same major', () =>
 
 test('selectBootstrapTarget: returns null when ~/.alethia/bridge/ is empty', () => {
   wipeInstallRoot();
-  assert.equal(selectBootstrapTarget(), null);
+  expect(selectBootstrapTarget()).toBe(null);
 });
 
 test('selectBootstrapTarget: returns null when only an older version is installed', () => {
   installFake('0.1.0', { verified: true });
   // PKG_VERSION read from package.json is at least 0.7.x — older installs
   // should never be selected as bootstrap targets.
-  assert.equal(selectBootstrapTarget(), null);
+  expect(selectBootstrapTarget()).toBe(null);
 });
 
 test('selectBootstrapTarget: picks newest verified version when multiple exist', () => {
@@ -114,30 +111,30 @@ test('selectBootstrapTarget: picks newest verified version when multiple exist',
   installFake('0.99.1', { verified: true });
   installFake('0.99.2', { verified: true });
   const target = selectBootstrapTarget();
-  assert.ok(target);
-  assert.equal(target.version, '0.99.2', 'should pick the newest verified version');
+  expect(target).toBeTruthy();
+  expect(target.version).toBe('0.99.2');
 });
 
 test('selectBootstrapTarget: picks an untrusted newer version if under retry threshold', () => {
   installFake('0.99.10', { verified: false, attempts: 1 }); // untrusted, 1 attempt so far
   const target = selectBootstrapTarget();
-  assert.ok(target);
-  assert.equal(target.version, '0.99.10');
+  expect(target).toBeTruthy();
+  expect(target.version).toBe('0.99.10');
 });
 
 test('selectBootstrapTarget: quarantines untrusted version after 3 failed attempts', () => {
   installFake('0.99.20', { verified: false, attempts: 3 }); // quarantined
   installFake('0.99.19', { verified: true });                // older but trusted
   const target = selectBootstrapTarget();
-  assert.ok(target);
-  assert.equal(target.version, '0.99.19', 'should fall back to the last verified version');
+  expect(target).toBeTruthy();
+  expect(target.version).toBe('0.99.19');
 });
 
 test('selectBootstrapTarget: refuses to cross a major version boundary', () => {
   installFake('99.0.0', { verified: true }); // huge jump, different major
   // Even though this is "newer" and "verified", crossing major means
   // the user has to accept the change manually. Skip it.
-  assert.equal(selectBootstrapTarget(), null);
+  expect(selectBootstrapTarget()).toBe(null);
 });
 
 test('selectBootstrapTarget: ALETHIA_BRIDGE_VERSION pin overrides auto-selection', () => {
@@ -145,8 +142,8 @@ test('selectBootstrapTarget: ALETHIA_BRIDGE_VERSION pin overrides auto-selection
   installFake('0.99.9', { verified: true });
   process.env.ALETHIA_BRIDGE_VERSION = '0.99.5';
   const target = selectBootstrapTarget();
-  assert.ok(target);
-  assert.equal(target.version, '0.99.5', 'pin should win over newest-available');
+  expect(target).toBeTruthy();
+  expect(target.version).toBe('0.99.5');
   delete process.env.ALETHIA_BRIDGE_VERSION;
 });
 
@@ -155,7 +152,7 @@ test('selectBootstrapTarget: ALETHIA_BRIDGE_VERSION pin returns null when pin ma
   const { readFileSync } = await import('node:fs');
   const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8'));
   process.env.ALETHIA_BRIDGE_VERSION = pkg.version;
-  assert.equal(selectBootstrapTarget(), null);
+  expect(selectBootstrapTarget()).toBe(null);
   delete process.env.ALETHIA_BRIDGE_VERSION;
 });
 
@@ -178,6 +175,6 @@ test('selectBootstrapTarget: skips version dirs missing dist/index.js', () => {
   // Note: deliberately NOT creating dist/index.js
   installFake('0.99.29', { verified: true });
   const target = selectBootstrapTarget();
-  assert.ok(target);
-  assert.equal(target.version, '0.99.29', 'broken install (no dist/index.js) should be skipped');
+  expect(target).toBeTruthy();
+  expect(target.version).toBe('0.99.29');
 });

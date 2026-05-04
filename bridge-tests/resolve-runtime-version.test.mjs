@@ -18,9 +18,6 @@
 //
 // The fetcher is swapped via the __setLatestVersionFetcherForTests hook
 // exported from the bridge. No global-https mocking required.
-
-import test from 'node:test';
-import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir, homedir } from 'node:os';
@@ -71,14 +68,14 @@ const clearInstalledMarker = () => {
   try { rmSync(TEST_RUNTIME_DIR, { recursive: true, force: true }); } catch { /* ignore */ }
 };
 
-test.afterEach(() => {
+afterEach(() => {
   __setLatestVersionFetcherForTests(null);
   delete process.env.ALETHIA_RUNTIME_VERSION;
   clearCache();
   clearInstalledMarker();
 });
 
-test.after(() => {
+afterAll(() => {
   try { rmSync(TEST_HOME, { recursive: true, force: true }); } catch { /* ignore */ }
 });
 
@@ -93,14 +90,14 @@ test('ALETHIA_RUNTIME_VERSION pin skips cache and fetcher', async () => {
   writeCache('1.2.3', 0); // fresh cache — should STILL be skipped
 
   const v = await resolveRuntimeVersion();
-  assert.equal(v, '0.3.7');
-  assert.equal(fetcherCalled, false, 'pin should skip fetcher entirely');
+  expect(v).toBe('0.3.7');
+  expect(fetcherCalled).toBe(false);
 });
 
 test('ALETHIA_RUNTIME_VERSION accepts "v" prefix', async () => {
   process.env.ALETHIA_RUNTIME_VERSION = 'v0.3.7';
   const v = await resolveRuntimeVersion();
-  assert.equal(v, '0.3.7');
+  expect(v).toBe('0.3.7');
 });
 
 // ---------------------------------------------------------------------------
@@ -113,8 +110,8 @@ test('fresh cache returns cached version without calling fetcher', async () => {
   __setLatestVersionFetcherForTests(async () => { fetcherCalled = true; return '9.9.9'; });
 
   const v = await resolveRuntimeVersion();
-  assert.equal(v, '0.4.2');
-  assert.equal(fetcherCalled, false, 'fresh cache should not trigger fetcher');
+  expect(v).toBe('0.4.2');
+  expect(fetcherCalled).toBe(false);
 });
 
 // ---------------------------------------------------------------------------
@@ -126,14 +123,11 @@ test('stale cache + successful fetch returns new version and rewrites cache', as
   __setLatestVersionFetcherForTests(async () => '0.5.0');
 
   const v = await resolveRuntimeVersion();
-  assert.equal(v, '0.5.0');
+  expect(v).toBe('0.5.0');
 
   const rewritten = JSON.parse(readFileSync(TEST_LATEST_RELEASE_CACHE, 'utf8'));
-  assert.equal(rewritten.version, '0.5.0');
-  assert.ok(
-    Date.now() - rewritten.fetchedAt < 5_000,
-    'cache fetchedAt should be updated to ~now',
-  );
+  expect(rewritten.version).toBe('0.5.0');
+  expect(Date.now() - rewritten.fetchedAt < 5_000).toBeTruthy();
 });
 
 // ---------------------------------------------------------------------------
@@ -145,7 +139,7 @@ test('stale cache + failed fetch falls back to stale cache value', async () => {
   __setLatestVersionFetcherForTests(async () => null); // simulate offline / rate-limit
 
   const v = await resolveRuntimeVersion();
-  assert.equal(v, '0.3.0', 'should soft-fallback to stale cache');
+  expect(v).toBe('0.3.0');
 });
 
 // ---------------------------------------------------------------------------
@@ -158,7 +152,7 @@ test('no cache + failed fetch + installed marker falls back to marker version', 
   __setLatestVersionFetcherForTests(async () => null);
 
   const v = await resolveRuntimeVersion();
-  assert.equal(v, '0.2.9', 'should soft-fallback to installed runtime version');
+  expect(v).toBe('0.2.9');
 });
 
 // ---------------------------------------------------------------------------
@@ -170,11 +164,7 @@ test('no cache + failed fetch + no marker throws a clear error', async () => {
   clearInstalledMarker();
   __setLatestVersionFetcherForTests(async () => null);
 
-  await assert.rejects(
-    () => resolveRuntimeVersion(),
-    /Could not determine runtime version.*ALETHIA_RUNTIME_VERSION/s,
-    'cold-path offline user should get an actionable error mentioning the pin env var',
-  );
+  await (async () => { let __themisError = null; try { await (typeof (() => resolveRuntimeVersion()) === 'function' ? (() => resolveRuntimeVersion())() : (() => resolveRuntimeVersion())); } catch (__e) { __themisError = __e; } expect(__themisError).toBeTruthy(); expect(String(__themisError && __themisError.message || __themisError)).toMatch(/Could not determine runtime version.*ALETHIA_RUNTIME_VERSION/s); })();
 });
 
 // ---------------------------------------------------------------------------
@@ -191,12 +181,12 @@ test('getArtifactName returns platform-specific templates', () => {
     // the template shape: version is interpolated, extension is correct.
     const v = '1.2.3';
     const name = getArtifactName(v);
-    assert.ok(name, `expected an artifact name for ${originalPlatform}-${originalArch}`);
-    assert.match(name, /1\.2\.3/, 'artifact name should contain the version');
-    assert.match(name, /\.(tar\.gz|zip)$/, 'artifact name should end with .tar.gz or .zip');
-    if (originalPlatform === 'win32') assert.match(name, /\.zip$/);
-    if (originalPlatform === 'linux') assert.match(name, /\.tar\.gz$/);
-    if (originalPlatform === 'darwin') assert.match(name, /\.tar\.gz$/);
+    expect(name).toBeTruthy();
+    expect(name).toMatch(/1\.2\.3/);
+    expect(name).toMatch(/\.(tar\.gz|zip)$/);
+    if (originalPlatform === 'win32') expect(name).toMatch(/\.zip$/);
+    if (originalPlatform === 'linux') expect(name).toMatch(/\.tar\.gz$/);
+    if (originalPlatform === 'darwin') expect(name).toMatch(/\.tar\.gz$/);
   } finally {
     // no-op — we don't mutate process.platform here
     void originalPlatform; void originalArch;
@@ -208,12 +198,6 @@ test('getArtifactName returns platform-specific templates', () => {
 // ---------------------------------------------------------------------------
 
 test('getGithubReleaseBase produces the expected URL', () => {
-  assert.equal(
-    getGithubReleaseBase('0.4.0'),
-    'https://github.com/vitron-ai/alethia/releases/download/v0.4.0',
-  );
-  assert.equal(
-    getGithubReleaseBase('1.2.3-pre.5'),
-    'https://github.com/vitron-ai/alethia/releases/download/v1.2.3-pre.5',
-  );
+  expect(getGithubReleaseBase('0.4.0')).toBe('https://github.com/vitron-ai/alethia/releases/download/v0.4.0');
+  expect(getGithubReleaseBase('1.2.3-pre.5')).toBe('https://github.com/vitron-ai/alethia/releases/download/v1.2.3-pre.5');
 });
