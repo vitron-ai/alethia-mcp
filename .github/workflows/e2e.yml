@@ -24,7 +24,7 @@ concurrency:
 env:
   # Pin the runtime version so the cache key is stable + the test is
   # reproducible. Bump this in tandem with a new alethia-core release.
-  ALETHIA_RUNTIME_VERSION: '0.7.7'
+  ALETHIA_RUNTIME_VERSION: '0.7.8'
   # Demo's NLP file references http://localhost:8765/<demo>.html — the
   # static server below binds this port.
   DEMO_PORT: '8765'
