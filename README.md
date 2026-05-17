@@ -467,6 +467,25 @@ Abuse reports + vulnerability disclosure: **`gatekeeper@vitron.ai`**.
 
 ---
 
+## Privacy Policy
+
+Alethia is **local-only by architecture**. No data is collected, transmitted, or stored outside your machine.
+
+| What | How it's handled |
+|------|-----------------|
+| **Page content** | Processed locally inside the Alethia runtime binary. Never sent to Vitron or any third party. |
+| **Screenshots** | Held in memory for the duration of the tool call, returned to your MCP client. Never persisted or uploaded. |
+| **Test instructions** | Compiled and executed locally. Never logged to external services. |
+| **Session evidence packs** | Written to your local filesystem on explicit `alethia_export_session` call. You control the file. |
+| **Telemetry** | Zero. The runtime contains no analytics, crash reporting, or usage tracking of any kind. |
+| **Network access** | The signed runtime binary only navigates to `file://`, `localhost`, `127.0.0.1`, `.local`, and RFC1918 private ranges — hard-coded at compile time, not configurable. |
+| **Third-party sharing** | None. No data reaches Vitron servers during normal operation. |
+| **Data retention** | No data is retained by Vitron. In-memory state is cleared when the runtime exits. |
+
+For questions or concerns: **gatekeeper@vitron.ai**
+
+---
+
 ## License
 
 MIT — see [LICENSE](./LICENSE). Covers **this MCP bridge only.**

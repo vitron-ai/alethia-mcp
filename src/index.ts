@@ -1627,6 +1627,12 @@ const TOOLS = [
       'Destructive actions (delete, purchase, transfer, etc.) are blocked unconditionally. ' +
       'Sensitive input (passwords, credit cards, SSN) is blocked unless allowSensitiveInput is true. ' +
       '~13 ms per step on average.',
+    annotations: {
+      title: 'Run E2E Tests',
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     inputSchema: {
       type: 'object',
       properties: {
@@ -1653,6 +1659,11 @@ const TOOLS = [
       'Returns the compiled IR, per-line confidence scores (0-1), and warnings for any lines the compiler ' +
       'could not parse. Use this to preview what tell() will run, debug coverage gaps, or generate ' +
       'reproducible IR scripts for CI pipelines.',
+    annotations: {
+      title: 'Compile Test Instructions',
+      readOnlyHint: true,
+      destructiveHint: false,
+    },
     inputSchema: {
       type: 'object',
       properties: {
@@ -1671,6 +1682,12 @@ const TOOLS = [
       'kill switch state, driver statistics (queued plans, run count, audit count), the current page domain, ' +
       'and runtime capabilities. Use this for liveness checks before sending tell() calls, and to verify ' +
       'the runtime is in a known-good state at the start of an agent loop.',
+    annotations: {
+      title: 'Check Runtime Status',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+    },
     inputSchema: { type: 'object', properties: {} },
   },
   {
@@ -1680,6 +1697,11 @@ const TOOLS = [
       'subsequent tell() calls will be blocked with reason KILL_SWITCH_ACTIVE until reset. ' +
       'Use this when an agent appears to be acting unsafely, when human review is required, or to enforce ' +
       'a hard boundary at the end of a controlled test run.',
+    annotations: {
+      title: 'Activate Kill Switch',
+      readOnlyHint: false,
+      destructiveHint: true,
+    },
     inputSchema: {
       type: 'object',
       properties: {
@@ -1695,6 +1717,11 @@ const TOOLS = [
     description:
       'Capture a PNG screenshot of the current page and return it as a base64-encoded image. ' +
       'Use this to visually verify what the browser is showing after running test steps with alethia_tell.',
+    annotations: {
+      title: 'Take Screenshot',
+      readOnlyHint: true,
+      destructiveHint: false,
+    },
     inputSchema: { type: 'object', properties: {} },
   },
   {
@@ -1704,6 +1731,12 @@ const TOOLS = [
       'Runs in the context of the navigated page, not the Alethia host UI. ' +
       'Use this for queries the NLP compiler cannot express — counting elements, reading computed styles, ' +
       'checking localStorage, or any DOM inspection that needs raw JS.',
+    annotations: {
+      title: 'Evaluate JavaScript',
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     inputSchema: {
       type: 'object',
       properties: {
@@ -1722,6 +1755,11 @@ const TOOLS = [
       'alt text, form labels, keyboard access, page title, lang attribute, link purpose, ' +
       'heading structure, duplicate IDs, and more. Call after navigating with alethia_tell. ' +
       'Returns findings with WCAG criterion numbers, severity levels, and issue counts.',
+    annotations: {
+      title: 'WCAG Accessibility Audit',
+      readOnlyHint: true,
+      destructiveHint: false,
+    },
     inputSchema: { type: 'object', properties: {} },
   },
   {
@@ -1732,6 +1770,11 @@ const TOOLS = [
       'IA (unmasked passwords, weak password constraints, MFA indicators), ' +
       'SI (input validation, error information leakage). ' +
       'Call after navigating with alethia_tell. Returns findings with control IDs and severity levels.',
+    annotations: {
+      title: 'NIST 800-53 Security Audit',
+      readOnlyHint: true,
+      destructiveHint: false,
+    },
     inputSchema: { type: 'object', properties: {} },
   },
   {
@@ -1741,6 +1784,11 @@ const TOOLS = [
       'made during this session with timestamps, inputs, outputs, policy decisions, and a ' +
       'SHA-256 integrity hash. Use at the end of an agent loop to produce cryptographic proof ' +
       'of everything the agent did. Designed for compliance review and chain-of-custody.',
+    annotations: {
+      title: 'Export Session Evidence',
+      readOnlyHint: true,
+      destructiveHint: false,
+    },
     inputSchema: { type: 'object', properties: {} },
   },
   {
@@ -1749,6 +1797,12 @@ const TOOLS = [
       'Run multiple test flows concurrently — each against a different URL. ' +
       'Takes an array of test specs, spawns a browser instance per spec, runs them in parallel, ' +
       'and returns all results together. Use this to verify multiple pages simultaneously.',
+    annotations: {
+      title: 'Run Parallel Tests',
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     inputSchema: {
       type: 'object',
       properties: {
@@ -1776,6 +1830,12 @@ const TOOLS = [
       'Use this to serve demo pages on localhost so they appear in preview panels (Claude Code, VS Code, etc.). ' +
       'The server runs on a random available port on 127.0.0.1. Call this before alethia_tell to get a localhost URL ' +
       'instead of a file:// path. Returns the base URL and a list of available demo pages.',
+    annotations: {
+      title: 'Serve Demo Pages',
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+    },
     inputSchema: { type: 'object', properties: {} },
   },
   {
@@ -1786,6 +1846,12 @@ const TOOLS = [
       'Returns an array of plain-English test blocks, including an auto-generated "EA1 Safety Gate Verification" ' +
       'block that uses "expect block: <action>" for every destructive control on the page. ' +
       'Use this to bootstrap test coverage for a new page or to discover what the safety gate should be watching.',
+    annotations: {
+      title: 'Propose Test Suite',
+      readOnlyHint: true,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     inputSchema: {
       type: 'object',
       properties: {
@@ -1805,6 +1871,12 @@ const TOOLS = [
       'This is the automated policy-verification primitive — proves the safety gate works on a real page ' +
       'without the agent or human having to click each destructive button manually. Use it as a compliance ' +
       'check before releasing an agent-driven workflow against a customer environment.',
+    annotations: {
+      title: 'Verify EA1 Safety Gate',
+      readOnlyHint: true,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     inputSchema: {
       type: 'object',
       properties: {
@@ -1822,6 +1894,12 @@ const TOOLS = [
       'Show the Alethia cockpit window — the oversight surface where the target app is driven and each ' +
       'step is highlighted live (green = pass, blue = type, red = EA1 block). Use this to pop the UI ' +
       'into view during a headless-launched session for demos, review, or partner walkthroughs.',
+    annotations: {
+      title: 'Show Cockpit',
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+    },
     inputSchema: { type: 'object', properties: {} },
   },
   {
@@ -1829,6 +1907,12 @@ const TOOLS = [
     description:
       'Hide the Alethia cockpit window. The runtime keeps running and continues to accept tool calls; ' +
       'only the visible window is dismissed.',
+    annotations: {
+      title: 'Hide Cockpit',
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+    },
     inputSchema: { type: 'object', properties: {} },
   },
 ] as const;

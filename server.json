@@ -1,0 +1,43 @@
+{
+  "$schema": "https://registry.modelcontextprotocol.io/schema/v0/server.json",
+  "name": "io.github.vitron-ai/alethia",
+  "description": "Patent-pending zero-IPC E2E test runtime for AI agents. Plain-English browser tests at ~13ms/step, VITRON-EA1 fail-closed safety gate, WCAG 2.1 AA and NIST SP 800-53 audits, cryptographically signed evidence packs. Local-first, zero telemetry.",
+  "version": "0.8.6",
+  "license": "MIT",
+  "homepage": "https://vitron.ai",
+  "repository": "https://github.com/vitron-ai/alethia-mcp",
+  "author": {
+    "name": "vitron.ai",
+    "email": "gatekeeper@vitron.ai",
+    "url": "https://vitron.ai"
+  },
+  "packages": [
+    {
+      "registry": "npm",
+      "name": "@vitronai/alethia",
+      "version": "0.8.6",
+      "runtime": "node",
+      "startCommand": {
+        "type": "stdio",
+        "command": "npx",
+        "args": ["-y", "@vitronai/alethia"]
+      }
+    }
+  ],
+  "categories": [
+    "browser-automation",
+    "testing",
+    "accessibility",
+    "security",
+    "developer-tools"
+  ],
+  "tags": [
+    "e2e",
+    "playwright-alternative",
+    "wcag",
+    "nist",
+    "ai-safety",
+    "evidence-pack",
+    "zero-ipc"
+  ]
+}
