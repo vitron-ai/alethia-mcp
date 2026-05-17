@@ -52,6 +52,7 @@
   "bugs": {
     "url": "https://github.com/vitron-ai/alethia-mcp/issues"
   },
+  "mcpName": "io.github.vitron-ai/alethia",
   "publishConfig": {
     "access": "public"
   },
