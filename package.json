@@ -42,7 +42,7 @@
     "fail-closed",
     "vitron"
   ],
-  "author": "vitron.ai <gatekeeper@vitron.ai>",
+  "author": "vitron.ai <team@vitron.ai>",
   "license": "MIT",
   "homepage": "https://github.com/vitron-ai/alethia",
   "repository": {

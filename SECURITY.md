@@ -143,12 +143,12 @@ A reimplementation of the runtime from scratch that reproduces the claimed behav
 
 ## Reporting security issues
 
-Bugs that weaken the local-only boundary, the policy gate, the evidence-pack integrity, the signed-release verification, or any control listed in the threat model above should be reported to **`gatekeeper@vitron.ai`** rather than filed as a public GitHub issue. We will acknowledge within 72 hours and coordinate a disclosure timeline. Do not include reproduction details in public issues.
+Bugs that weaken the local-only boundary, the policy gate, the evidence-pack integrity, the signed-release verification, or any control listed in the threat model above should be reported to **`team@vitron.ai`** rather than filed as a public GitHub issue. We will acknowledge within 72 hours and coordinate a disclosure timeline. Do not include reproduction details in public issues.
 
 ## Reporting abuse
 
-If you observe Alethia being used against non-local origins — through a modified binary, a downstream fork, a leaked design-partner build, or any other mechanism — email **`gatekeeper@vitron.ai`** with whatever detail you can share. We will yank the affected release, stop signing new builds for the responsible party, and pursue applicable legal channels.
+If you observe Alethia being used against non-local origins — through a modified binary, a downstream fork, a leaked design-partner build, or any other mechanism — email **`team@vitron.ai`** with whatever detail you can share. We will yank the affected release, stop signing new builds for the responsible party, and pursue applicable legal channels.
 
 ---
 
-_Contact: gatekeeper@vitron.ai_
+_Contact: team@vitron.ai_

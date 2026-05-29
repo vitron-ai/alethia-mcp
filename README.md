@@ -15,7 +15,7 @@ This package is the **MIT-licensed MCP bridge** (~22 KB) — a thin stdio-to-HTT
 
 The cockpit is an **oversight surface**, not an authoring IDE. Humans do not write tests in a GUI. Agents propose tests, run them, and prove safety — humans review the evidence.
 
-> **Patent notice.** The MIT license on this bridge does **not** grant a patent license to the Alethia runtime (U.S. Application No. 19/571,437). Commercial runtime use may require a separate license. Contact **gatekeeper@vitron.ai**.
+> **Patent notice.** The MIT license on this bridge does **not** grant a patent license to the Alethia runtime (U.S. Application No. 19/571,437). Commercial runtime use may require a separate license. Contact **team@vitron.ai**.
 
 ---
 
@@ -463,7 +463,7 @@ The Alethia runtime (which this bridge connects to) is local-only **by architect
 
 **Full security posture** — threat model, cryptographic chain of custody, supply-chain posture, update cadence, disclosure process — is at [`SECURITY.md`](./SECURITY.md).
 
-Abuse reports + vulnerability disclosure: **`gatekeeper@vitron.ai`**.
+Abuse reports + vulnerability disclosure: **`team@vitron.ai`**.
 
 ---
 
@@ -482,7 +482,7 @@ Alethia is **local-only by architecture**. No data is collected, transmitted, or
 | **Third-party sharing** | None. No data reaches Vitron servers during normal operation. |
 | **Data retention** | No data is retained by Vitron. In-memory state is cleared when the runtime exits. |
 
-For questions or concerns: **gatekeeper@vitron.ai**
+For questions or concerns: **team@vitron.ai**
 
 ---
 
@@ -492,4 +492,4 @@ MIT — see [LICENSE](./LICENSE). Covers **this MCP bridge only.**
 
 ## Patent Notice
 
-The Alethia runtime is patent pending (U.S. Application No. 19/571,437). The MIT license on this bridge does **not** grant any patent license. For licensing inquiries: **gatekeeper@vitron.ai**.
+The Alethia runtime is patent pending (U.S. Application No. 19/571,437). The MIT license on this bridge does **not** grant any patent license. For licensing inquiries: **team@vitron.ai**.

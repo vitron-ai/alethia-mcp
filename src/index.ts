@@ -858,7 +858,7 @@ const ensureRuntime = async (): Promise<void> => {
     throw new Error(
       `No Alethia runtime available for ${platform()}-${arch()}. ` +
       `Supported: macOS (x64/arm64), Linux (x64/arm64), Windows (x64). ` +
-      `Contact gatekeeper@vitron.ai for assistance.`
+      `Contact team@vitron.ai for assistance.`
     );
   }
 
@@ -894,7 +894,7 @@ const ensureRuntime = async (): Promise<void> => {
     throw new Error(
       'Release manifest signature verification FAILED. ' +
       'The download may have been tampered with. Aborting. ' +
-      'Contact gatekeeper@vitron.ai if this persists.'
+      'Contact team@vitron.ai if this persists.'
     );
   }
   debug('manifest signature verified');
@@ -1070,7 +1070,7 @@ RUNTIME
   Ed25519-signed, SHA-256 verified. No signup required.
 
       Releases:        https://github.com/vitron-ai/alethia/releases
-      Licensing:       gatekeeper@vitron.ai
+      Licensing:       team@vitron.ai
 
 ENVIRONMENT
   ALETHIA_HOST          Host of the Alethia runtime (default: 127.0.0.1)
@@ -1091,7 +1091,7 @@ ABOUT
   Patent Pending — U.S. Application No. 19/571,437.
   Title: "Deterministic Local Automation Runtime with Zero-IPC Execution,
           Offline Operation, and Per-Step Policy Enforcement"
-  Licensing inquiries: gatekeeper@vitron.ai
+  Licensing inquiries: team@vitron.ai
   Bridge source (MIT): https://github.com/vitron-ai/alethia-mcp
   Project landing:     https://github.com/vitron-ai/alethia
 `;
@@ -1494,7 +1494,7 @@ const callAlethia = (body: unknown, timeoutMs = ALETHIA_TIMEOUT_MS): Promise<Ale
           `Troubleshooting:\n` +
           `  → Run: alethia-mcp --health-check\n` +
           `  → Releases: https://github.com/vitron-ai/alethia/releases\n` +
-          `  → Licensing: gatekeeper@vitron.ai\n` +
+          `  → Licensing: team@vitron.ai\n` +
           `\n` +
           `Override host/port with ALETHIA_HOST / ALETHIA_PORT environment vars\n` +
           `if your runtime listens on a non-default address.`
@@ -1571,7 +1571,7 @@ const runHealthCheck = async (): Promise<never> => {
       `GitHub Releases. Ed25519-signed, no signup required.\n` +
       `\n` +
       `  → https://github.com/vitron-ai/alethia/releases\n` +
-      `  → Licensing: gatekeeper@vitron.ai\n`
+      `  → Licensing: team@vitron.ai\n`
     );
     process.exit(1);
   }
