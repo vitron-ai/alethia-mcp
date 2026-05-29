@@ -102,4 +102,4 @@ Alethia refuses to navigate to any origin outside `file://`, `localhost`, `127.0
 - Runtime releases: [github.com/vitron-ai/alethia](https://github.com/vitron-ai/alethia)
 - Starter template: [github.com/vitron-ai/alethia-anvil](https://github.com/vitron-ai/alethia-anvil)
 - Website: [vitron.ai](https://vitron.ai)
-- Licensing: gatekeeper@vitron.ai
+- Licensing: team@vitron.ai

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:registry.modelcontextprotocol.io)",
+      "WebFetch(domain:modelcontextprotocol.info)",
+      "WebFetch(domain:support.claude.com)",
+      "WebFetch(domain:claude.com)",
+      "Read(//Users/higgs/github/alethia-core/docs/evidence/ui/**)",
+      "Skill(alethia)",
+      "Skill(alethia:*)",
+      "Read(//Users/higgs/.claude/**)",
+      "Read(//tmp/**)",
+      "Read(//private/tmp/**)"
+    ],
+    "additionalDirectories": [
+      "/Users/higgs/.claude"
+    ]
+  }
+}
