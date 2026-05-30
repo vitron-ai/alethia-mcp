@@ -29,6 +29,9 @@ The cockpit is an **oversight surface**, not an authoring IDE. Humans do not wri
 | Speed (per call) | ~200 ms via Playwright MCP, ~2 s via Playwright CLI | ~40 ms — 2-5× faster than Playwright MCP; up to 50× vs Playwright CLI on simple flows — [reproduce the numbers yourself](https://github.com/vitron-ai/alethia-anvil#verify-the-faster-than-cdp-based-tools-claim-yourself) |
 | Evidence | screenshots, videos | signed evidence pack with per-step integrity hashes |
 | Network | Telemetry on by default; optional cloud dashboards | **Air-gap deployable** — no cloud product, no telemetry path, bound to 127.0.0.1 |
+| Dev feedback during coding | reload + devtools + screenshot (can serve cached frames) | `alethia_eval` → live `getComputedStyle()` and layout values, no cache, no round-trip |
+
+Alethia isn't only a post-development testing tool. AI coding agents can use `alethia_eval` as a real-time DOM oracle *while writing code* — call `getComputedStyle()` to read exact computed values, `offsetWidth` for layout dimensions, `querySelectorAll().length` to verify list renders. The eval path always returns live values from the current page with no caching ambiguity, catching CSS cascade bugs in seconds that would otherwise require multiple reload-and-inspect cycles.
 
 ---
 

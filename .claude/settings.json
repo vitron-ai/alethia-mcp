@@ -11,7 +11,12 @@
       "Skill(alethia:*)",
       "Read(//Users/higgs/.claude/**)",
       "Read(//tmp/**)",
-      "Read(//private/tmp/**)"
+      "Read(//private/tmp/**)",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "mcp__alethia__alethia_screenshot",
+      "mcp__alethia__alethia_eval",
+      "mcp__alethia__alethia_assert_safety"
     ],
     "additionalDirectories": [
       "/Users/higgs/.claude"

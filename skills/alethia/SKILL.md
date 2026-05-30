@@ -166,9 +166,35 @@ On any `alethia_tell` failure, the response includes:
 
 Read these before retrying. Most failures are phrasing mismatches, not real bugs — the suggested fix usually works.
 
-## Escape hatches (use sparingly)
+## Dev feedback loop (eval as a DOM oracle)
 
-- **`alethia_eval({ expression })`** — raw JavaScript in the page context. For cases where NLP can't express what you need (counting elements, reading computed styles, triggering React's native input setter). Runs in the target page, not the host.
+During active frontend development, `alethia_eval` is more reliable than screenshots for catching bugs in real time. Screenshots can serve a cached frame; eval always returns live values from the current DOM.
+
+**The pattern:** write code → navigate → eval the DOM → get exact values → correct → repeat.
+
+```javascript
+// Did the CSS actually apply?
+alethia_eval({ expression: "getComputedStyle(document.querySelector('.hero-title')).fontSize" })
+// → "32px"
+
+// Is the layout correct?
+alethia_eval({ expression: "getComputedStyle(document.querySelector('.sidebar')).justifyContent" })
+// → "flex-start"
+
+// How wide is the element actually rendering?
+alethia_eval({ expression: "document.querySelector('.card').offsetWidth" })
+// → 320
+
+// Count elements to verify a list rendered
+alethia_eval({ expression: "document.querySelectorAll('.product-card').length" })
+// → 6
+```
+
+Use eval for **ground truth** (computed values, layout dimensions, element counts, React state). Use `alethia_screenshot` for **visual verification** (does it look right, are things positioned correctly on screen). When a CSS bug is suspected, reach for eval first — it returns exact values in milliseconds without any caching ambiguity.
+
+## Escape hatches
+
+- **`alethia_eval({ expression })`** — raw JavaScript in the page context. Runs in the target page, not the host. See "Dev feedback loop" above for the primary use case; also useful for triggering React's native input setter when NLP typing doesn't fire onChange.
 - **`alethia_screenshot()`** — PNG of the current page, for visual verification.
 - **`alethia_activate_kill_switch` / `alethia_reset_kill_switch`** — emergency halt and resume. Blocks all tool calls until reset.
 
