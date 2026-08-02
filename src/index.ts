@@ -877,6 +877,11 @@ const ensureRuntime = async (): Promise<void> => {
     try { rmSync(RUNTIME_DIR, { recursive: true, force: true }); } catch { /* best effort */ }
   } else {
     process.stderr.write(`[alethia] Runtime not found. Auto-installing v${targetVersion}...\n`);
+    process.stderr.write(
+      `[alethia] The Alethia runtime is proprietary software distributed under the vitron.ai ` +
+      `Evaluation License. By installing or executing it, you agree to those terms: ` +
+      `https://github.com/vitron-ai/alethia/blob/main/EVAL_LICENSE.md\n`
+    );
   }
 
   mkdirSync(RUNTIME_DIR, { recursive: true });
