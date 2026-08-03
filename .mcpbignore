@@ -1,0 +1,16 @@
+# Dev tooling and repo internals that shouldn't ship in the bundle —
+# mirrors package.json's "files" allowlist (dist, demo, skills, examples,
+# LICENSE, README.md) plus the manifest's icon asset.
+node_modules/
+.claude/
+.themis/
+.github/
+bridge-tests/
+tessl/
+tessl.json
+themis.config.json
+server.json
+package-lock.json
+CLAUDE.md
+src/index.ts
+examples/.claude/
