@@ -20,7 +20,8 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "test": "themis test --isolation process",
-    "prepublishOnly": "npm run build && npm test"
+    "prepublishOnly": "npm run build && npm test",
+    "bundle:mcpb": "npm run build && npx @anthropic-ai/mcpb pack . release/alethia-$(node -p \"require('./package.json').version\").mcpb"
   },
   "keywords": [
     "mcp",
