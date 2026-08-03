@@ -1,93 +1,107 @@
 {
-  "name": "Alethia",
+  "manifest_version": "0.3",
+  "name": "alethia",
+  "display_name": "Alethia",
+  "version": "0.9.0",
   "description": "Patent-pending zero-IPC E2E test runtime for AI agents. Run plain-English browser tests at ~13ms/step, enforce the VITRON-EA1 fail-closed safety gate, audit WCAG 2.1 AA accessibility and NIST SP 800-53 security controls, and export cryptographically signed evidence packs — all local-only, zero telemetry.",
-  "logo": "https://raw.githubusercontent.com/vitron-ai/alethia-mcp/main/src/assets/alethiaLogo.png",
-  "favicon": "https://raw.githubusercontent.com/vitron-ai/alethia-mcp/main/src/assets/alethiaLogo.png",
-  "privacyPolicyUrl": "https://github.com/vitron-ai/alethia-mcp#privacy-policy",
-  "supportUrl": "https://github.com/vitron-ai/alethia-mcp/issues",
-  "homepageUrl": "https://vitron.ai",
-  "categories": [
-    "developer-tools",
-    "testing",
+  "author": {
+    "name": "vitron.ai",
+    "email": "team@vitron.ai",
+    "url": "https://vitron.ai"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/dist/index.js"
+      ]
+    }
+  },
+  "icon": "src/assets/alethiaLogo.png",
+  "homepage": "https://vitron.ai",
+  "documentation": "https://github.com/vitron-ai/alethia-mcp#readme",
+  "support": "https://github.com/vitron-ai/alethia-mcp/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vitron-ai/alethia-mcp"
+  },
+  "license": "MIT",
+  "keywords": [
+    "e2e-testing",
     "browser-automation",
     "accessibility",
-    "security"
+    "security",
+    "playwright-alternative"
   ],
-  "installationInstructions": "Add to your Claude Code MCP config: npx @vitronai/alethia",
+  "compatibility": {
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  },
+  "privacy_policies": [
+    "https://github.com/vitron-ai/alethia-mcp#privacy-policy"
+  ],
   "tools": [
     {
       "name": "alethia_tell",
-      "title": "Run E2E Tests",
       "description": "Execute plain-English browser test instructions with the EA1 safety gate active."
     },
     {
       "name": "alethia_compile",
-      "title": "Compile Test Instructions",
       "description": "Compile NLP instructions to Action IR without executing them."
     },
     {
       "name": "alethia_status",
-      "title": "Check Runtime Status",
       "description": "Health probe — runtime version, kill switch state, driver stats."
     },
     {
       "name": "alethia_activate_kill_switch",
-      "title": "Activate Kill Switch",
       "description": "Immediately halt all automation and block subsequent test calls."
     },
     {
       "name": "alethia_screenshot",
-      "title": "Take Screenshot",
       "description": "Capture a PNG screenshot of the current page."
     },
     {
       "name": "alethia_eval",
-      "title": "Evaluate JavaScript",
       "description": "Evaluate a JS expression in the page under test."
     },
     {
       "name": "alethia_audit_wcag",
-      "title": "WCAG Accessibility Audit",
       "description": "Run a WCAG 2.1 AA audit on the current page."
     },
     {
       "name": "alethia_audit_nist",
-      "title": "NIST 800-53 Security Audit",
       "description": "Run a NIST SP 800-53 Rev. 5 security controls audit on the current page."
     },
     {
       "name": "alethia_export_session",
-      "title": "Export Session Evidence",
       "description": "Export a SHA-256 signed evidence pack of the full session."
     },
     {
       "name": "alethia_tell_parallel",
-      "title": "Run Parallel Tests",
       "description": "Run multiple test flows concurrently against different URLs."
     },
     {
       "name": "alethia_serve_demo",
-      "title": "Serve Demo Pages",
       "description": "Start a local HTTP server for the built-in demo pages."
     },
     {
       "name": "alethia_propose_tests",
-      "title": "Propose Test Suite",
       "description": "Scan a page and generate a candidate NLP test suite."
     },
     {
       "name": "alethia_assert_safety",
-      "title": "Verify EA1 Safety Gate",
       "description": "Prove the VITRON-EA1 policy gate blocks every destructive action on a page."
     },
     {
       "name": "alethia_show_cockpit",
-      "title": "Show Cockpit",
       "description": "Show the live-step oversight window."
     },
     {
       "name": "alethia_hide_cockpit",
-      "title": "Hide Cockpit",
       "description": "Hide the cockpit window (runtime keeps running)."
     }
   ]
