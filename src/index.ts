@@ -878,9 +878,9 @@ const ensureRuntime = async (): Promise<void> => {
   } else {
     process.stderr.write(`[alethia] Runtime not found. Auto-installing v${targetVersion}...\n`);
     process.stderr.write(
-      `[alethia] The Alethia runtime is proprietary software distributed under the vitron.ai ` +
-      `Evaluation License. By installing or executing it, you agree to those terms: ` +
-      `https://github.com/vitron-ai/alethia/blob/main/EVAL_LICENSE.md\n`
+      `[alethia] The Alethia runtime is patent-pending proprietary software (U.S. Application No. 19/571,437). ` +
+      `Local-only use (file://, localhost, private network ranges) is free. Commercial production use or ` +
+      `access to non-localhost origins requires a separate license — contact team@vitron.ai.\n`
     );
   }
 
