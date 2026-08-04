@@ -271,7 +271,7 @@ The full reference example lives at [**vitron-ai/alethia-anvil**](https://github
 | `alethia_screenshot` | Capture a PNG of the current page. |
 | `alethia_eval` | Raw JavaScript in the page under test (policy-gated). |
 | `alethia_status` | Version, policy profile, kill switch state. |
-| `alethia_audit_wcag` | WCAG 2.1 AA accessibility audit — 14 criteria. |
+| `alethia_audit_wcag` | WCAG 2.1 AA accessibility audit via axe-core. |
 | `alethia_audit_nist` | NIST SP 800-53 Rev. 5 security controls audit. |
 | `alethia_export_session` | Signed evidence pack of the whole session. |
 | `alethia_activate_kill_switch` / `alethia_reset_kill_switch` | Emergency halt and resume. |
