@@ -120,7 +120,7 @@ quick scratch testing where you don't care about the audit boundary.
 ### Full compliance audit with signed evidence
 ```
 1. alethia_tell({ instructions: "navigate to <url>" })
-2. alethia_audit_wcag()   → 14 accessibility criteria
+2. alethia_audit_wcag()   → axe-core accessibility audit
 3. alethia_audit_nist()   → 8 NIST SP 800-53 controls
 4. alethia_export_session() → signed JSON evidence pack, SHA-256 hashed
 ```

@@ -1756,10 +1756,10 @@ const TOOLS = [
   {
     name: 'alethia_audit_wcag',
     description:
-      'Run a WCAG 2.1 AA accessibility audit on the current page. Checks 14 criteria including ' +
-      'alt text, form labels, keyboard access, page title, lang attribute, link purpose, ' +
-      'heading structure, duplicate IDs, and more. Call after navigating with alethia_tell. ' +
-      'Returns findings with WCAG criterion numbers, severity levels, and issue counts.',
+      'Run a WCAG 2.1 AA accessibility audit on the current page, powered by axe-core. Checks ' +
+      'alt text, form labels, keyboard access, color contrast, ARIA usage, heading structure, ' +
+      'and the rest of the axe-core ruleset — not a fixed checklist. Call after navigating with ' +
+      'alethia_tell. Returns findings with rule IDs, impact levels, and issue counts.',
     annotations: {
       title: 'WCAG Accessibility Audit',
       readOnlyHint: true,
@@ -2163,7 +2163,7 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
             '- alethia_screenshot: Capture a PNG screenshot of the current page.\n' +
             '- alethia_eval: Run JavaScript in the page under test.\n' +
             '- alethia_activate_kill_switch: Emergency halt. The kill auto-clears on the operator\'s next Run from the cockpit; agents have no self-release path by design.\n' +
-            '- alethia_audit_wcag: WCAG 2.1 AA accessibility audit — 14 criteria.\n' +
+            '- alethia_audit_wcag: WCAG 2.1 AA accessibility audit via axe-core.\n' +
             '- alethia_audit_nist: NIST SP 800-53 security controls audit — 8 controls.\n' +
             '- alethia_export_session: Export signed evidence pack of everything the agent did this session.\n' +
             '- alethia_serve_demo: Start a localhost server for built-in demo pages. Opens in preview panels.\n' +
