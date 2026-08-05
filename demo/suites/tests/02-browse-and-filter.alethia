@@ -1,0 +1,8 @@
+name Browse and filter
+navigate to http://127.0.0.1:47432/demo/ecommerce.html
+click Input
+assert Tide Mechanical Keyboard is visible
+click Display
+assert Aria Monitor Stand is visible
+click All
+assert Vector Pro Mouse is visible

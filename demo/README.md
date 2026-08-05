@@ -129,3 +129,30 @@ Every demo HTML ships with a matching `.alethia` test file in this folder. Feed 
 | `nist-compliance.alethia` | `nist-compliance.html` | Navigation target for `alethia_audit_nist` |
 
 The URLs assume `http://localhost:8765/` (matches the python3 one-liner above). If you use `alethia_serve_demo` instead, swap the host/port to whatever the server returns.
+
+## Demo suite — `suites/storefront-release.suite`
+
+The specs above are single tests. A **suite** is an ordered group of them that runs as one job and produces a single evidence pack at the end.
+
+`suites/storefront-release.suite` covers one app (`ecommerce.html`) across four tests:
+
+| # | Test | What it proves |
+|---|---|---|
+| 1 | `01-storefront-smoke.alethia` | Page renders, key products visible |
+| 2 | `02-browse-and-filter.alethia` | Category filters swap the product grid |
+| 3 | `03-cart-and-promo.alethia` | Add to cart, apply `HELIX20`, discount confirmed |
+| 4 | `04-checkout-safety-gate.alethia` | EA1 blocks **Complete Purchase** |
+
+**Run it in the cockpit:** open the **Tests** panel and click *Load the demo suite* (or the *Storefront Release Check* card in **Demos**). Then **Run Suite** — all four run in order, and the Session panel's switcher lets you jump between individual tests.
+
+A suite file is plain text, not JSON — an optional `name:`/`description:` header, a blank line, then one test path per line, relative to the suite file:
+
+```
+name: Storefront Release Check
+description: Four tests over one app's critical paths.
+
+tests/01-storefront-smoke.alethia
+tests/02-browse-and-filter.alethia
+```
+
+Suite URLs point at `http://127.0.0.1:47432/demo/` — the runtime's own demo server, so they work as soon as the cockpit is running with no separate server to start.
