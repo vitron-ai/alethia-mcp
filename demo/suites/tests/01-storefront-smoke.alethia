@@ -1,5 +1,0 @@
-name Storefront smoke
-navigate to http://127.0.0.1:47432/demo/ecommerce.html
-assert Gear that gets out of your way. is visible
-assert Tide Mechanical Keyboard is visible
-assert Vector Pro Mouse is visible

@@ -1,4 +1,0 @@
-name Checkout safety gate
-navigate to http://127.0.0.1:47432/demo/ecommerce.html
-click Add to Cart
-expect block: click Complete Purchase

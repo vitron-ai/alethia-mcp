@@ -1,0 +1,6 @@
+name Console structure
+navigate to http://127.0.0.1:47432/demo/dispatch-console.html
+assert Dispatch Console is visible
+assert Meridian Field Services is visible
+assert Open Orders is visible
+assert Northgate Substation is visible
