@@ -1,0 +1,7 @@
+name: Storefront Release Check
+description: Four tests over one app's critical paths — structure, browse, cart, and the EA1 gate on checkout.
+
+tests/01-storefront-smoke.alethia
+tests/02-browse-and-filter.alethia
+tests/03-cart-and-promo.alethia
+tests/04-checkout-safety-gate.alethia

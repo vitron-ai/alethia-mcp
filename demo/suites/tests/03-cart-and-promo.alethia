@@ -1,0 +1,6 @@
+name Cart and promo code
+navigate to http://127.0.0.1:47432/demo/ecommerce.html
+click Add to Cart
+type "HELIX20" into Promo code (try HELIX20)
+click Apply
+assert 20% discount applied. is visible
