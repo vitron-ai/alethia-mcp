@@ -1,0 +1,479 @@
+<!doctype html>
+<!--
+  Alethia demo — Meridian Field Services dispatch console.
+
+  Deliberately a LIGHT, dense, enterprise-ops surface: the other demos are
+  dark consumer/SOC screens, and the suite demo should not look like the
+  ecommerce storefront it used to reuse. Table-driven rather than card-grid,
+  slate/steel palette rather than pink-on-near-black.
+
+  Exercised by demo/suites/field-dispatch.suite — four flows: structure,
+  filter + search, assign a technician (a safe write), and a destructive
+  action that EA1 blocks.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Meridian Field Services — Dispatch Console</title>
+<style>
+  :root {
+    --page: #eef1f5;
+    --surface: #ffffff;
+    --line: #d8dee7;
+    --line-soft: #e8ecf2;
+    --ink: #16202e;
+    --ink-muted: #5b6b7f;
+    --ink-faint: #8695a8;
+    --steel: #2f6f9f;
+    --steel-deep: #1f5075;
+    --steel-soft: #e4eef6;
+    --amber: #b5730d;
+    --amber-soft: #fdf1dc;
+    --red: #b4342c;
+    --red-soft: #fbe6e4;
+    --green: #1f7a4d;
+    --green-soft: #e2f3ea;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── Masthead ─────────────────────────────────────────── */
+  .masthead {
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    padding: 18px 28px 0;
+  }
+  .masthead-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  h1 { margin: 0; font-size: 20px; font-weight: 650; letter-spacing: -0.01em; }
+  .brand-sub { font-size: 12.5px; color: var(--ink-faint); }
+  .shift-note {
+    font-size: 12px;
+    color: var(--ink-muted);
+    font-family: var(--mono);
+  }
+
+  .kpis { display: flex; gap: 34px; margin: 18px 0 0; padding: 0 0 16px; }
+  .kpi-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--ink-faint);
+    font-weight: 600;
+  }
+  .kpi-value { font-size: 24px; font-weight: 650; letter-spacing: -0.02em; margin-top: 2px; }
+  .kpi-value.warn { color: var(--amber); }
+  .kpi-value.crit { color: var(--red); }
+
+  /* ── Layout ───────────────────────────────────────────── */
+  .shell { display: grid; grid-template-columns: 214px 1fr; gap: 22px; padding: 22px 28px 40px; align-items: start; }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+  .panel-head {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 12px;
+    font-weight: 650;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+  }
+  .panel-body { padding: 14px 16px; }
+
+  /* ── Filters ──────────────────────────────────────────── */
+  .filter-stack { display: flex; flex-direction: column; gap: 6px; }
+  .filter-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 11px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--ink-muted);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+  }
+  .filter-btn:hover { background: var(--line-soft); color: var(--ink); }
+  .filter-btn.active {
+    background: var(--steel-soft);
+    border-color: #bcd8ea;
+    color: var(--steel-deep);
+    font-weight: 600;
+  }
+  .filter-count { font-size: 11.5px; font-family: var(--mono); opacity: .75; }
+
+  .search-row { margin-bottom: 12px; }
+  .search-input {
+    width: 100%;
+    padding: 8px 11px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font: inherit;
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--surface);
+  }
+  .search-input:focus { outline: none; border-color: var(--steel); box-shadow: 0 0 0 3px rgba(47,111,159,.14); }
+
+  /* ── Table ────────────────────────────────────────────── */
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left;
+    padding: 9px 14px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+    font-weight: 650;
+    border-bottom: 1px solid var(--line);
+    background: #f8fafc;
+  }
+  tbody td { padding: 11px 14px; border-bottom: 1px solid var(--line-soft); font-size: 13.5px; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr.selected { background: var(--steel-soft); }
+  .wo-id { font-family: var(--mono); font-size: 12.5px; color: var(--steel-deep); font-weight: 600; }
+  .unassigned { color: var(--ink-faint); font-style: italic; }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .tag-open { background: var(--steel-soft); color: var(--steel-deep); }
+  .tag-progress { background: var(--green-soft); color: var(--green); }
+  .tag-blocked { background: var(--red-soft); color: var(--red); }
+  .prio-high { color: var(--red); font-weight: 650; }
+  .prio-normal { color: var(--ink-muted); }
+
+  .row-btn {
+    padding: 4px 10px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: var(--surface);
+    color: var(--ink-muted);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .row-btn:hover { border-color: var(--steel); color: var(--steel-deep); }
+
+  .empty-row { padding: 26px 14px; text-align: center; color: var(--ink-faint); font-size: 13px; }
+
+  /* ── Detail / assign ──────────────────────────────────── */
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .detail-label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-faint); font-weight: 600; }
+  .detail-value { font-size: 13.5px; margin-top: 2px; }
+
+  .field-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .field { display: flex; flex-direction: column; gap: 5px; min-width: 190px; }
+  .field label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-faint); font-weight: 600; }
+  select, .note-input {
+    padding: 8px 11px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font: inherit;
+    font-size: 13px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  select:focus, .note-input:focus { outline: none; border-color: var(--steel); box-shadow: 0 0 0 3px rgba(47,111,159,.14); }
+
+  .btn {
+    padding: 8px 15px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-primary { background: var(--steel); color: #fff; }
+  .btn-primary:hover { background: var(--steel-deep); }
+  .btn-quiet { background: var(--surface); border-color: var(--line); color: var(--ink-muted); }
+  .btn-quiet:hover { border-color: var(--steel); color: var(--steel-deep); }
+  .btn-danger { background: var(--surface); border-color: #e3b6b2; color: var(--red); }
+  .btn-danger:hover { background: var(--red-soft); }
+
+  .assign-msg { margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--green); min-height: 19px; }
+
+  .danger-zone {
+    margin-top: 18px;
+    padding: 14px 16px;
+    border: 1px solid #ecd2cf;
+    border-radius: 7px;
+    background: #fdf7f6;
+  }
+  .danger-zone h3 { margin: 0 0 4px; font-size: 13px; color: var(--red); }
+  .danger-zone p { margin: 0 0 11px; font-size: 12.5px; color: var(--ink-muted); }
+  .danger-actions { display: flex; gap: 9px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-top">
+    <div class="brand">
+      <h1>Dispatch Console</h1>
+      <span class="brand-sub">Meridian Field Services</span>
+    </div>
+    <span class="shift-note">Shift 2 · Central Region · 06:00–18:00</span>
+  </div>
+  <div class="kpis">
+    <div>
+      <div class="kpi-label">Open Orders</div>
+      <div class="kpi-value" id="kpi-open">6</div>
+    </div>
+    <div>
+      <div class="kpi-label">In Progress</div>
+      <div class="kpi-value" id="kpi-progress">3</div>
+    </div>
+    <div>
+      <div class="kpi-label">Blocked</div>
+      <div class="kpi-value crit" id="kpi-blocked">2</div>
+    </div>
+    <div>
+      <div class="kpi-label">Avg Response</div>
+      <div class="kpi-value warn">42m</div>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+
+  <aside class="panel">
+    <div class="panel-head">Queues</div>
+    <div class="panel-body">
+      <div class="filter-stack" id="filters">
+        <button class="filter-btn active" data-status="all">All Orders <span class="filter-count">11</span></button>
+        <button class="filter-btn" data-status="open">Open <span class="filter-count">6</span></button>
+        <button class="filter-btn" data-status="progress">In Progress <span class="filter-count">3</span></button>
+        <button class="filter-btn" data-status="blocked">Blocked <span class="filter-count">2</span></button>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="panel" style="margin-bottom:22px">
+      <div class="panel-head">Work Orders</div>
+      <div class="panel-body" style="padding-bottom:0">
+        <div class="search-row">
+          <input class="search-input" id="search" type="text" placeholder="Search orders or sites" aria-label="Search orders or sites" />
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Order</th>
+            <th>Site</th>
+            <th>Technician</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="orders"></tbody>
+      </table>
+      <div class="empty-row" id="empty" style="display:none">No work orders match this filter.</div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">Order Detail</div>
+      <div class="panel-body">
+        <div class="detail-grid">
+          <div>
+            <div class="detail-label">Selected Order</div>
+            <div class="detail-value" id="detail-id">WO-4471</div>
+          </div>
+          <div>
+            <div class="detail-label">Site</div>
+            <div class="detail-value" id="detail-site">Northgate Substation</div>
+          </div>
+          <div>
+            <div class="detail-label">Reported Fault</div>
+            <div class="detail-value" id="detail-fault">Transformer temperature alarm</div>
+          </div>
+          <div>
+            <div class="detail-label">SLA Due</div>
+            <div class="detail-value" id="detail-sla">Today 16:40</div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="tech">Assign Technician</label>
+            <select id="tech" aria-label="Assign Technician">
+              <option value="">— unassigned —</option>
+              <option>Dana Whitfield</option>
+              <option>Marcus Ellery</option>
+              <option>Priya Raman</option>
+              <option>Tomas Bergstrom</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="note">Dispatch Note</label>
+            <input class="note-input" id="note" type="text" placeholder="Optional note for the technician" />
+          </div>
+          <button class="btn btn-primary" id="btn-assign">Assign</button>
+          <button class="btn btn-quiet" id="btn-ack">Acknowledge</button>
+        </div>
+        <div class="assign-msg" id="assign-msg"></div>
+
+        <div class="danger-zone">
+          <h3>Irreversible actions</h3>
+          <p>These permanently alter service records and customer billing.</p>
+          <div class="danger-actions">
+            <button class="btn btn-danger" id="btn-delete">Delete Work Order</button>
+            <button class="btn btn-danger" id="btn-purge">Purge Site History</button>
+            <button class="btn btn-danger" id="btn-cancel-contract">Cancel Service Contract</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  var ORDERS = [
+    { id: 'WO-4471', site: 'Northgate Substation', tech: '',                 prio: 'High',   status: 'open' },
+    { id: 'WO-4472', site: 'Harbor Pump Station',  tech: 'Dana Whitfield',   prio: 'Normal', status: 'progress' },
+    { id: 'WO-4473', site: 'Cedar Ridge Relay',    tech: '',                 prio: 'Normal', status: 'open' },
+    { id: 'WO-4474', site: 'Foundry Yard Feeder',  tech: 'Marcus Ellery',    prio: 'High',   status: 'blocked' },
+    { id: 'WO-4475', site: 'Westline Depot',       tech: '',                 prio: 'Normal', status: 'open' },
+    { id: 'WO-4476', site: 'Quarry Road Tower',    tech: 'Priya Raman',      prio: 'Normal', status: 'progress' },
+    { id: 'WO-4477', site: 'Bell Canyon Vault',    tech: '',                 prio: 'High',   status: 'open' },
+    { id: 'WO-4478', site: 'Riverside Intertie',   tech: 'Tomas Bergstrom',  prio: 'Normal', status: 'progress' },
+    { id: 'WO-4479', site: 'Old Mill Switchgear',  tech: '',                 prio: 'Normal', status: 'blocked' },
+    { id: 'WO-4480', site: 'Anders Field Pad',     tech: '',                 prio: 'Normal', status: 'open' },
+    { id: 'WO-4481', site: 'Summit Line Segment',  tech: 'Dana Whitfield',   prio: 'High',   status: 'open' }
+  ];
+
+  var STATUS_LABEL = { open: 'Open', progress: 'In Progress', blocked: 'Blocked' };
+  var STATUS_CLASS = { open: 'tag-open', progress: 'tag-progress', blocked: 'tag-blocked' };
+
+  var activeFilter = 'all';
+  var query = '';
+
+  function visibleOrders() {
+    return ORDERS.filter(function (o) {
+      if (activeFilter !== 'all' && o.status !== activeFilter) return false;
+      if (query) {
+        var hay = (o.id + ' ' + o.site + ' ' + o.tech).toLowerCase();
+        if (hay.indexOf(query.toLowerCase()) === -1) return false;
+      }
+      return true;
+    });
+  }
+
+  function render() {
+    var rows = visibleOrders();
+    var tbody = document.getElementById('orders');
+    tbody.innerHTML = '';
+    rows.forEach(function (o) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td><span class="wo-id">' + o.id + '</span></td>' +
+        '<td>' + o.site + '</td>' +
+        '<td>' + (o.tech ? o.tech : '<span class="unassigned">Unassigned</span>') + '</td>' +
+        '<td class="' + (o.prio === 'High' ? 'prio-high' : 'prio-normal') + '">' + o.prio + '</td>' +
+        '<td><span class="tag ' + STATUS_CLASS[o.status] + '">' + STATUS_LABEL[o.status] + '</span></td>' +
+        '<td style="text-align:right"><button class="row-btn" data-open="' + o.id + '">Open</button></td>';
+      tbody.appendChild(tr);
+    });
+    document.getElementById('empty').style.display = rows.length ? 'none' : 'block';
+  }
+
+  document.getElementById('filters').addEventListener('click', function (e) {
+    var btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    activeFilter = btn.getAttribute('data-status');
+    Array.prototype.forEach.call(document.querySelectorAll('.filter-btn'), function (b) {
+      b.classList.toggle('active', b === btn);
+    });
+    render();
+  });
+
+  document.getElementById('search').addEventListener('input', function (e) {
+    query = e.target.value.trim();
+    render();
+  });
+
+  document.getElementById('orders').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-open]');
+    if (!btn) return;
+    var id = btn.getAttribute('data-open');
+    var order = ORDERS.filter(function (o) { return o.id === id; })[0];
+    if (!order) return;
+    document.getElementById('detail-id').textContent = order.id;
+    document.getElementById('detail-site').textContent = order.site;
+    Array.prototype.forEach.call(document.querySelectorAll('#orders tr'), function (tr) {
+      tr.classList.remove('selected');
+    });
+    btn.closest('tr').classList.add('selected');
+  });
+
+  document.getElementById('btn-assign').addEventListener('click', function () {
+    var tech = document.getElementById('tech').value;
+    var msg = document.getElementById('assign-msg');
+    var id = document.getElementById('detail-id').textContent;
+    if (!tech) {
+      msg.style.color = '#b5730d';
+      msg.textContent = 'Select a technician before assigning.';
+      return;
+    }
+    var order = ORDERS.filter(function (o) { return o.id === id; })[0];
+    if (order) { order.tech = tech; order.status = 'progress'; }
+    msg.style.color = '#1f7a4d';
+    msg.textContent = 'Technician assigned to ' + id + '.';
+    render();
+  });
+
+  document.getElementById('btn-ack').addEventListener('click', function () {
+    var msg = document.getElementById('assign-msg');
+    msg.style.color = '#1f7a4d';
+    msg.textContent = 'Order acknowledged.';
+  });
+
+  // Destructive controls — these are the ones EA1 is expected to block.
+  // They intentionally do real damage to page state if ever reached, so a
+  // successful block is observable rather than cosmetic.
+  function destructive(label) {
+    return function () {
+      ORDERS.length = 0;
+      render();
+      var msg = document.getElementById('assign-msg');
+      msg.style.color = '#b4342c';
+      msg.textContent = label + ' completed — records destroyed.';
+    };
+  }
+  document.getElementById('btn-delete').addEventListener('click', destructive('Delete Work Order'));
+  document.getElementById('btn-purge').addEventListener('click', destructive('Purge Site History'));
+  document.getElementById('btn-cancel-contract').addEventListener('click', destructive('Cancel Service Contract'));
+
+  render();
+</script>
+</body>
+</html>

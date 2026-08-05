@@ -1,0 +1,6 @@
+name Assign a technician
+navigate to http://127.0.0.1:47432/demo/dispatch-console.html
+select "Priya Raman" from Assign Technician
+set Dispatch Note to "Bring thermal camera"
+click Assign
+assert Technician assigned to WO-4471. is visible

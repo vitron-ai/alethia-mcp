@@ -1,0 +1,6 @@
+name Irreversible actions blocked
+navigate to http://127.0.0.1:47432/demo/dispatch-console.html
+expect block: click Delete Work Order
+expect block: click Purge Site History
+expect block: click Cancel Service Contract
+assert Northgate Substation is visible

@@ -1,0 +1,7 @@
+name: Field Dispatch Checks
+description: Four flows over the Meridian dispatch console — structure, queue filters, assigning a technician, and the EA1 gate on irreversible actions.
+
+tests/01-console-structure.alethia
+tests/02-queue-filters.alethia
+tests/03-assign-technician.alethia
+tests/04-irreversible-actions.alethia

@@ -28,6 +28,7 @@ The agent starts a localhost server, drives the app with plain English, and EA1 
 | `admin-panel.html` | Defense / Classified | Classified admin system (TS/SCI) — user management, deletion blocked by EA1 |
 | `financial-dashboard.html` | Finance / Trading | Risk monitor — margin warnings, compliance checks, liquidation blocked by EA1 |
 | `ea1-stress-test.html` | Security / Compliance | Negative tests — every destructive action should be BLOCKED by EA1 policy |
+| `dispatch-console.html` | Field service / Ops | Light-theme work-order console — queue filters, technician assignment, irreversible actions blocked. Target of the demo **suite** below |
 | `wcag-audit.html` | Accessibility / Section 508 | Negative tests — 12 deliberate WCAG violations, audit should catch all |
 | `nist-compliance.html` | Federal / NIST 800-53 | Negative tests — 6 NIST SP 800-53 security control violations |
 
@@ -130,20 +131,20 @@ Every demo HTML ships with a matching `.alethia` test file in this folder. Feed 
 
 The URLs assume `http://localhost:8765/` (matches the python3 one-liner above). If you use `alethia_serve_demo` instead, swap the host/port to whatever the server returns.
 
-## Demo suite — `suites/storefront-release.suite`
+## Demo suite — `suites/field-dispatch.suite`
 
 The specs above are single tests. A **suite** is an ordered group of them that runs as one job and produces a single evidence pack at the end.
 
-`suites/storefront-release.suite` covers one app (`ecommerce.html`) across four tests:
+`suites/field-dispatch.suite` covers one app (`dispatch-console.html`) across four flows:
 
 | # | Test | What it proves |
 |---|---|---|
-| 1 | `01-storefront-smoke.alethia` | Page renders, key products visible |
-| 2 | `02-browse-and-filter.alethia` | Category filters swap the product grid |
-| 3 | `03-cart-and-promo.alethia` | Add to cart, apply `HELIX20`, discount confirmed |
-| 4 | `04-checkout-safety-gate.alethia` | EA1 blocks **Complete Purchase** |
+| 1 | `01-console-structure.alethia` | Masthead, KPIs, and the work-order table render |
+| 2 | `02-queue-filters.alethia` | Status queues filter the table; search narrows it |
+| 3 | `03-assign-technician.alethia` | Select a technician, add a note, assign — a safe write |
+| 4 | `04-irreversible-actions.alethia` | EA1 blocks **Delete Work Order**, **Purge Site History**, and **Cancel Service Contract** |
 
-**Run it in the cockpit:** open the **Tests** panel and click *Load the demo suite* (or the *Storefront Release Check* card in **Demos**). Then **Run Suite** — all four run in order, and the Session panel's switcher lets you jump between individual tests.
+**Run it in the cockpit:** open the **Tests** panel and click *Load the demo suite* (or the *Suite with Tests* card in **Demos**). Then **Run all** — the four run in order, and the Session panel's switcher drops down to jump between individual tests.
 
 A suite file is plain text, not JSON — an optional `name:`/`description:` header, a blank line, then one test path per line, relative to the suite file:
 

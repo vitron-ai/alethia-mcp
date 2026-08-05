@@ -1,0 +1,7 @@
+name Queue filters and search
+navigate to http://127.0.0.1:47432/demo/dispatch-console.html
+click Blocked
+assert Foundry Yard Feeder is visible
+click All Orders
+type "Harbor" into Search orders or sites
+assert Harbor Pump Station is visible
