@@ -4,7 +4,7 @@ Every block below is a **literal prompt**. Paste it into Claude, Cursor, Cline, 
 
 **Prerequisites**
 
-- `@vitronai/alethia` configured as an MCP server in your agent client. See [quickstart-mcp.md](quickstart-mcp.md) for 30-second setup per client.
+- `@vitronai/alethia` configured as an MCP server in your agent client. See the [Install section of the main README](../README.md#install) for 30-second setup per client.
 - The Alethia cockpit opens by default — you'll see each step highlighted live (green = pass, blue = type, red = EA1 block).
 
 ---
@@ -33,7 +33,7 @@ Use Alethia to smoke test my dev server at http://localhost:3000. Navigate to it
 Scan http://localhost:3000/settings with Alethia, generate a test suite for everything interactive on the page, and run it. Include destructive-action safety checks — I want proof the EA1 gate blocks anything that could wipe data.
 ```
 
-**What the agent does:** `alethia_propose_tests` returns a candidate suite of **named test blocks** — cohesive multi-step flows like "Page Structure Verification", "Safe Button Interactions", "EA1 Safety Gate Verification" (with auto-generated `expect block:` lines for each destructive action). The agent calls `alethia_tell` **once per block** (not merged) so each block becomes its own signed `PlanRun` with its own integrity hash, its own history entry, and the cockpit UI paints them as discrete runs anyone watching live can read. One block failing doesn't sink the others.
+**What the agent does:** `alethia_propose_tests` returns a candidate suite of **named test blocks** — cohesive multi-step flows like "Page Structure Verification", "Safe Button Interactions", "EA1 Safety Gate Verification" (with auto-generated `expect block:` lines for each destructive action). The agent calls `alethia_tell` **once per block** (not merged) so each block gets its own signed record and its own history entry, and the cockpit paints them as discrete runs anyone watching live can read. One block failing doesn't sink the others.
 
 ---
 
