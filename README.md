@@ -13,7 +13,7 @@
 
 This package is the **MIT-licensed MCP bridge** (~22 KB) — a thin stdio-to-HTTP relay that lets any MCP client (Claude Code, Cursor, Cline, Continue, Claude Desktop) drive the Alethia desktop runtime. It auto-downloads the signed runtime on first use.
 
-The cockpit is an **oversight surface**, not an authoring IDE. Humans do not write tests in a GUI. Agents propose tests, run them, and prove safety — humans review the evidence.
+The cockpit shows every step live, and you can also write or edit tests directly in its editor when you want hands-on control — it's not agent-only. But the primary loop is agent-driven: ask your agent in plain English, it proposes and runs the test, and you review the evidence.
 
 > **Patent notice.** The MIT license on this bridge does **not** grant a patent license to the Alethia runtime (U.S. Application No. 19/571,437). Commercial runtime use may require a separate license. Contact **team@vitron.ai**.
 
@@ -207,14 +207,14 @@ Block 2 — Safe Button Interactions (2 steps)
 Block 3 — EA1 Safety Gate Verification (3 steps, all expect-block)
 ```
 
-Calling `alethia_tell` once per block (rather than merging all blocks into one giant NLP string) is deliberate:
+Ask your agent to run each block as its own `alethia_tell` call, rather than merging all blocks into one giant instruction string:
 
-- **Each block becomes its own signed `PlanRun`** with its own integrity hash and its own history entry. Merged, you lose the audit boundary.
-- **Named blocks stay named.** "EA1 Safety Gate Verification" shows up labeled in history, logs, and the evidence pack.
-- **One block's failure doesn't sink the others.** Partial success + targeted rerun is the default.
-- **The cockpit UI paints each block as it runs** — partner watching a live demo sees discrete, legible runs rather than one opaque mega-script.
+- **Each block gets its own signed record and its own history entry.** Merge them and you lose that boundary.
+- **Named blocks stay named** — "EA1 Safety Gate Verification" shows up labeled in history, logs, and the evidence pack.
+- **One block's failure doesn't sink the others** — partial success and a targeted rerun is the default.
+- **The cockpit paints each block as it runs**, so someone watching a live demo sees discrete, legible runs instead of one opaque mega-script.
 
-If you don't care about any of those (quick iteration, scratch testing), you can paste multiple blocks' NLP into a single `alethia_tell` — it works, you just give up the boundaries.
+For quick iteration or scratch testing, you can paste multiple blocks into a single `alethia_tell` call — it works, you just give up those boundaries.
 
 ---
 
@@ -261,26 +261,26 @@ The full reference example lives at [**vitron-ai/alethia-anvil**](https://github
 
 ## Tools
 
-| Tool | Purpose |
-|---|---|
-| `alethia_tell` | Run plain-English test steps. Returns per-step results, `nearMatches`, `suggestedFix`, `pageContext`, and an integrity hash. |
-| `alethia_propose_tests` | Scan a local URL (localhost, 127.0.0.1, file://, or RFC1918), return a candidate test suite including auto-wrapped `expect block:` for destructive actions. |
-| `alethia_assert_safety` | Walk every destructive control on a local URL, verify the EA1 gate blocks each one. |
-| `alethia_tell_parallel` | Concurrent multi-page test execution. |
-| `alethia_compile` | Preview what `tell` will run without executing. |
-| `alethia_screenshot` | Capture a PNG of the current page. |
-| `alethia_eval` | Raw JavaScript in the page under test (policy-gated). |
-| `alethia_status` | Version, policy profile, kill switch state. |
-| `alethia_audit_wcag` | WCAG 2.1 AA accessibility audit via axe-core. |
-| `alethia_audit_nist` | NIST SP 800-53 Rev. 5 security controls audit. |
-| `alethia_export_session` | Signed evidence pack of the whole session. |
-| `alethia_activate_kill_switch` / `alethia_reset_kill_switch` | Emergency halt and resume. |
-| `alethia_serve_demo` | Start the bundled localhost demo server. |
-| `alethia_show_cockpit` / `alethia_hide_cockpit` | Toggle the live oversight window mid-session. |
+You don't call these directly — you ask your agent in plain English, and it picks the right one. This table shows what to say and what comes back.
 
-Destructive actions (delete, purchase, transfer, liquidate, revoke, terminate, ...) are blocked by default under the hardened local-only profile. Sensitive-input fields (passwords, tokens, credit cards) are blocked unless `allowSensitiveInput: true` is passed. Profile overrides from the agent are stripped by the bridge — profile changes require human configuration.
+| Tool | Ask for it | What comes back |
+|---|---|---|
+| `alethia_tell` | "Sign in and verify the dashboard loads." | What changed, whether anything was blocked, and a tamper-evident record of the run. |
+| `alethia_propose_tests` | "Generate tests for this page — I haven't covered it yet." | A starter test suite, including a safety check for every destructive control found. |
+| `alethia_assert_safety` | "Prove the safety gate blocks destructive actions on this page." | A per-action block/allow report — proof the gate holds before trusting an agent on a real environment. |
+| `alethia_tell_parallel` | "Check the dashboard and the settings page at the same time." | Results for every page, run concurrently. |
+| `alethia_compile` | "Show me what that test would do before you run it." | A preview — nothing runs against the page. |
+| `alethia_screenshot` | "Take a screenshot." | A PNG of what the browser is showing right now. |
+| `alethia_eval` | "How many items are in that list right now?" | Answers to questions plain English can't — counts, computed styles, stored values. |
+| `alethia_status` | "Is Alethia actually running? What version?" | A quick health check. |
+| `alethia_audit_wcag` | "Audit this page for accessibility." | A real WCAG 2.1 AA audit via axe-core. |
+| `alethia_audit_nist` | "Audit this page for compliance and security." | Findings across 8 NIST SP 800-53 controls. |
+| `alethia_export_session` | "Export a signed evidence pack of everything you just did." | A tamper-evident record of the full session. |
+| `alethia_activate_kill_switch` | "Stop everything right now — something looks wrong." | An immediate halt. Only clears on your next Run from the cockpit — agents can't self-release it. |
+| `alethia_serve_demo` | "Serve the demo pages." | A localhost URL for the bundled demo pages. |
+| `alethia_show_cockpit` / `alethia_hide_cockpit` | "Show me the cockpit" / "hide the cockpit." | Toggles the live oversight window mid-session. |
 
-Full input/output schemas are available at runtime via the MCP `tools/list` method — every MCP-capable client surfaces the schemas automatically.
+Destructive actions (delete, purchase, transfer, liquidate, revoke, terminate, ...) are blocked by default. Sensitive fields (passwords, tokens, credit cards) are blocked unless you frame the request as a legitimate auth or payment test — the agent enables that for the call, you don't need to name a flag yourself. Profile overrides from the agent are stripped by the bridge; widening the gate requires you to configure it directly, not the agent.
 
 ---
 
