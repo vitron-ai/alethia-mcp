@@ -2,14 +2,15 @@
 <!--
   Alethia demo — Meridian Field Services dispatch console.
 
-  Deliberately a LIGHT, dense, enterprise-ops surface: the other demos are
-  dark consumer/SOC screens, and the suite demo should not look like the
-  ecommerce storefront it used to reuse. Table-driven rather than card-grid,
-  slate/steel palette rather than pink-on-near-black.
+  Dense, table-driven enterprise-ops surface, dark palette matching the
+  rest of this demo set (steel-blue accent rather than the pink/teal used
+  elsewhere, so it still reads as its own thing within the shared theme).
 
-  Exercised by demo/suites/field-dispatch.suite — four flows: structure,
-  filter + search, assign a technician (a safe write), and a destructive
-  action that EA1 blocks.
+  Exercised by demo/suites/field-dispatch.suite — eight flows: structure,
+  filter + search, selecting a different order, assigning a technician (a
+  safe write), acknowledging an order, the assign-without-a-technician
+  validation message, a no-match search, and destructive actions that EA1
+  blocks.
 -->
 <html lang="en">
 <head>
@@ -18,22 +19,22 @@
 <title>Meridian Field Services — Dispatch Console</title>
 <style>
   :root {
-    --page: #eef1f5;
-    --surface: #ffffff;
-    --line: #d8dee7;
-    --line-soft: #e8ecf2;
-    --ink: #16202e;
-    --ink-muted: #5b6b7f;
-    --ink-faint: #8695a8;
-    --steel: #2f6f9f;
-    --steel-deep: #1f5075;
-    --steel-soft: #e4eef6;
-    --amber: #b5730d;
-    --amber-soft: #fdf1dc;
-    --red: #b4342c;
-    --red-soft: #fbe6e4;
-    --green: #1f7a4d;
-    --green-soft: #e2f3ea;
+    --page: #0b0f14;
+    --surface: #121820;
+    --line: #232c38;
+    --line-soft: #1a222c;
+    --ink: #e6edf5;
+    --ink-muted: #93a3b8;
+    --ink-faint: #64758a;
+    --steel: #4d9fe0;
+    --steel-deep: #8fc4ee;
+    --steel-soft: rgba(77, 159, 224, .14);
+    --amber: #e0a53c;
+    --amber-soft: rgba(224, 165, 60, .12);
+    --red: #e2635a;
+    --red-soft: rgba(226, 99, 90, .12);
+    --green: #4cc38a;
+    --green-soft: rgba(76, 195, 138, .12);
     --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
@@ -118,7 +119,7 @@
   .filter-btn:hover { background: var(--line-soft); color: var(--ink); }
   .filter-btn.active {
     background: var(--steel-soft);
-    border-color: #bcd8ea;
+    border-color: rgba(77, 159, 224, .4);
     color: var(--steel-deep);
     font-weight: 600;
   }
@@ -135,7 +136,7 @@
     color: var(--ink);
     background: var(--surface);
   }
-  .search-input:focus { outline: none; border-color: var(--steel); box-shadow: 0 0 0 3px rgba(47,111,159,.14); }
+  .search-input:focus { outline: none; border-color: var(--steel); box-shadow: 0 0 0 3px rgba(77, 159, 224, .18); }
 
   /* ── Table ────────────────────────────────────────────── */
   table { width: 100%; border-collapse: collapse; }
@@ -148,7 +149,7 @@
     color: var(--ink-faint);
     font-weight: 650;
     border-bottom: 1px solid var(--line);
-    background: #f8fafc;
+    background: rgba(255,255,255,.02);
   }
   tbody td { padding: 11px 14px; border-bottom: 1px solid var(--line-soft); font-size: 13.5px; }
   tbody tr:last-child td { border-bottom: none; }
@@ -200,7 +201,7 @@
     background: var(--surface);
     color: var(--ink);
   }
-  select:focus, .note-input:focus { outline: none; border-color: var(--steel); box-shadow: 0 0 0 3px rgba(47,111,159,.14); }
+  select:focus, .note-input:focus { outline: none; border-color: var(--steel); box-shadow: 0 0 0 3px rgba(77, 159, 224, .18); }
 
   .btn {
     padding: 8px 15px;
@@ -215,7 +216,7 @@
   .btn-primary:hover { background: var(--steel-deep); }
   .btn-quiet { background: var(--surface); border-color: var(--line); color: var(--ink-muted); }
   .btn-quiet:hover { border-color: var(--steel); color: var(--steel-deep); }
-  .btn-danger { background: var(--surface); border-color: #e3b6b2; color: var(--red); }
+  .btn-danger { background: var(--surface); border-color: rgba(226, 99, 90, .35); color: var(--red); }
   .btn-danger:hover { background: var(--red-soft); }
 
   .assign-msg { margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--green); min-height: 19px; }
@@ -223,9 +224,9 @@
   .danger-zone {
     margin-top: 18px;
     padding: 14px 16px;
-    border: 1px solid #ecd2cf;
+    border: 1px solid rgba(226, 99, 90, .3);
     border-radius: 7px;
-    background: #fdf7f6;
+    background: rgba(226, 99, 90, .06);
   }
   .danger-zone h3 { margin: 0 0 4px; font-size: 13px; color: var(--red); }
   .danger-zone p { margin: 0 0 11px; font-size: 12.5px; color: var(--ink-muted); }
@@ -440,20 +441,20 @@
     var msg = document.getElementById('assign-msg');
     var id = document.getElementById('detail-id').textContent;
     if (!tech) {
-      msg.style.color = '#b5730d';
+      msg.style.color = 'var(--amber)';
       msg.textContent = 'Select a technician before assigning.';
       return;
     }
     var order = ORDERS.filter(function (o) { return o.id === id; })[0];
     if (order) { order.tech = tech; order.status = 'progress'; }
-    msg.style.color = '#1f7a4d';
+    msg.style.color = 'var(--green)';
     msg.textContent = 'Technician assigned to ' + id + '.';
     render();
   });
 
   document.getElementById('btn-ack').addEventListener('click', function () {
     var msg = document.getElementById('assign-msg');
-    msg.style.color = '#1f7a4d';
+    msg.style.color = 'var(--green)';
     msg.textContent = 'Order acknowledged.';
   });
 
@@ -465,7 +466,7 @@
       ORDERS.length = 0;
       render();
       var msg = document.getElementById('assign-msg');
-      msg.style.color = '#b4342c';
+      msg.style.color = 'var(--red)';
       msg.textContent = label + ' completed — records destroyed.';
     };
   }

@@ -1,0 +1,6 @@
+name Select a different order
+navigate to http://127.0.0.1:47432/demo/dispatch-console.html
+type "Cedar Ridge" into Search orders or sites
+click Open
+assert WO-4473 is visible
+assert Cedar Ridge Relay is visible

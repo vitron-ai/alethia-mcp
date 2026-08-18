@@ -1,0 +1,4 @@
+name Assign without a technician is rejected
+navigate to http://127.0.0.1:47432/demo/dispatch-console.html
+click Assign
+assert Select a technician before assigning. is visible

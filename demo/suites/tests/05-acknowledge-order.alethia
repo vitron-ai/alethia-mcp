@@ -1,0 +1,4 @@
+name Acknowledge an order
+navigate to http://127.0.0.1:47432/demo/dispatch-console.html
+click Acknowledge
+assert Order acknowledged. is visible
