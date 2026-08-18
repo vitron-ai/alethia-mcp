@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "alethia": {
+      "command": "npx",
+      "args": ["-y", "@vitronai/alethia@latest"]
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "alethia",
+  "description": "Single-plugin marketplace for the Alethia agent-driven browser testing MCP server and skill.",
+  "owner": {
+    "name": "vitron.ai",
+    "email": "team@vitron.ai",
+    "url": "https://vitron.ai"
+  },
+  "plugins": [
+    {
+      "name": "alethia",
+      "source": "./",
+      "description": "Patent-pending zero-IPC E2E test runtime for AI agents. Drive a real browser in plain English, enforce the VITRON-EA1 fail-closed safety gate, audit WCAG 2.1 AA and NIST SP 800-53, and export signed evidence packs."
+    }
+  ]
+}

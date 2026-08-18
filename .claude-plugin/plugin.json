@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "alethia",
+  "displayName": "Alethia",
+  "version": "0.9.2",
+  "description": "Patent-pending zero-IPC E2E test runtime for AI agents. Drive a real browser in plain English, enforce the VITRON-EA1 fail-closed safety gate, audit WCAG 2.1 AA and NIST SP 800-53, and export signed evidence packs. Local-first, zero telemetry.",
+  "author": {
+    "name": "vitron.ai",
+    "email": "team@vitron.ai",
+    "url": "https://vitron.ai"
+  },
+  "homepage": "https://vitron.ai",
+  "repository": "https://github.com/vitron-ai/alethia-mcp",
+  "license": "MIT",
+  "keywords": [
+    "e2e-testing",
+    "browser-automation",
+    "accessibility",
+    "wcag",
+    "nist",
+    "security",
+    "playwright-alternative",
+    "agent-testing"
+  ]
+}
