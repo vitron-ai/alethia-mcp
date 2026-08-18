@@ -1031,7 +1031,9 @@ const spawnRuntime = async (runtimeVersion?: string): Promise<void> => {
   throw new Error(`Runtime failed to start within ${maxWait / 1000}s. Check ${RUNTIME_DIR} for issues.`);
 };
 
-// Clean up spawned runtime on exit
+// Clean up spawned runtime on exit. Fire-and-forget — Node's 'exit' event
+// handlers can't be async, so this is only a safety net for exit paths that
+// don't go through awaitRuntimeShutdown() below.
 const cleanupRuntime = (): void => {
   if (runtimeProcess && !runtimeProcess.killed) {
     debug('killing spawned runtime');
@@ -1039,6 +1041,25 @@ const cleanupRuntime = (): void => {
   }
 };
 process.on('exit', cleanupRuntime);
+
+// Same kill, but actually waited on — for `alethia run`'s own exit paths.
+// Without this, the CLI process (and therefore the port) could still be
+// held by the dying runtime when the *next* `alethia run` invocation in a
+// loop (e.g. CI iterating over every demo) tries to spawn a fresh one,
+// racing it into an ERR_ABORTED/ECONNREFUSED failure that has nothing to
+// do with the demo itself. SIGTERM is fire-and-forget at the OS level; this
+// just waits for the resulting 'exit' event, capped so a runtime that
+// refuses to die can't hang the CLI forever.
+const awaitRuntimeShutdown = (timeoutMs = 5000): Promise<void> => {
+  if (!runtimeProcess || runtimeProcess.killed) return Promise.resolve();
+  const proc = runtimeProcess;
+  debug('killing spawned runtime (waiting for exit)');
+  return new Promise<void>((resolve) => {
+    const timer = setTimeout(resolve, timeoutMs);
+    proc.once('exit', () => { clearTimeout(timer); resolve(); });
+    proc.kill('SIGTERM');
+  });
+};
 
 // ---------------------------------------------------------------------------
 // CLI flag handling — runs before any stdio processing
@@ -1363,16 +1384,16 @@ const runCli = async (argv: string[]): Promise<never> => {
     });
     if (response.error) {
       process.stderr.write(`alethia run: runtime error: ${response.error.message}\n`);
-      cleanupRuntime();
+      await awaitRuntimeShutdown();
       process.exit(1);
     }
     const result = extractRunResult(response.result);
     process.stdout.write(formatRunResult(result, args) + '\n');
-    cleanupRuntime();
+    await awaitRuntimeShutdown();
     process.exit(result.ok ? 0 : 1);
   } catch (err) {
     process.stderr.write(`alethia run: ${(err as Error).message}\n`);
-    cleanupRuntime();
+    await awaitRuntimeShutdown();
     process.exit(1);
   }
 };
