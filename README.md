@@ -15,7 +15,7 @@
 
 ```
 /plugin marketplace add vitron-ai/alethia-mcp
-/plugin install alethia@alethia
+/plugin install alethia@vitronai
 ```
 
 This wires up both the MCP server and the skill in one step — no manual `npm install` or MCP config editing. Restart or run `/reload-plugins` to activate.
