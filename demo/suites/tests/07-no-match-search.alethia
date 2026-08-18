@@ -1,0 +1,4 @@
+name Search with no matches
+navigate to http://127.0.0.1:47432/demo/dispatch-console.html
+type "nonexistent-site-zzz" into Search orders or sites
+assert No work orders match this filter. is visible
