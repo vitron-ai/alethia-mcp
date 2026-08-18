@@ -76,7 +76,7 @@ Use alethia_tell to navigate to file:///PATH/demo/wcag-audit.html. Assert "WCAG 
 
 ### NIST 800-53 Compliance Audit — Federal Security Controls
 ```
-Use alethia_tell to navigate to file:///PATH/demo/nist-compliance.html. Assert "NIST 800-53" is visible. Check the NIST 800-53 audit in the response — how many findings were flagged? What severity levels? The page deliberately violates AC-7 (login lockout), AC-8 (security banner), AC-12 (session timeout), SI-10 (input validation), SI-11 (error leakage), and IA-6 (unmasked passwords).
+Use alethia_tell to navigate to file:///PATH/demo/nist-compliance.html. Assert "NIST SP 800-53" is visible. Check the NIST 800-53 audit in the response — how many findings were flagged? What severity levels? The page deliberately violates AC-7 (login lockout), AC-8 (security banner), AC-12 (session timeout), SI-10 (input validation), SI-11 (error leakage), and IA-6 (unmasked passwords).
 ```
 
 ## Setup
