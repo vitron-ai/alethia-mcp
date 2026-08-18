@@ -100,18 +100,24 @@ jobs:
           echo "Demo server failed to bind port ${{ env.DEMO_PORT }} after 5s"
           exit 1
 
-      - name: Run alethia against the demo
+      - name: Run alethia against every demo
         # The wrapping ::group:: collapsible keeps the GHA log scannable
         # while still surfacing per-step diagnostics on failure.
         # xvfb-run provides the virtual display the runtime expects.
         # ALETHIA_HEADLESS=1 keeps the cockpit window from being shown
         # *within* that virtual display.
+        #
+        # Runs every demo/*.alethia spec, not just one — this is what
+        # caught the stale "NIST 800-53" vs "NIST SP 800-53" assertion
+        # mismatch in nist-compliance.alethia before it shipped.
         env:
           ALETHIA_HEADLESS: '1'
         run: |
-          echo "::group::alethia run demo/claude-code-app.alethia"
-          xvfb-run -a node dist/index.js run demo/claude-code-app.alethia
-          echo "::endgroup::"
+          for test in demo/*.alethia; do
+            echo "::group::alethia run $test"
+            xvfb-run -a node dist/index.js run "$test"
+            echo "::endgroup::"
+          done
 
       - name: Stop demo server
         if: always()
