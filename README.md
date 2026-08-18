@@ -11,7 +11,16 @@
 
 ## Install
 
-**Claude Code — fastest path:**
+**Claude Code — fastest path (plugin):**
+
+```
+/plugin marketplace add vitron-ai/alethia-mcp
+/plugin install alethia@alethia
+```
+
+This wires up both the MCP server and the skill in one step — no manual `npm install` or MCP config editing. Restart or run `/reload-plugins` to activate.
+
+**Claude Code — skill only (no plugin manager):**
 
 ```bash
 mkdir -p ~/.claude/skills/alethia && \
