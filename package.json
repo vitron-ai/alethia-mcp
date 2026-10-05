@@ -21,7 +21,8 @@
     "dev": "tsc --watch",
     "test": "themis test --isolation process",
     "prepublishOnly": "npm run build && npm test",
-    "bundle:mcpb": "npm run build && npx @anthropic-ai/mcpb pack . release/alethia-$(node -p \"require('./package.json').version\").mcpb"
+    "bundle:mcpb": "npm run build && npx @anthropic-ai/mcpb pack . release/alethia-$(node -p \"require('./package.json').version\").mcpb",
+    "test:alethia": "npm run build && node scripts/alethia-mcp-smoke.mjs"
   },
   "keywords": [
     "mcp",

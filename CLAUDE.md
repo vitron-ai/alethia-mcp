@@ -17,7 +17,7 @@ Entry point: [src/index.ts](src/index.ts) → compiled to `dist/index.js`.
 npm test
 ```
 
-Runs `bridge-tests/*.test.mjs` via `@vitronai/themis`. Tests cover bridge smoke, self-update, CLI flags, runtime version resolution, and symlink spawning. Config in [themis.config.json](themis.config.json).
+Runs `tests/*.test.mjs` via `@vitronai/themis`. Tests cover bridge smoke, self-update, CLI flags, runtime version resolution, and symlink spawning. Config in [themis.config.json](themis.config.json).
 
 ## Run the bridge locally
 
@@ -48,7 +48,7 @@ The Claude Code skill lives at [skills/alethia/SKILL.md](skills/alethia/SKILL.md
 | Path | Purpose |
 |------|---------|
 | `src/index.ts` | Bridge entrypoint — MCP server, tool handlers, runtime installer |
-| `bridge-tests/` | Unit/integration tests (themis) |
+| `tests/` | Unit/integration tests (Themis) |
 | `demo/` | Demo HTML pages + paired `.alethia` NLP scripts |
 | `skills/alethia/SKILL.md` | Bundled Claude Code skill |
 | `examples/` | Copy-paste integration examples for downstream projects |
