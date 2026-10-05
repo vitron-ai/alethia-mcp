@@ -1153,6 +1153,12 @@ EXAMPLES
   alethia run tests/login.alethia
   alethia run --nlp "navigate to http://localhost:3000\\nclick Sign In\\nassert dashboard is visible"
   cat tests/login.alethia | alethia run -
+
+WINDOWS / NPM EXEC
+  For multi-step runs on Windows, use a .alethia file or pipe input to
+  alethia run -; npm command shims may truncate real newlines in --nlp.
+  Literal \n separators in --nlp are expanded to line breaks.
+  With npx/npm exec, put CLI flags after npm's -- separator.
   alethia run tests/login.alethia --quiet
 
 EXIT CODES
@@ -1193,7 +1199,9 @@ export const parseRunArgs = (argv: string[]): RunCliArgs => {
     if (a === '--nlp') {
       const v = argv[++i];
       if (v === undefined) return { mode: 'error', message: '--nlp requires a value.' };
-      nlpInline = v;
+      // Literal \n keeps multi-step inline input usable through Windows npm shims,
+      // which cannot reliably forward an argument containing real newlines.
+      nlpInline = v.replace(/\\n/g, '\n');
       continue;
     }
     if (a === '-') {

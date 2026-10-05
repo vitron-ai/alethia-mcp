@@ -178,6 +178,8 @@ alethia-mcp --debug          Run with debug logging on stderr
 
 A shorter `alethia` alias (same binary) is also installed, so the run subcommand can be invoked as `alethia run <path>`.
 
+On Windows, prefer a .alethia file or stdin (Get-Content tests\login.alethia -Raw | alethia run -) for multi-step runs. PowerShell and npm command shims may truncate actual newline characters passed in --nlp; literal \n separators are supported for inline input. For flags such as --json through npx/npm exec, use npm's -- separator before the Alethia command arguments.
+
 ### Environment variables
 
 | Variable | Default | Description |
@@ -200,6 +202,8 @@ A shorter `alethia` alias (same binary) is also installed, so the run subcommand
 - The bundled Claude Code skill auto-refreshes the same way — each spawn compares it to `~/.claude/skills/alethia/SKILL.md` and overwrites if stale.
 
 ### Troubleshooting
+**A multi-step run --nlp only executes its first step on Windows** — use a .alethia file or pipe the file to alethia run -; npm command shims can truncate real newlines in arguments. For short inline commands, use literal \n between steps. When invoking CLI flags through npx/npm exec, pass them after npm's -- separator.
+
 
 **"Alethia desktop runtime is not running"** — run `alethia-mcp --health-check` (triggers auto-install if missing). If that fails, check network reachability to GitHub.
 
