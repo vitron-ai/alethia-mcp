@@ -39,7 +39,7 @@ process.env.USERPROFILE = TEST_HOME; // Windows
 delete process.env.ALETHIA_RUNTIME_VERSION;
 
 // Now import the bridge — its module-level constants read these env vars.
-const { resolveRuntimeVersion, __setLatestVersionFetcherForTests, getArtifactName, getGithubReleaseBase } =
+const { resolveRuntimeVersion, __setLatestVersionFetcherForTests, getArtifactName, getGithubReleaseBase, getWindowsExecutablePath } =
   await import('../dist/index.js');
 
 // Utility: re-import is not needed; we reset caches by writing/removing files
@@ -200,4 +200,28 @@ test('getArtifactName returns platform-specific templates', () => {
 test('getGithubReleaseBase produces the expected URL', () => {
   expect(getGithubReleaseBase('0.4.0')).toBe('https://github.com/vitron-ai/alethia/releases/download/v0.4.0');
   expect(getGithubReleaseBase('1.2.3-pre.5')).toBe('https://github.com/vitron-ai/alethia/releases/download/v1.2.3-pre.5');
+});
+
+test('Windows executable lookup prefers win-unpacked when both layouts exist', () => {
+  const runtimeDir = join(TEST_HOME, 'windows-both-layouts');
+  mkdirSync(join(runtimeDir, 'win-unpacked'), { recursive: true });
+  writeFileSync(join(runtimeDir, 'win-unpacked', 'Alethia.exe'), '');
+  writeFileSync(join(runtimeDir, 'Alethia.exe'), '');
+
+  expect(getWindowsExecutablePath(runtimeDir)).toBe(join(runtimeDir, 'win-unpacked', 'Alethia.exe'));
+});
+
+test('Windows executable lookup falls back to Alethia.exe at the runtime root', () => {
+  const runtimeDir = join(TEST_HOME, 'windows-flat-layout');
+  mkdirSync(runtimeDir, { recursive: true });
+  writeFileSync(join(runtimeDir, 'Alethia.exe'), '');
+
+  expect(getWindowsExecutablePath(runtimeDir)).toBe(join(runtimeDir, 'Alethia.exe'));
+});
+
+test('Windows executable lookup reports the expected nested path when no executable exists', () => {
+  const runtimeDir = join(TEST_HOME, 'windows-missing');
+  mkdirSync(runtimeDir, { recursive: true });
+
+  expect(getWindowsExecutablePath(runtimeDir)).toBe(join(runtimeDir, 'win-unpacked', 'Alethia.exe'));
 });

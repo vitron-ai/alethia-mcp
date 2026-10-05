@@ -695,6 +695,16 @@ export const getArtifactName = (runtimeVersion: string): string | null => {
 export const getGithubReleaseBase = (runtimeVersion: string): string =>
   `https://github.com/vitron-ai/alethia/releases/download/v${runtimeVersion}`;
 
+// Windows runtime zips have existed in both layouts: packaged under
+// win-unpacked/ and with Alethia.exe at the archive root. Prefer the legacy
+// nested path when both are present, then support the flat archive layout.
+export const getWindowsExecutablePath = (runtimeDir = RUNTIME_DIR): string => {
+  const unpackedExe = join(runtimeDir, 'win-unpacked', 'Alethia.exe');
+  if (existsSync(unpackedExe)) return unpackedExe;
+  const rootExe = join(runtimeDir, 'Alethia.exe');
+  return existsSync(rootExe) ? rootExe : unpackedExe;
+};
+
 // Finds the runtime binary in the install dir. Runtime version is only needed
 // for Linux (version-prefixed extract dir); Mac and Windows have stable layouts.
 const getExecutablePath = (runtimeVersion?: string): string => {
@@ -705,7 +715,7 @@ const getExecutablePath = (runtimeVersion?: string): string => {
     return join(RUNTIME_DIR, macDir, 'Alethia.app', 'Contents', 'MacOS', 'Alethia');
   }
   if (p === 'win32') {
-    return join(RUNTIME_DIR, 'win-unpacked', 'Alethia.exe');
+    return getWindowsExecutablePath();
   }
   // Linux — the tarball extracts into a version-prefixed directory. Try the
   // expected-for-this-version paths first, then scan.
