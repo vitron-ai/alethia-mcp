@@ -39,7 +39,7 @@ process.env.USERPROFILE = TEST_HOME; // Windows
 delete process.env.ALETHIA_RUNTIME_VERSION;
 
 // Now import the bridge — its module-level constants read these env vars.
-const { resolveRuntimeVersion, __setLatestVersionFetcherForTests, getArtifactName, getGithubReleaseBase, getWindowsExecutablePath, getTarExecutable } =
+const { resolveRuntimeVersion, __setLatestVersionFetcherForTests, getArtifactName, getGithubReleaseBase, getWindowsExecutablePath, getTarExecutable, getCommandErrorDetail } =
   await import('../dist/index.js');
 
 // Utility: re-import is not needed; we reset caches by writing/removing files
@@ -235,4 +235,14 @@ test('tar extraction uses the Windows system tar.exe regardless of shell PATH', 
 
 test('tar extraction keeps using tar on non-Windows platforms', () => {
   expect(getTarExecutable('linux', {})).toBe('tar');
+});
+
+test('extractor diagnostics prefer command stderr when available', () => {
+  expect(getCommandErrorDetail({ stderr: Buffer.from('archive: invalid header\n'), message: 'Command failed' }))
+    .toBe('archive: invalid header');
+});
+
+test('extractor diagnostics fall back to the command error message', () => {
+  expect(getCommandErrorDetail(new Error('Command failed with exit code 2')))
+    .toBe('Command failed with exit code 2');
 });
