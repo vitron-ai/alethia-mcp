@@ -44,6 +44,12 @@ test('parseRunArgs: --nlp inline', () => {
   expect(r.nlp).toBe('navigate to /\nclick Sign In');
 });
 
+test('parseRunArgs: --nlp expands literal newline separators for Windows-safe inline input', () => {
+  const r = parseRunArgs(['--nlp', 'navigate to /\\nclick Sign In\\nassert dashboard is visible']);
+  expect(r.mode).toBe('inline');
+  expect(r.nlp).toBe('navigate to /\nclick Sign In\nassert dashboard is visible');
+});
+
 test('parseRunArgs: --nlp without value errors', () => {
   const r = parseRunArgs(['--nlp']);
   expect(r.mode).toBe('error');
