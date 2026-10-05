@@ -1,44 +1,41 @@
-# @vitronai/alethia
+# Alethia MCP
 
-**Agent-native E2E with verifiable safety.** Your agent drives a real browser with plain English, and destructive actions are blocked by a safety gate you can prove works — with a signed audit trail and no cloud.
+## AI agents can write software. Vitron makes sure it works.
+
+Vitron is building execution and verification infrastructure for AI-powered software development. Alethia connects an AI agent to an application so it can run workflows, check behavior, inspect results, and iterate with evidence.
+
+Alethia is available to MCP-compatible clients as a local server. Give your agent plain-English instructions such as “open the sign-in page, submit the test account, and confirm the dashboard appears.” The agent receives step results and can continue based on what happened.
 
 [![npm version](https://img.shields.io/npm/v/@vitronai/alethia.svg?logo=npm&logoColor=white)](https://www.npmjs.com/package/@vitronai/alethia)
-[![License: MIT](https://img.shields.io/badge/bridge-MIT-green.svg?logo=opensourceinitiative&logoColor=white)](./LICENSE)
-[![Patent Pending](https://img.shields.io/badge/runtime-Patent%20Pending-blue.svg?logo=shield&logoColor=white)](#patent-notice)
-[![GitHub](https://img.shields.io/badge/source-GitHub-1f2328.svg?logo=github&logoColor=white)](https://github.com/vitron-ai/alethia-mcp)
+[![Bridge license: MIT](https://img.shields.io/badge/bridge-MIT-green.svg?logo=opensourceinitiative&logoColor=white)](./LICENSE)
+[![Source](https://img.shields.io/badge/source-GitHub-1f2328.svg?logo=github&logoColor=white)](https://github.com/vitron-ai/alethia-mcp)
 
----
+## Get started
 
-## Install
+### Install for Claude Code
 
-**Claude Code — fastest path (plugin):**
+The Claude Code plugin installs the MCP server and its workflow skill:
 
-```
+~~~text
 /plugin marketplace add vitron-ai/alethia-mcp
 /plugin install alethia@vitronai
-```
+~~~
 
-This wires up both the MCP server and the skill in one step — no manual `npm install` or MCP config editing. Restart or run `/reload-plugins` to activate.
+Restart Claude Code or run `/reload-plugins`.
 
-**Claude Code — skill only (no plugin manager):**
+To install only the skill, use `alethia-mcp --install-skill` after installing the package, or follow the [manual skill instructions](https://github.com/vitron-ai/alethia-mcp/tree/main/skills/alethia).
 
-```bash
-mkdir -p ~/.claude/skills/alethia && \
-  curl -fsSL https://raw.githubusercontent.com/vitron-ai/alethia-mcp/main/skills/alethia/SKILL.md \
-    -o ~/.claude/skills/alethia/SKILL.md
-```
+### Install for another MCP client
 
-Restart Claude Code. Next time you ask it to test a page, it notices Alethia isn't configured yet and walks you through installing the bridge itself.
+Alethia requires Node.js 18 or later. Install the bridge:
 
-**Everyone else (Claude Desktop, Cursor, Cline, Continue):**
-
-```bash
+~~~sh
 npm install -g @vitronai/alethia
-```
+~~~
 
-Then add this to your client's MCP config:
+Add it to your MCP client's configuration:
 
-```json
+~~~json
 {
   "mcpServers": {
     "alethia": {
@@ -46,27 +43,11 @@ Then add this to your client's MCP config:
     }
   }
 }
-```
+~~~
 
-| Client | Config file |
-|---|---|
-| Claude Code | `~/.claude/mcp.json` |
-| Claude Desktop (macOS) | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| Claude Desktop (Windows) | `%APPDATA%\Claude\claude_desktop_config.json` |
-| Claude Desktop (Linux) | `~/.config/Claude/claude_desktop_config.json` |
-| Cursor | Settings → MCP → Add server (paste the inner `"alethia": {...}` object only, no `mcpServers` wrapper) |
-| Cline / Continue / other | The client's own MCP config file |
+For a temporary or always-current install, configure the client to run npm's package binary:
 
-Restart your client after saving. The runtime auto-downloads (signed, ~100 MB) the first time your agent calls an Alethia tool. A cockpit window opens by default so you can watch — set `ALETHIA_HEADLESS=1` to hide it; CI hides it automatically.
-
-<details>
-<summary>Advanced install options — always-latest spawn, version pinning, upgrading</summary>
-
-**Upgrade the bridge:** `npm install -g @vitronai/alethia@latest`. Since 0.6.0 you don't need a new bridge for new runtime versions — it queries GitHub Releases on every start.
-
-**Always run the latest without manually upgrading:**
-
-```json
+~~~json
 {
   "mcpServers": {
     "alethia": {
@@ -75,163 +56,149 @@ Restart your client after saving. The runtime auto-downloads (signed, ~100 MB) t
     }
   }
 }
-```
+~~~
 
-The `@latest` suffix matters — without it, `npx -y` can serve a stale cached version. Trade-off: adds 10–30s on a cold cache, and every spawn pulls whatever npm is currently serving (a global install is the safer default for compliance-sensitive work, since it only changes when you explicitly upgrade it).
+The bridge checks for compatible updates in the background unless `ALETHIA_SKIP_AUTO_UPDATE=1`. The `@latest` npx configuration resolves the latest published bridge when the client starts and may take longer on a cold cache.
 
-**Pin a specific runtime version** (reproducible CI, bisection):
+Common client configuration locations:
 
-```json
-"env": { "ALETHIA_RUNTIME_VERSION": "0.4.0" }
-```
-
-**Install the Claude Code skill** (optional, teaches Claude when to use each tool):
-
-```bash
-alethia-mcp --install-skill
-```
-
-</details>
-
----
-
-## What to ask for
-
-You don't call these tools directly — just ask your agent in plain English, and it picks the right one.
-
-| Ask for it | What happens |
+| Client | Configuration |
 |---|---|
-| *"Sign in and verify the dashboard loads."* | Drives the browser, reports what changed and whether anything was blocked. |
-| *"Generate tests for this page — I haven't covered it yet."* | Scans the page and drafts a starter test suite, with a safety check for every destructive control it finds. |
-| *"Prove the safety gate blocks destructive actions on this page."* | Finds every destructive action and confirms the gate blocks each one — a per-action pass/fail report. |
-| *"Audit this page for accessibility."* | A real WCAG 2.1 AA audit, via axe-core. |
-| *"Audit this page for compliance and security."* | Checks against 8 NIST SP 800-53 controls. |
-| *"Export a signed evidence pack of everything you just did."* | A tamper-evident record of the session — hand it to an auditor. |
-| *"Check the dashboard and the settings page at the same time."* | Runs several tests concurrently, one per page. |
-| *"Take a screenshot."* / *"How many items are in that list?"* | Visual check, or an answer plain English can't give you directly (counts, computed styles). |
-| *"Stop everything right now — something looks wrong."* | Immediate halt. Only clears from the cockpit itself — an agent can't release its own kill switch. |
+| Claude Code | `~/.claude/mcp.json` |
+| Claude Desktop (macOS) | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Claude Desktop (Windows) | `%APPDATA%\Claude\claude_desktop_config.json` |
+| Claude Desktop (Linux) | `~/.config/Claude/claude_desktop_config.json` |
+| Cursor | Settings → MCP |
+| Other clients | The client's MCP server configuration |
 
-Typing into password, token, or credit-card fields is blocked unless you frame the request as a real login or payment test — the agent enables that for you, you don't need to name a flag.
+Restart the client after changing its configuration. The proprietary runtime downloads on first use and is verified before it is installed. By default, the cockpit is visible while the agent works. Set `ALETHIA_HEADLESS=1` to hide it; CI environments are detected automatically.
 
-**More paste-ready examples:** the [agent cookbook](./docs/agent-cookbook.md) has full walkthroughs — bootstrapping tests on an unknown page, a full compliance pass, parallel multi-page checks, a live partner demo. Every one is a literal prompt you paste in.
+## What your agent can do
 
----
+Ask for an outcome; your agent selects and combines the tools.
 
-## Add Alethia to your project
+| Tool | Purpose |
+|---|---|
+| `alethia_tell` | Run newline-separated, plain-English instructions and return per-step results. |
+| `alethia_compile` | Preview how instructions compile without executing them. |
+| `alethia_propose_tests` | Inspect a page and suggest candidate test flows. |
+| `alethia_assert_safety` | Check how the runtime's safety policy handles destructive actions on a page. |
+| `alethia_audit_wcag` | Run an axe-core accessibility audit against WCAG 2.1 AA rules. |
+| `alethia_audit_nist` | Check a page against selected NIST SP 800-53 Rev. 5 controls. |
+| `alethia_export_session` | Export session records with SHA-256 integrity data. |
+| `alethia_tell_parallel` | Run flows concurrently against multiple URLs. |
+| `alethia_screenshot`, `alethia_eval` | Capture the current page or evaluate a JavaScript expression in that page. |
+| `alethia_status`, `alethia_activate_kill_switch` | Check runtime status or halt automation. |
+| `alethia_serve_demo` | Serve a built-in demo page on localhost. |
+| `alethia_show_cockpit`, `alethia_hide_cockpit` | Show or hide the runtime's oversight window. |
 
-No per-project install needed — once the MCP server is configured, any agent in any project can use it.
+Accessibility and NIST audit tools require a valid runtime license. Some runtime builds include a bundled, time-limited trial for these tools; its expiry comes from the license issue date, so it may have expired before you download the build. Contact Vitron for current access.
 
-1. **Drop a `.alethia` file anywhere** your repo treats as test code — `tests/e2e/`, wherever fits.
+The parallel tool supports up to two concurrent flows by default; a valid license can raise the limit to ten.
 
-   ```
-   # tests/e2e/login.alethia
-   name login flow
-   navigate to http://127.0.0.1:5173
-   assert "Sign in" is visible
-   click Sign in
-   type dev@company.com into the email field
-   assert dashboard is visible
-   ```
+Sensitive inputs are blocked by default. The optional `allowSensitiveInput: true` setting is for legitimate authentication or payment tests.
 
-2. **Ask your agent to run it:** *"Run tests/e2e/login.alethia against http://127.0.0.1:5173."*
+Audit results are technical findings, not a certification or a claim of compliance.
 
-3. **In CI**, run it without an agent or MCP host at all:
-   ```bash
-   alethia run tests/e2e/login.alethia
-   ```
-   Exits 0 on pass, 1 on fail. Drop-in workflow: [`examples/github-actions.yml`](examples/github-actions.yml).
+Example prompts:
 
-A working reference (demo app + specs + CI + benchmark) lives at [vitron-ai/alethia-anvil](https://github.com/vitron-ai/alethia-anvil).
+- “Run a smoke test on my local app and confirm the checkout confirmation appears.”
+- “Preview these test instructions before running them.”
+- “Audit this page for accessibility issues and summarize findings by impact.”
+- “Check this admin page for destructive controls and report how the safety policy responds.”
+- “Export the session evidence when the checks are complete.”
 
----
+For complete prompts and workflows, see the [agent cookbook](./docs/agent-cookbook.md).
 
-## Why not just Cypress or Playwright?
+## Use Alethia in a project or CI
 
-| | Cypress / Playwright | Alethia |
+No project-local package is required. Configure the MCP server once, then ask your agent to create a `.alethia` file in your repository and run it.
+
+~~~text
+# tests/e2e/login.alethia
+name login flow
+navigate to http://localhost:5173
+assert "Sign in" is visible
+click Sign in
+assert dashboard is visible
+~~~
+
+To run the file directly from a shell or CI job:
+
+~~~sh
+alethia run tests/e2e/login.alethia
+~~~
+
+The command exits with code 0 when all steps pass, 1 when a run fails, and 2 for invalid input. You can also pipe a test file into stdin:
+
+~~~sh
+cat tests/e2e/login.alethia | alethia run -
+~~~
+
+On Windows, use a file or stdin for multi-step runs. npm command shims may truncate real newlines passed as an argument. For a short inline test, separate steps with literal `\n`:
+
+~~~sh
+alethia run --nlp "navigate to http://localhost:5173\\nassert the page loaded"
+~~~
+
+PowerShell stdin example:
+
+~~~powershell
+Get-Content tests\e2e\login.alethia -Raw | alethia run -
+~~~
+
+More CI guidance is in [examples/github-actions.yml](./examples/github-actions.yml); project examples are in [examples](./examples).
+
+## Product and licensing
+
+The npm package in this repository is the **MIT-licensed MCP bridge**. It is open source and does not contain the Alethia execution runtime.
+
+The **Alethia runtime is proprietary and closed source**. The bridge downloads it separately from [Alethia releases](https://github.com/vitron-ai/alethia/releases). Using this bridge does not grant rights to the runtime beyond the applicable runtime license. Review the [runtime evaluation terms](https://github.com/vitron-ai/alethia/blob/main/EVAL_LICENSE.md). Use beyond evaluation—including production or customer-facing use, non-local origins, or third-party reliance on generated audits or evidence—requires a separate written commercial license. Contact [team@vitron.ai](mailto:team@vitron.ai).
+
+The **Themis project is open source** and is a separate testing and verdict layer: [vitron-ai/themis](https://github.com/vitron-ai/themis). Themis does not include or open-source the Alethia runtime.
+
+## Configuration
+
+These environment variables are optional:
+
+| Variable | Default | Purpose |
 |---|---|---|
-| Who writes the test | a human, in a `.spec` file | an AI agent, in plain English |
-| Proving destructive actions are blocked | manual review | one prompt — an automated, machine-readable report |
-| Speed per step | ~200 ms (Playwright MCP), ~2 s (Playwright CLI) | ~13 ms — [reproduce the numbers yourself](https://github.com/vitron-ai/alethia-anvil#verify-the-faster-than-cdp-based-tools-claim-yourself) |
-| Evidence | screenshots, videos | a signed evidence pack |
-| Network | telemetry on by default for most cloud dashboards | air-gap deployable — zero telemetry, bound to 127.0.0.1 |
+| `ALETHIA_HEADLESS` | unset | Set to `1` to hide the cockpit. |
+| `ALETHIA_HIGHLIGHTS` | enabled for `tell` | Set to `0` to disable per-step highlights. |
+| `ALETHIA_RUNTIME_VERSION` | latest release | Pin the runtime version. |
+| `ALETHIA_RUNTIME_DIR` | `~/.alethia/runtime` | Set the runtime install directory. |
+| `ALETHIA_TIMEOUT_MS` | `60000` | Set the per-request timeout in milliseconds. |
+| `ALETHIA_DEBUG` | unset | Set to `1` for bridge diagnostics on stderr. |
+| `ALETHIA_SKIP_AUTO_UPDATE` | unset | Set to `1` to disable bridge self-updates. |
+| `ALETHIA_BRIDGE_VERSION` | latest compatible version | Pin the bridge version and skip its registry update check. |
+| `ALETHIA_BRIDGE_SRI` | unset | Require a matching SHA-512 integrity value for an auto-updated bridge. |
+| `ALETHIA_HOST` / `ALETHIA_PORT` | `127.0.0.1` / `47432` | Configure the local runtime endpoint. |
 
-It's not only a testing tool, either — ask an agent to check `getComputedStyle()` or `offsetWidth` on a page it's actively building, and you get a live, uncached answer straight from the DOM instead of a reload-and-inspect cycle.
+The runtime and bridge version pins are useful for reproducible CI runs. Bridge updates do not automatically cross major-version boundaries.
 
-**Go deeper:** [Architecture](https://vitron.ai/why) · [Safety gate](https://vitron.ai/safety) · [FAQ](https://vitron.ai/faq) · [UI patterns for agent-driven testing](./docs/ui-for-agents.md)
+## Troubleshooting
 
----
+**The client does not show Alethia tools.** Check the MCP configuration, restart the client, and run `alethia-mcp --health-check`. Set `ALETHIA_DEBUG=1` to print bridge diagnostics to stderr.
 
-<details>
-<summary><strong>Reference — CLI flags, environment variables, how the bridge updates itself, troubleshooting</strong></summary>
+**The runtime is missing or cannot start.** Run `alethia-mcp --health-check` to check availability. On first use, the runtime must be downloaded from GitHub Releases. Check network access and review any verification or extraction error printed by the bridge.
 
-### CLI flags
+**A multi-step inline run loses later steps on Windows.** Use a `.alethia` file or pipe it to `alethia run -`. Literal `\n` separators also work for short inline input.
 
-```
-alethia-mcp                  Run as a stdio MCP server (default)
-alethia-mcp run <path>       Run an NLP test file from the shell (CI mode)
-alethia-mcp run --nlp "..."  Run inline NLP from the shell
-alethia-mcp run -            Read NLP from stdin
-alethia-mcp --version        Print the version and exit
-alethia-mcp --health-check   Probe the Alethia runtime and exit 0/1
-alethia-mcp --debug          Run with debug logging on stderr
-```
+**A page cannot be reached.** Allowed destinations are set by the runtime build. A license file does not add origins. Contact Vitron if you need a different deployment scope.
 
-A shorter `alethia` alias (same binary) is also installed, so the run subcommand can be invoked as `alethia run <path>`.
+**A destructive action is blocked.** Review the policy result and test against an application and data you control. Do not try to bypass a safety decision through a different prompt.
 
-On Windows, prefer a .alethia file or stdin (Get-Content tests\login.alethia -Raw | alethia run -) for multi-step runs. PowerShell and npm command shims may truncate actual newline characters passed in --nlp; literal \n separators are supported for inline input. For flags such as --json through npx/npm exec, use npm's -- separator before the Alethia command arguments.
+**A licensed audit feature is unavailable.** Audit access requires a valid runtime license. Contact [team@vitron.ai](mailto:team@vitron.ai) for licensing help.
 
-### Environment variables
+## Learn more
 
-| Variable | Default | Description |
-|---|---|---|
-| `ALETHIA_HOST` / `ALETHIA_PORT` | `127.0.0.1` / `47432` | Where the runtime listens |
-| `ALETHIA_TIMEOUT_MS` | `60000` | Per-request timeout |
-| `ALETHIA_HEADLESS` | unset (visible) | `1` hides the cockpit window. CI environments auto-hide. |
-| `ALETHIA_HIGHLIGHTS` | on for `tell` | Per-step highlights on the target. `0` disables for headless/max-speed runs. |
-| `ALETHIA_RUNTIME_VERSION` | unset (latest) | Pin the runtime to a specific version for reproducible CI |
-| `ALETHIA_RUNTIME_DIR` | `~/.alethia/runtime` | Where the auto-installed runtime lives |
-| `ALETHIA_BRIDGE_VERSION` | unset | Pin the bridge itself, skip the npm auto-update check |
-| `ALETHIA_BRIDGE_SRI` | unset | Require the auto-downloaded bridge tarball to match this `sha512-...` hash |
-| `ALETHIA_SKIP_AUTO_UPDATE` | unset | `1` disables the bridge's npm registry check entirely |
-| `ALETHIA_DEBUG` | unset | `1` for debug logging on stderr |
+- [Agent cookbook](./docs/agent-cookbook.md)
+- [UI patterns for agent-driven testing](./docs/ui-for-agents.md)
+- [Security policy](./SECURITY.md)
+- [CI example](./examples/github-actions.yml)
+- [Vitron](https://vitron.ai)
+- [Alethia runtime releases](https://github.com/vitron-ai/alethia/releases)
+- [Themis open-source repository](https://github.com/vitron-ai/themis)
+- [Report a bug](https://github.com/vitron-ai/alethia-mcp/issues)
 
-### How the bridge keeps itself current
-
-- The runtime auto-installs on first use from signed GitHub releases (Ed25519-verified). The bridge asks GitHub what the current version is on first start (cached 1h) — no version pin lives in the bridge source, so a globally-installed bridge keeps pulling current runtimes as they ship.
-- The bridge also auto-updates itself (since 0.8.0): checks npm on startup, verifies the tarball's SHA-512, installs to `~/.alethia/bridge/<version>/`. Never crosses a major version without explicit action; a new version only becomes trusted after it completes a real MCP handshake, and versions that crash before that get quarantined after 3 attempts.
-- The bundled Claude Code skill auto-refreshes the same way — each spawn compares it to `~/.claude/skills/alethia/SKILL.md` and overwrites if stale.
-
-### Troubleshooting
-**A multi-step run --nlp only executes its first step on Windows** — use a .alethia file or pipe the file to alethia run -; npm command shims can truncate real newlines in arguments. For short inline commands, use literal \n between steps. When invoking CLI flags through npx/npm exec, pass them after npm's -- separator.
-
-
-**"Alethia desktop runtime is not running"** — run `alethia-mcp --health-check` (triggers auto-install if missing). If that fails, check network reachability to GitHub.
-
-**"WRITE_HIGH" / "EA1 POLICY BLOCK" in the audit log** — a destructive action was blocked. This is correct, fail-closed behavior — not an error to fix. Widening it requires human configuration; an agent can't do it from inside a call.
-
-**"SENSITIVE_INPUT_DENIED"** — a password/token/credit-card field was detected. Only override with `allowSensitiveInput: true` for legitimate auth/payment tests.
-
-**MCP client doesn't see the tools** — run `alethia-mcp --health-check`, check your config shape, restart the client, and set `ALETHIA_DEBUG=1` to log bridge traffic.
-
-**"Server transport closed unexpectedly" / bridge exits silently** — usually a stale cached bridge. If using `npx -y @vitronai/alethia` without `@latest`, add it or run `rm -rf ~/.npm/_npx`. If using a global install, run `npm install -g @vitronai/alethia@latest`. Then fully quit and restart your client (Cmd-Q on macOS, not just close the window).
-
-**"I see a new release on GitHub but my runtime hasn't upgraded"** — the "what's current" check is cached for 1 hour. Bust it with `rm ~/.alethia/.latest-release ~/.alethia/.bridge-registry-cache`, then restart your client.
-
-</details>
-
-<details>
-<summary><strong>Security, privacy, and license</strong></summary>
-
-### Security posture
-
-The runtime is local-only **by architecture**: its signed binary refuses to navigate anywhere outside `file://`, `localhost`, `127.0.0.1`, `.local`, and RFC1918 private ranges. This is a compile-time constant — no flag, env var, or UI toggle changes it. Full threat model and disclosure process: [`SECURITY.md`](./SECURITY.md). Abuse reports: **team@vitron.ai**.
-
-### Privacy
-
-Local-only by architecture — nothing is collected, transmitted, or stored outside your machine. Page content, screenshots, and test instructions are processed locally and never sent anywhere. Evidence packs are written to your filesystem only on explicit request. Zero telemetry, zero analytics, zero crash reporting. Questions: **team@vitron.ai**.
-
-### License and patent notice
-
-This bridge is **MIT-licensed** — see [LICENSE](./LICENSE). The Alethia runtime itself is **patent pending** (U.S. Application No. 19/571,437); the MIT license on this bridge does **not** grant a patent license to the runtime. Commercial runtime use may require a separate license. Licensing inquiries: **team@vitron.ai**.
-
-</details>
+The runtime is proprietary software and patent pending. This repository contains the MIT-licensed MCP bridge. The MIT license does not grant a license to the runtime or any patent rights.
