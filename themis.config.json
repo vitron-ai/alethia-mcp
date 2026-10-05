@@ -1,5 +1,5 @@
 {
-  "testDir": "bridge-tests",
+  "testDir": "tests",
   "generatedTestsDir": "__themis__/tests",
   "testRegex": "\\.(test|spec)\\.(mjs)$",
   "maxWorkers": 5,

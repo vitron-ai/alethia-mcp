@@ -149,6 +149,17 @@ Get-Content tests\e2e\login.alethia -Raw | alethia run -
 
 More CI guidance is in [examples/github-actions.yml](./examples/github-actions.yml); project examples are in [examples](./examples).
 
+
+### Run the MCP integration smoke test
+
+The optional smoke test launches this bridge, calls its MCP tools, serves the bundled TaskFlow demo, and asks Alethia to verify that the page loads:
+
+~~~sh
+npm run test:alethia
+~~~
+
+This downloads and starts the proprietary runtime on first use, so it needs network access and an eligible local evaluation setup. The flow only opens the bundled local demo and checks that “TaskFlow” is visible. Keep it separate from `npm test`, which remains the fast, deterministic bridge test suite. Set `ALETHIA_E2E_TIMEOUT_MS` to change the default five-minute tool-call timeout.
+
 ## Product and licensing
 
 The npm package in this repository is the **MIT-licensed MCP bridge**. It is open source and does not contain the Alethia execution runtime.

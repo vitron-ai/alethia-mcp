@@ -119,6 +119,14 @@ jobs:
             echo "::endgroup::"
           done
 
+      - name: Verify the MCP protocol path
+        # The CLI demo loop above covers the runtime and demo scenarios.
+        # This short smoke flow separately verifies MCP initialization,
+        # tool discovery, demo serving, and tool-call routing through stdio.
+        env:
+          ALETHIA_HEADLESS: '1'
+        run: xvfb-run -a npm run test:alethia
+
       - name: Stop demo server
         if: always()
         run: |
