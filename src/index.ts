@@ -24,11 +24,31 @@ import http from 'node:http';
 import https from 'node:https';
 import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync, createWriteStream, chmodSync, rmSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve, join } from 'node:path';
+import { dirname, resolve, join, win32 as win32Path } from 'node:path';
 import { createHash, createPublicKey, verify as cryptoVerify } from 'node:crypto';
-import { execSync, spawn, type ChildProcess } from 'node:child_process';
+import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
 import { homedir, platform, arch } from 'node:os';
 import { pipeline } from 'node:stream/promises';
+
+
+// Use Windows' bundled tar.exe directly instead of shell PATH lookup. This
+// works from PowerShell, cmd, and Git Bash without relying on an installed
+// unzip/tar utility. Windows 10 1803+ tar.exe supports both .tar.gz and .zip.
+export const getTarExecutable = (
+  targetPlatform = platform(),
+  env: NodeJS.ProcessEnv = process.env,
+): string => {
+  if (targetPlatform !== 'win32') return 'tar';
+  const windowsRoot = env.WINDIR ?? env.SystemRoot ?? 'C:\\Windows';
+  return win32Path.join(windowsRoot, 'System32', 'tar.exe');
+};
+
+const extractTarGz = (archivePath: string, targetDir: string, stripComponents = false): void => {
+  execFileSync(getTarExecutable(), [
+    '-xzf', archivePath, '-C', targetDir,
+    ...(stripComponents ? ['--strip-components=1'] : []),
+  ], { stdio: 'pipe' });
+};
 
 // ---------------------------------------------------------------------------
 // Package metadata (read at runtime from the bundled package.json)
@@ -376,7 +396,7 @@ const backgroundCheckForNewBridge = async (): Promise<void> => {
   // we end up with dist/, skills/, package.json directly under <version>/.
   mkdirSync(targetDir, { recursive: true });
   try {
-    execSync(`tar -xzf "${tarballPath}" -C "${targetDir}" --strip-components=1`, { stdio: 'pipe' });
+    extractTarGz(tarballPath, targetDir, true);
   } catch {
     process.stderr.write(`[alethia] failed to extract ${info.version} tarball.\n`);
     try { rmSync(targetDir, { recursive: true, force: true }); } catch { /* ignore */ }
@@ -936,9 +956,13 @@ const ensureRuntime = async (): Promise<void> => {
   // Extract
   process.stderr.write('[alethia] Extracting runtime...\n');
   if (artifactName.endsWith('.tar.gz')) {
-    execSync(`tar -xzf "${artifactPath}" -C "${RUNTIME_DIR}"`, { stdio: 'pipe' });
+    extractTarGz(artifactPath, RUNTIME_DIR);
   } else if (artifactName.endsWith('.zip')) {
-    execSync(`unzip -o -q "${artifactPath}" -d "${RUNTIME_DIR}"`, { stdio: 'pipe' });
+    if (platform() === 'win32') {
+      execFileSync(getTarExecutable(), ['-xf', artifactPath, '-C', RUNTIME_DIR], { stdio: 'pipe' });
+    } else {
+      execFileSync('unzip', ['-o', '-q', artifactPath, '-d', RUNTIME_DIR], { stdio: 'pipe' });
+    }
   }
 
   // Mark as installed
