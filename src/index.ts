@@ -43,6 +43,15 @@ export const getTarExecutable = (
   return win32Path.join(windowsRoot, 'System32', 'tar.exe');
 };
 
+export const getCommandErrorDetail = (err: unknown): string => {
+  if (err && typeof err === 'object' && 'stderr' in err) {
+    const stderr = err.stderr;
+    if (Buffer.isBuffer(stderr) && stderr.toString('utf8').trim()) return stderr.toString('utf8').trim();
+    if (typeof stderr === 'string' && stderr.trim()) return stderr.trim();
+  }
+  return err instanceof Error ? err.message : String(err);
+};
+
 const extractTarGz = (archivePath: string, targetDir: string, stripComponents = false): void => {
   execFileSync(getTarExecutable(), [
     '-xzf', archivePath, '-C', targetDir,
@@ -397,8 +406,9 @@ const backgroundCheckForNewBridge = async (): Promise<void> => {
   mkdirSync(targetDir, { recursive: true });
   try {
     extractTarGz(tarballPath, targetDir, true);
-  } catch {
-    process.stderr.write(`[alethia] failed to extract ${info.version} tarball.\n`);
+  } catch (err) {
+    const detail = getCommandErrorDetail(err);
+    process.stderr.write(`[alethia] failed to extract ${info.version} tarball: ${detail}\n`);
     try { rmSync(targetDir, { recursive: true, force: true }); } catch { /* ignore */ }
     try { rmSync(tarballPath, { force: true }); } catch { /* ignore */ }
     return;
