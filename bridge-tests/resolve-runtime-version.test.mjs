@@ -39,7 +39,7 @@ process.env.USERPROFILE = TEST_HOME; // Windows
 delete process.env.ALETHIA_RUNTIME_VERSION;
 
 // Now import the bridge — its module-level constants read these env vars.
-const { resolveRuntimeVersion, __setLatestVersionFetcherForTests, getArtifactName, getGithubReleaseBase, getWindowsExecutablePath } =
+const { resolveRuntimeVersion, __setLatestVersionFetcherForTests, getArtifactName, getGithubReleaseBase, getWindowsExecutablePath, getTarExecutable } =
   await import('../dist/index.js');
 
 // Utility: re-import is not needed; we reset caches by writing/removing files
@@ -224,4 +224,15 @@ test('Windows executable lookup reports the expected nested path when no executa
   mkdirSync(runtimeDir, { recursive: true });
 
   expect(getWindowsExecutablePath(runtimeDir)).toBe(join(runtimeDir, 'win-unpacked', 'Alethia.exe'));
+});
+
+test('tar extraction uses the Windows system tar.exe regardless of shell PATH', () => {
+  expect(getTarExecutable('win32', { WINDIR: 'D:\\Windows' }))
+    .toBe('D:\\Windows\\System32\\tar.exe');
+  expect(getTarExecutable('win32', { SystemRoot: 'C:\\Windows' }))
+    .toBe('C:\\Windows\\System32\\tar.exe');
+});
+
+test('tar extraction keeps using tar on non-Windows platforms', () => {
+  expect(getTarExecutable('linux', {})).toBe('tar');
 });
