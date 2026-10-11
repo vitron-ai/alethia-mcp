@@ -1,7 +1,7 @@
 {
   "$schema": "https://registry.modelcontextprotocol.io/schema/v0/server.json",
   "name": "io.github.vitron-ai/alethia",
-  "description": "Patent-pending agent-native execution E2E test runtime for AI agents. Plain-English browser tests at ~13ms/step, VITRON-EA1 fail-closed safety gate, WCAG 2.1 AA and NIST SP 800-53 audits, cryptographically signed evidence packs. Local-first, zero telemetry.",
+  "description": "Patent-pending agent-native software runtime for executing and verifying real application workflows. Plain-English browser interactions and E2E checks, VITRON-EA1 fail-closed safety gate, accessibility and security audits, cryptographically signed evidence packs. Local-first, zero telemetry.",
   "version": "0.8.6",
   "license": "MIT",
   "homepage": "https://vitron.ai",
@@ -38,6 +38,6 @@
     "nist",
     "ai-safety",
     "evidence-pack",
-    "agent-native execution"
+    "agent-runtime"
   ]
 }

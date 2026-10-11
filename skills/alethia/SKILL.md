@@ -1,6 +1,6 @@
 ---
 name: alethia
-description: Drive a real browser with plain English via Alethia — the patent-pending agent-native execution agent-driven testing runtime. Use when the user asks to smoke-test a local app, run an accessibility (WCAG) or security (NIST SP 800-53) audit, prove the EA1 safety gate works, bootstrap test coverage on an unknown page, run parallel multi-page checks, or export a cryptographically signed evidence pack. Requires the @vitronai/alethia MCP server to be configured. Trigger patterns include "test this page," "verify the login flow," "audit accessibility," "compliance audit," "run WCAG/NIST," "check that deletes are blocked," and similar.
+description: Use Alethia, a patent-pending agent-native software runtime for executing and verifying application workflows, to interact with a real browser, run E2E checks, enforce safety policies, audit accessibility or security, and export signed evidence. Requires the @vitronai/alethia MCP server to be configured. Trigger patterns include "test this page," "verify the login flow," "audit accessibility," "compliance audit," "run WCAG/NIST," "check that deletes are blocked," and similar.
 ---
 
 # Alethia — agent-driven browser testing

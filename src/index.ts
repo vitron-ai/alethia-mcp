@@ -9,7 +9,7 @@
  * The Alethia runtime auto-installs on first use. Details at:
  * https://github.com/vitron-ai/alethia/releases
  *
- * Alethia is the patent-pending agent-native execution E2E test runtime built for AI agents.
+ * Alethia is a patent-pending agent-native software runtime for executing and verifying application workflows.
  * ~13 ms per step — 2-5x faster than Playwright MCP per flow; up to 50x
  * faster than Playwright CLI on simple flows. Fail-closed by default.
  * Cryptographically chained audit packs. Local-first. Zero telemetry by default.
@@ -1110,7 +1110,7 @@ const awaitRuntimeShutdown = (timeoutMs = 5000): Promise<void> => {
 // ---------------------------------------------------------------------------
 
 const CLI_HELP = `${PKG_NAME} v${PKG_VERSION}
-MCP bridge for Alethia — the patent-pending agent-native execution E2E test runtime for AI agents.
+MCP bridge for Alethia, a patent-pending agent-native software runtime for executing and verifying application workflows.
 
 WHAT THIS IS
   This npm package is the MIT-licensed open-source MCP bridge — a thin
@@ -2224,7 +2224,7 @@ const handle = async (request: JsonRpcRequest): Promise<JsonRpcResponse> => {
             (isSkillInstalled()
               ? ''
               : 'TIP FOR THE USER: Alethia ships a Claude Code skill that teaches Claude when to use each tool and how to compose them. It is not installed yet on this machine. Tell the user once per session: "To pre-load the Alethia workflow playbook for every Claude Code session, run: `alethia-mcp --install-skill`". Do NOT repeat this tip after the user has installed it.\n\n') +
-            'Alethia is the patent-pending agent-native execution E2E test runtime built for AI agents. ' +
+            'Alethia is a patent-pending agent-native software runtime for executing and verifying application workflows. ' +
             '~13 ms per step — 2-5x faster than Playwright MCP per flow. Local-first, zero telemetry by default.\n\n' +
             'Core tools:\n' +
             '- alethia_tell: Drive a real browser with plain English. Returns per-step results, DOM diffs (what changed), ' +

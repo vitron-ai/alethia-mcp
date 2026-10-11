@@ -1,6 +1,6 @@
-# Alethia — Agent-Native E2E with Verifiable Safety
+# Alethia — Agent-Native Software Runtime
 
-Alethia is the patent-pending agent-native execution E2E runtime built for AI agents. Your agent writes the tests, runs them against a real browser, and proves destructive actions are blocked by a per-step policy gate — with a cryptographic audit trail and no cloud. 2–5× faster than Playwright MCP per flow; up to 50× faster than Playwright CLI on simple flows ([benchmark](https://github.com/vitron-ai/alethia-anvil/blob/main/benchmark/README.md)).
+Alethia is a patent-pending agent-native software runtime for executing and verifying real application workflows. Agents can use it to interact with applications, run E2E checks, enforce safety policies, audit accessibility and security, and produce signed evidence locally. See the [benchmark methodology and results](https://github.com/vitron-ai/alethia-anvil/blob/main/benchmark/README.md).
 
 ## Quick start
 

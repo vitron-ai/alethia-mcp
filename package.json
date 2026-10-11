@@ -1,7 +1,7 @@
 {
   "name": "@vitronai/alethia",
   "version": "0.9.3",
-  "description": "MIT-licensed MCP bridge to the Alethia runtime — the patent-pending agent-native execution E2E test runtime for AI agents. 2-5x faster than Playwright MCP. Signed evidence packs, EA1 fail-closed safety gate, WCAG + NIST 800-53 audits built in. Local-first, zero telemetry. Auto-installs on first use.",
+  "description": "MIT-licensed MCP bridge to Alethia, a patent-pending agent-native software runtime for executing and verifying application workflows. Supports browser interaction, E2E checks, safety enforcement, accessibility and security audits, and signed evidence packs. Local-first, zero telemetry. Auto-installs on first use.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -33,7 +33,7 @@
     "browser-automation",
     "testing",
     "ai-agents",
-    "agent-native execution",
+    "agent-runtime",
     "playwright-alternative",
     "cypress-alternative",
     "claude-code",

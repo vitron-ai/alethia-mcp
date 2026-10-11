@@ -10,7 +10,7 @@
     {
       "name": "alethia",
       "source": "./",
-      "description": "Patent-pending agent-native execution E2E test runtime for AI agents. Drive a real browser in plain English, enforce the VITRON-EA1 fail-closed safety gate, audit WCAG 2.1 AA and NIST SP 800-53, and export signed evidence packs."
+      "description": "Patent-pending agent-native software runtime for executing and verifying real application workflows. Drive browser interactions and E2E checks in plain English, enforce the VITRON-EA1 fail-closed safety gate, audit accessibility and security controls, and export signed evidence packs."
     }
   ]
 }

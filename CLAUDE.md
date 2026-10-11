@@ -1,6 +1,6 @@
 # alethia-mcp
 
-MCP bridge connecting AI agents (Claude Code, Cursor, Cline, etc.) to the Alethia E2E test runtime.
+MCP bridge connecting AI agents (Claude Code, Cursor, Cline, etc.) to Alethia, an agent-native software runtime for executing and verifying application workflows.
 
 ## Build
 
