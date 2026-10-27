@@ -7,7 +7,7 @@ description: Use Alethia, a patent-pending agent-native software runtime for exe
 
 Alethia is built **for AI agents**, not human test authors. You drive it in plain English. You almost never need to write a selector — say *"click Submit"* and Alethia finds the right button. Say *"verify the dashboard is visible"* and it checks. Say *"type admin@example.com into the email field"* and it types.
 
-The runtime is local-only: it refuses to navigate to anything outside `file://`, `localhost`, `127.0.0.1`, `.local`, or RFC1918 ranges. Destructive actions (delete, purchase, transfer, submit, liquidate, purge) are blocked by default under the VITRON-EA1 policy gate — not a safety feature you can turn off, a compile-time constant.
+The runtime is local-only: it refuses to navigate to anything outside `file://`, `localhost`, `127.0.0.1`, `.local`, or RFC1918 ranges. Destructive actions (delete, purchase, transfer, submit, liquidate, purge) are blocked by default under the VITRON-EA1 policy gate. A compatible core runtime can allow a specifically annotated step through a matching operator-reviewed grant policy; the annotation alone never authorizes an action.
 
 ## Bootstrap: if the `alethia_*` tools aren't available yet
 
@@ -90,6 +90,16 @@ expect block: click Transfer Funds
 ```
 
 Each step **passes** if the gate blocked the action (reason code `DENY_WRITE_HIGH`) and **fails** if the action went through. This is how you prove safety — not by avoiding destructive controls, but by exercising them and confirming the gate holds.
+
+## Operator grants for approved test steps
+
+For a destructive action that must run in a disposable local fixture, an existing test script may mark only that NLP step with a grant ID:
+
+```text
+@grant(fixture-delete) delete the disposable fixture
+```
+
+This works only with a compatible Alethia core runtime and a matching operator-approved grant policy loaded through `ALETHIA_APPROVAL_GRANTS_PATH`. The grant policy can be checked in beside the test; review changes to it as authorization changes. The ID links the script step to a policy entry that must match the run name, zero-based step number, exact compiled action, local origin, expiry, and use limit. The runtime stores use counts locally. An annotation by itself does nothing, and absent or mismatched grants remain blocked. Do not add an annotation or change a grant policy unless the user explicitly authorized that exact disposable-fixture action; never create grants for real user data or non-disposable targets.
 
 ## Common tool-chain patterns
 
@@ -203,7 +213,7 @@ Use eval for **ground truth** (computed values, layout dimensions, element count
 
 - **Don't write CSS selectors in NLP.** Say *"click Submit"*, not *"click button#submit"*. The resolver handles mapping.
 - **Don't leave an ambiguous hashtag unmarked.** A single token such as `#release` can be read as a CSS ID selector; use `text:#release` when it is visible text.
-- **Don't try to bypass the EA1 gate.** If a destructive action needs to actually run (e.g., cleanup in a test teardown on a throwaway DB), that's a custom-signed-build conversation with vitron.ai, not something the default runtime allows.
+- **Don't bypass the EA1 gate.** For approved destructive steps on disposable local fixtures, use an operator-reviewed grant policy only when the installed core runtime supports it. Otherwise keep the action blocked or use cockpit approval. Never invent a grant ID or broaden a checked-in grant just to make a test pass.
 - **Don't expect telemetry or cloud state.** Every run is local and ephemeral unless you call `alethia_export_session`, which produces a signed artifact you save yourself.
 
 ## At session end for compliance-sensitive work

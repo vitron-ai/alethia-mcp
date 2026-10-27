@@ -85,7 +85,7 @@ Default profile is `controlled-web`:
 - **write-high** (delete, purchase, submit) — blocked by default
 - Sensitive input (passwords, credit cards, PII) — blocked in all profiles unless explicitly opted in
 
-The policy gate is in-process — agents cannot bypass it.
+The policy gate is in-process — agents cannot create or widen grants. A compatible runtime may allow a specifically annotated step when an operator-configured grant policy matches its run, step, compiled action, local origin, expiry, and use limit.
 
 ## Privacy
 

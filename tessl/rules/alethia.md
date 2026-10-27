@@ -13,7 +13,7 @@
 
 ## Never
 
-- Do not try to bypass the EA1 policy gate. If an action is blocked, explain the safety classification to the user.
+- Do not bypass the EA1 policy gate or invent grants. If an action is blocked, explain the safety classification. For approved destructive steps on disposable local fixtures, use only an existing reviewed grant in the configured policy and a compatible runtime.
 - Do not pass `allowSensitiveInput: true` unless the user explicitly asks to test an auth or payment flow.
 - Do not invent selectors or NLP phrasings the response didn't support — if `nearMatches` is empty and the selector is not found, tell the user the element is not on the page rather than guessing.
 - Both `file://` and `http://localhost` URLs are supported. Use whichever fits the test scenario.

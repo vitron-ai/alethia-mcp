@@ -111,5 +111,5 @@ I'm demoing Alethia live. Show the cockpit window, then drive the local demo ser
 ## What Alethia does NOT do
 
 - **Does not touch non-local origins.** Anything outside `file://`, `localhost`, `127.0.0.1`, `.local`, or RFC1918 is refused at the main-process boundary. No env var, CLI flag, or MCP argument expands this. Design-partner production access is handled by a separately-signed build — see [vitron.ai/safety](https://vitron.ai/safety).
-- **Does not write or execute destructive actions by default.** Delete, purchase, transfer, submit, and sensitive-input writes are refused unconditionally unless the calling NLP explicitly wraps them in `expect block:` (which asserts the refusal rather than bypassing it).
+- **Blocks destructive actions by default.** Delete, purchase, transfer, and submit actions require cockpit approval unless a compatible runtime has an operator-reviewed scoped grant for that exact test step. `expect block:` asserts the refusal; it does not execute the action. Sensitive-input checks remain separate and unchanged.
 - **Does not send telemetry.** Zero cloud calls, zero analytics. Loopback JSON-RPC only.
