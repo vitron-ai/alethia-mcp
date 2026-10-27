@@ -72,6 +72,7 @@ assert Login is visible
 assert Welcome to Dashboard is visible
 assert Sign In button is visible
 ```
+When visible text starts with `#`, quote the full target so it is treated as text, for example `assert "#100 Upgrade the build image" is visible` or `click "#100 Upgrade the build image"`. Use the same quoting for `wait for` targets.
 
 **Verifiable safety — `expect block:` (unique to Alethia):**
 ```
@@ -94,6 +95,7 @@ click Sign In
 click the Reset button
 click #specific-element-id
 ```
+For text beginning with `#` (such as issue numbers or hashtags), quote the full text target; unquoted targets beginning with `#` may be read as CSS selectors.
 
 **Waiting:**
 ```

@@ -144,6 +144,7 @@ alethia_assert_safety({ url })  → walks every destructive control on the
 ## NLP patterns that work well
 
 - **Assertions:** *"assert X is visible"*, *"assert X exists"*, *"assert X is not visible"*
+- **Text starting with `#`:** quote the whole target so issue numbers and hashtags are matched as text, e.g. `assert "#100 Upgrade the build image" is visible`, `click "#100 Upgrade the build image"`, or `wait for "#100 Upgrade the build image" to be visible`.
 - **Text input:** *"type X into the Y field"*, *"type X into the input"*
 - **Clicks:** *"click Submit"*, *"click the Sign In button"*
 - **Navigation:** *"navigate to <url>"* (must be a local origin)
@@ -201,6 +202,7 @@ Use eval for **ground truth** (computed values, layout dimensions, element count
 ## Don't
 
 - **Don't write CSS selectors in NLP.** Say *"click Submit"*, not *"click button#submit"*. The resolver handles mapping.
+- **Quote visible text that starts with `#`.** For example, use `click "#100 Upgrade the build image"`; an unquoted target beginning with `#` may be interpreted as a CSS selector.
 - **Don't try to bypass the EA1 gate.** If a destructive action needs to actually run (e.g., cleanup in a test teardown on a throwaway DB), that's a custom-signed-build conversation with vitron.ai, not something the default runtime allows.
 - **Don't expect telemetry or cloud state.** Every run is local and ephemeral unless you call `alethia_export_session`, which produces a signed artifact you save yourself.
 
