@@ -55,7 +55,7 @@ Who and what we defend against, and which control closes each class:
 |---|---|---|
 | **Account takeover / credential stuffing** via agent driving | Malicious prompt tells the agent to hammer a login endpoint on a public site | Local-only invariant blocks the navigate before any request leaves the loopback interface |
 | **CAPTCHA farms / abuse posting** at scale | Attacker runs Alethia headless against a social network | Local-only invariant refuses any navigate to a public origin |
-| **Destructive action via prompt injection** | Malicious page or prompt tricks the agent into clicking a "Delete All" button | VITRON-EA1 policy gate classifies write-high actions and refuses unconditionally (no profile override) |
+| **Destructive action via prompt injection** | Malicious page or prompt tricks the agent into clicking a "Delete All" button | VITRON-EA1 blocks write-high actions by default. A compatible runtime allows only an exact step covered by the operator-configured, reviewed grant policy; the test annotation alone cannot authorize it. |
 | **Sensitive input exfiltration** | Agent types a password / token / SSN / credit card into a logged or malicious field | Sensitive-input detector blocks the write; `allowSensitiveInput: true` is a per-call scoped opt-in for legitimate auth-flow tests |
 | **Evidence-pack tampering** | Auditor receives a pack; attacker wants to alter history post-hoc | Canonical payload hashed with SHA-256; every step has its own per-step integrity hash; chained within the run |
 | **Supply-chain attack on the runtime binary** | Attacker swaps the signed artifact on GitHub | Ed25519 signature on the release manifest, verified against the public key embedded in the bridge |

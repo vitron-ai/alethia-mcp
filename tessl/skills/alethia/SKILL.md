@@ -72,6 +72,7 @@ assert Login is visible
 assert Welcome to Dashboard is visible
 assert Sign In button is visible
 ```
+Unquoted numbered labels such as `#100 Upgrade the build image` are treated as visible text in click, assert, and wait steps. Use `text:#release` to force a hashtag label to match as text, or `css:#release` to target an element ID.
 
 **Verifiable safety — `expect block:` (unique to Alethia):**
 ```
@@ -92,8 +93,10 @@ type hello world into the message field
 ```
 click Sign In
 click the Reset button
-click #specific-element-id
+click css:#specific-element-id
+click text:#release
 ```
+Use the `text:` and `css:` prefixes when the same `#` value could refer to visible text or an element ID.
 
 **Waiting:**
 ```
@@ -131,6 +134,16 @@ Each `alethia_tell` call returns a PlanRun with:
 
 When a step is blocked with `DENY_WRITE_HIGH`, this is correct behavior — the EA1 policy gate is protecting the user from unintended destructive actions. Explain this to the user rather than trying to work around it.
 
+### Operator-approved fixture steps
+
+With a compatible Alethia core runtime, a test script can annotate one destructive NLP step:
+
+```text
+@grant(fixture-delete) delete the disposable fixture
+```
+
+The annotation only links to an operator-approved grant policy loaded through `ALETHIA_APPROVAL_GRANTS_PATH`. The checked-in policy must match the run name, zero-based step number, exact compiled action, local origin, expiry, and use limit. Review policy changes as authorization changes; the label alone is not authority. Missing or mismatched grants stay blocked. Current grant enforcement requires a POSIX runtime that exposes the process UID; unsupported platforms fail closed, leaving the action blocked or requiring cockpit approval. Do not add grant annotations or change grant policy without the user's explicit authorization for that exact disposable-fixture action. Never create grants for real user data or non-local targets. Runtimes without grant support continue to block the action or require cockpit approval.
+
 When the user explicitly asks to **verify** that destructive actions are blocked (compliance, safety review), use `expect block:` in NLP or call `alethia_assert_safety`. A blocked step in `expect block:` mode counts as a PASS.
 
 ## Reason Codes
@@ -139,6 +152,8 @@ Common `reasonCode` values on step results:
 
 - `ALLOW` — step executed normally
 - `DENY_WRITE_HIGH` — write-high action blocked by policy (correct behavior)
+- `WRITE_HIGH_APPROVED_BY_GRANT` — exact step was authorized by a matching operator grant
+- `WRITE_HIGH_GRANT_INVALID` — grant was absent, expired, exhausted, or mismatched; action stayed blocked
 - `DENY_SENSITIVE_INPUT` — password/token/card input blocked
 - `KILL_SWITCH_ACTIVE` — runtime halted by operator
 - `EXPECT_BLOCK_VIOLATED` — `expect block:` step was NOT blocked (policy gate failure — hard fail)
