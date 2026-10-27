@@ -72,6 +72,7 @@ assert Login is visible
 assert Welcome to Dashboard is visible
 assert Sign In button is visible
 ```
+Unquoted numbered labels such as `#100 Upgrade the build image` are treated as visible text in click, assert, and wait steps. Quote other literal labels beginning with `#` (for example, `assert "#release" is visible`) so they are not mistaken for CSS ID selectors.
 
 **Verifiable safety — `expect block:` (unique to Alethia):**
 ```
@@ -94,6 +95,7 @@ click Sign In
 click the Reset button
 click #specific-element-id
 ```
+For a visible hashtag label, quote the text (for example, `click "#release"`). The unquoted form can be interpreted as an element ID selector.
 
 **Waiting:**
 ```
